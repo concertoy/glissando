@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "./build.sh",
-    "test": "npx tsx scripts/test-examples.ts"
+    "test": "npx tsx scripts/test-examples.ts",
+    "init": "npx tsx scripts/init.ts"
   },
   "dependencies": {
     "mathjax-full": "^3.2.1",

@@ -44,7 +44,6 @@ src/
       components.ts         Pre-designed components (factory)
       layouts.ts            Pre-designed slide layouts
       presets.ts            Font presets (default, macosNative, googleFonts)
-      fonts/                Font files + install instructions
 examples/
   ai-tooling-tutorial/      Real-world deck (default preset)
   mimic-claude-macos/       macOS native fonts (Iowan Old Style + Avenir Next)
@@ -108,6 +107,7 @@ export default function build() {
 | `deck.quote({ quote, attribution? })` | Large quote on accent bg |
 | `deck.image({ title, imagePath, caption? })` | Heading + image |
 | `deck.table({ title, headers, rows })` | Heading + themed table |
+| `await deck.equation({ title, equations })` | Heading + rendered LaTeX equations |
 | `deck.blank({ bg? })` | Empty slide (returns raw pptxgenjs slide) |
 
 ## Available Components
@@ -128,6 +128,7 @@ Components can be used directly for custom slides via `deck.components`:
 - `arrow(slide, { from, to, color?, width?, head?, tail?, dashed? })` — straight arrow between coordinates
 - `hookArrow(slide, { from, to, hookDirection, ... })` — L-shaped elbow arrow
 - `container(slide, { label?, x, y, w, h, border?, fill? })` — dashed-border grouping box returning `ShapeRef`
+- `equation(slide, { latex, x, y, w, h?, color?, label? })` — rendered LaTeX equation (async)
 
 ## Callout Block Variants
 

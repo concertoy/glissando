@@ -73,6 +73,30 @@ export interface CodeStyle {
   label: string;        // Language label color
 }
 
+export type EmojiStyle = "openmoji" | "twemoji";
+
+export interface EmojiSet {
+  style: EmojiStyle;
+  size?: number;                      // render size in px (default 128)
+  custom?: Record<string, string>;    // name → SVG string overrides
+}
+
+export interface EmojiProps {
+  name: string;
+  x: number;
+  y: number;
+  w?: number;   // default 0.4"
+  h?: number;
+}
+
+/** Stored internally for post-processing emoji bullets into OOXML <a:buBlip>. */
+export interface EmojiDef {
+  slideIndex: number;
+  objectName: string;         // text shape objectName to find in XML
+  bulletIndices: number[];    // which bullet paragraphs get emoji images
+  emojiPngs: string[];        // base64 PNG data (parallel with bulletIndices)
+}
+
 export interface ThemeConfig {
   name: string;
   colors: ThemeColors;
@@ -80,6 +104,7 @@ export interface ThemeConfig {
   sizes: ThemeSizes;
   spacing: ThemeSpacing;
   codeStyle: CodeStyle;
+  emojiSet?: EmojiSet;
 }
 
 // ---------------------------------------------------------------------------
@@ -308,6 +333,7 @@ export interface ThemeComponents {
   hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;
   container: (slide: PptxGenJS.Slide, props: ContainerProps) => ShapeRef;
   equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<void>;
+  emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -391,8 +417,13 @@ export interface ThemeLayouts {
 // Theme — the full package
 // ---------------------------------------------------------------------------
 
+/** Collects pending async work from sync components (e.g. emoji renders in bodyText). */
+export interface PendingWork {
+  promises: Promise<void>[];
+}
+
 /** Factory that creates components bound to a specific config. */
-export type ComponentFactory = (config: ThemeConfig) => ThemeComponents;
+export type ComponentFactory = (config: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork) => ThemeComponents;
 
 export interface Theme {
   config: ThemeConfig;

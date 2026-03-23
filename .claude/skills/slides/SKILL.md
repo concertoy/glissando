@@ -9,10 +9,59 @@ Create a Glissando slide deck based on the user's request: $ARGUMENTS
 
 ## Workflow
 
-1. Create a new folder under `examples/` (e.g. `examples/my-deck/`)
-2. Write `slides.ts` in that folder using the API below
-3. Build with `./build.sh examples/my-deck`
-4. Confirm the build succeeds
+1. Plan the slide structure based on the user's request
+2. Create a new folder under `examples/` (e.g. `examples/my-deck/`)
+3. For diagram slides, decide: **built-in components or image generation?** (see decision guide below)
+4. Write `slides.ts` in that folder
+5. Build with `./build.sh examples/my-deck`
+6. Confirm the build succeeds
+
+## Diagrams: components first, images last
+
+**Always prefer built-in diagram components.** They produce vector, editable, themed shapes that move together. Image generation is a last resort.
+
+### Decision guide
+
+Can the diagram be expressed as **labeled boxes + arrows**? → Use built-in components on a `deck.blank()` slide.
+
+- Flowcharts, pipelines, process steps → **components**
+- Architecture diagrams (boxes + connections) → **components**
+- Tokenization steps, data flow → **components**
+- Tree/hierarchy structures → **components**
+- State machines → **components**
+- Photos, illustrations, charts with curves, complex visuals → **image generation** (only if `~/.glissando/config.json` exists)
+
+### Diagram component API (for `deck.blank()` slides)
+
+```ts
+const { diagramBox: box, arrow, container } = deck.components;
+const sp = deck.config.spacing;
+
+// Boxes return ShapeRef with connection points (.top, .right, .bottom, .left)
+const a = box(slide, { text: "Input", x: 1, y: 3, w: 2.5, h: 1, fill: "E8DFC4", border: "D4C9A0" });
+const b = box(slide, { text: "Process", x: 5, y: 3, w: 2.5, h: 1, fill: "D4956C", border: "C07A50", textColor: "FFFFFF" });
+const c = box(slide, { text: "Output", x: 9, y: 3, w: 2.5, h: 1, fill: "B8613D", border: "9A4E30", textColor: "FFFFFF" });
+
+// Arrows between boxes
+arrow(slide, { from: { x: 3.5, y: 3.5 }, to: { x: 5, y: 3.5 } });
+arrow(slide, { from: { x: 7.5, y: 3.5 }, to: { x: 9, y: 3.5 } });
+
+// Native connectors (move with shapes when dragged)
+deck.connector({ from: a.right, to: b.left, type: "straight" });
+
+// Grouping container
+container(slide, { label: "System", x: 0.5, y: 2, w: 12, h: 3.5, fill: "F9F9F7", border: "B8B8B8" });
+```
+
+### Image generation (fallback only)
+
+Only if the diagram cannot be built with shapes, and `~/.glissando/config.json` exists:
+
+```bash
+npx tsx scripts/generate-figure.ts "<description>" examples/my-deck/figure.png
+```
+
+Then reference with `deck.image({ title, imagePath: img("figure.png") })`.
 
 ## Layout API
 
@@ -66,6 +115,18 @@ export default function build() {
     code: `def greet(name: str) -> str:\n    return f"Hello, {name}!"`,
     language: "python",
   });
+
+  // Diagram slide using built-in components (preferred over image generation)
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, diagramBox: box, arrow: ar } = deck.components;
+    hd(slide, { text: "How It Works", x: 0.8, y: 0.5, w: 11 });
+    const a = box(slide, { text: "Prompt", x: 1, y: 3, w: 2.5, h: 1, fill: "EEF1FA", border: "9BADD4" });
+    const b = box(slide, { text: "Agent", x: 5, y: 3, w: 2.5, h: 1, fill: "FAF0EB", border: "DA7756" });
+    const c = box(slide, { text: "Code", x: 9, y: 3, w: 2.5, h: 1, fill: "ECFAF0", border: "7BBF96" });
+    ar(slide, { from: { x: 3.5, y: 3.5 }, to: { x: 5, y: 3.5 } });
+    ar(slide, { from: { x: 7.5, y: 3.5 }, to: { x: 9, y: 3.5 } });
+  }
 
   deck.quote({
     quote: "The best tool is the one that disappears into your workflow.",

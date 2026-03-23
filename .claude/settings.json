@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./build.sh *)",
+      "Bash(npm test)",
+      "Bash(npm run init)",
+      "Bash(npx tsx scripts/*)",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}

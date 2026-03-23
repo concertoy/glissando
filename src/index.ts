@@ -27,7 +27,10 @@ import type {
   BlankLayoutProps,
   ConnectorProps,
   ConnectorDef,
+  EmojiDef,
+  PendingWork,
 } from "./types.js";
+import { renderEmoji } from "./emoji.js";
 
 export type { Theme, ShapeRef, ConnectionPoint } from "./types.js";
 
@@ -36,6 +39,8 @@ export class Deck {
   private theme: Theme;
   private boundComponents: ReturnType<Theme["createComponents"]>;
   private _connectorDefs: ConnectorDef[] = [];
+  private _emojiDefs: EmojiDef[] = [];
+  private _pending: PendingWork = { promises: [] };
   private _slideCount = 0;
 
   constructor(theme: Theme) {
@@ -43,7 +48,8 @@ export class Deck {
     this.pres = new PptxGenJS();
 
     // Create components bound to this theme's config (respects presets)
-    this.boundComponents = theme.createComponents(theme.config);
+    // Pass emoji defs accumulator and pending work tracker so components can queue async work
+    this.boundComponents = theme.createComponents(theme.config, this._emojiDefs, this._pending);
 
     const { slideWidth, slideHeight } = theme.config.spacing;
     this.pres.defineLayout({ name: "CUSTOM", width: slideWidth, height: slideHeight });
@@ -164,12 +170,24 @@ export class Deck {
     return this.theme.config;
   }
 
+  /** Render an emoji to a base64 PNG data URI (for use with addImage). */
+  async emoji(name: string, size?: number): Promise<string> {
+    return renderEmoji(name, this.theme.config.emojiSet, size);
+  }
+
   /** Write the deck to a .pptx file. */
   async save(path: string): Promise<void> {
+    // Wait for any pending async work from sync components (e.g. emoji renders)
+    if (this._pending.promises.length > 0) {
+      await Promise.all(this._pending.promises);
+      this._pending.promises = [];
+    }
+
     await this.pres.writeFile({ fileName: path });
     await patchPptx(path, {
       fonts: this.theme.config.fonts,
       connectorDefs: this._connectorDefs,
+      emojiDefs: this._emojiDefs,
     });
   }
 }

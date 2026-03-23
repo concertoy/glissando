@@ -8,7 +8,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import JSZip from "jszip";
-import type { ConnectorDef } from "./types.js";
+import type { ConnectorDef, EmojiDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -17,6 +17,7 @@ import type { ConnectorDef } from "./types.js";
 export interface PatchOptions {
   fonts: { heading: string; sans: string };
   connectorDefs: ConnectorDef[];
+  emojiDefs?: EmojiDef[];
 }
 
 /**
@@ -65,6 +66,11 @@ export async function patchPptx(pptxPath: string, opts: PatchOptions): Promise<v
 
   // --- Group callout block shapes (bg + icon → <p:grpSp>) ---
   await groupCalloutBlocks(zip);
+
+  // --- Patch emoji bullets (<a:buChar> → <a:buBlip>) ---
+  if (opts.emojiDefs && opts.emojiDefs.length > 0) {
+    await patchEmojiBullets(zip, opts.emojiDefs);
+  }
 
   // Write back
   const out = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
@@ -564,5 +570,120 @@ async function groupCalloutBlocks(zip: JSZip): Promise<void> {
     }
 
     zip.file(slidePath, xml);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Emoji bullet patching — replace <a:buChar> with <a:buBlip> for emoji bullets
+// ---------------------------------------------------------------------------
+
+/**
+ * For each emoji-prefixed bullet, embed the PNG in the PPTX media folder
+ * and replace the bullet character with an image bullet (<a:buBlip>).
+ */
+async function patchEmojiBullets(zip: JSZip, emojiDefs: EmojiDef[]): Promise<void> {
+  let mediaCounter = 0;
+
+  const slideFiles = Object.keys(zip.files).filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f));
+
+  for (const slidePath of slideFiles) {
+    const entry = zip.file(slidePath);
+    if (!entry) continue;
+    let xml = await entry.async("string");
+
+    const relsPath = slidePath.replace("ppt/slides/", "ppt/slides/_rels/") + ".rels";
+    const relsEntry = zip.file(relsPath);
+    let relsXml = relsEntry ? await relsEntry.async("string") : null;
+
+    let modified = false;
+
+    for (const def of emojiDefs) {
+      if (!xml.includes(`name="${def.objectName}"`)) continue;
+
+      // Locate the shape by objectName
+      const shapeRegex = new RegExp(
+        `(<p:sp>\\s*<p:nvSpPr>\\s*<p:cNvPr[^>]*name="${def.objectName}"[\\s\\S]*?</p:sp>)`,
+      );
+      const shapeMatch = xml.match(shapeRegex);
+      if (!shapeMatch) continue;
+
+      let shapeXml = shapeMatch[1];
+      const originalShapeXml = shapeXml;
+
+      // Find all <a:p> paragraphs in this shape
+      const paragraphs = [...shapeXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g)];
+
+      for (let bi = 0; bi < def.bulletIndices.length; bi++) {
+        const paraIdx = def.bulletIndices[bi];
+        if (paraIdx >= paragraphs.length) continue;
+
+        const paraXml = paragraphs[paraIdx][0];
+
+        // Embed PNG as media file
+        mediaCounter++;
+        const mediaName = `emoji${mediaCounter}.png`;
+        const mediaPath = `ppt/media/${mediaName}`;
+
+        const pngData = def.emojiPngs[bi];
+        const base64 = pngData.replace(/^image\/png;base64,/, "");
+        zip.file(mediaPath, base64, { base64: true });
+
+        // Add relationship
+        const rId = `rIdEmoji${mediaCounter}`;
+        if (relsXml) {
+          relsXml = relsXml.replace(
+            "</Relationships>",
+            `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${mediaName}"/></Relationships>`,
+          );
+        } else {
+          relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+            `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+            `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${mediaName}"/>` +
+            `</Relationships>`;
+        }
+
+        // Replace <a:buFont .../><a:buChar .../> with <a:buBlip>
+        let newParaXml = paraXml;
+        newParaXml = newParaXml.replace(/<a:buFont[^/]*\/>/g, "");
+        newParaXml = newParaXml.replace(/<a:buChar[^/]*\/>/g, "");
+        newParaXml = newParaXml.replace(/<a:buAutoNum[^/]*\/>/g, "");
+
+        const buBlipXml =
+          `<a:buSzPct val="100000"/>` +
+          `<a:buBlip>` +
+          `<a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/>` +
+          `</a:buBlip>`;
+
+        if (newParaXml.includes("</a:pPr>")) {
+          newParaXml = newParaXml.replace("</a:pPr>", buBlipXml + "</a:pPr>");
+        }
+
+        shapeXml = shapeXml.replace(paraXml, newParaXml);
+      }
+
+      if (shapeXml !== originalShapeXml) {
+        xml = xml.replace(originalShapeXml, shapeXml);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      zip.file(slidePath, xml);
+      if (relsXml) {
+        zip.file(relsPath, relsXml);
+      }
+      // Ensure Content_Types has png registered
+      const ctEntry = zip.file("[Content_Types].xml");
+      if (ctEntry) {
+        let ctXml = await ctEntry.async("string");
+        if (!ctXml.includes('Extension="png"')) {
+          ctXml = ctXml.replace(
+            "</Types>",
+            `<Default Extension="png" ContentType="image/png"/></Types>`,
+          );
+          zip.file("[Content_Types].xml", ctXml);
+        }
+      }
+    }
   }
 }

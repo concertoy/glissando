@@ -27,12 +27,16 @@ import type {
   HookArrowProps,
   ContainerProps,
   EquationProps,
+  EmojiProps,
+  EmojiDef,
+  PendingWork,
 } from "../../types.js";
 import { highlightCode } from "../../highlight.js";
 import { lucideIcon } from "../../icons.js";
 import { renderEquation } from "../../equation.js";
+import { renderEmoji, extractLeadingEmoji } from "../../emoji.js";
 
-export const createComponents: ComponentFactory = (cfg: ThemeConfig): ThemeComponents => {
+export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork): ThemeComponents => {
   const { colors: c, fonts: f, sizes: s } = cfg;
 
   // --- Accent bar ---
@@ -58,22 +62,80 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig): ThemeCompo
   }
 
   // --- Body text ---
+  // Supports leading :emoji: — e.g. ":rocket: Launch the product"
+  // Emoji is placed as an image before the text, text is shifted right.
   function bodyText(slide: PptxGenJS.Slide, props: BodyTextProps): void {
-    slide.addText(props.text, {
-      x: props.x, y: props.y, w: props.w, h: props.h ?? 0.5,
-      fontSize: props.fontSize ?? s.body,
-      fontFace: props.fontFace ?? f.sans,
-      color: props.color ?? c.textSecondary,
-      bold: props.bold ?? false,
-      italic: props.italic ?? false,
-      valign: "top",
-    });
+    const leading = cfg.emojiSet ? extractLeadingEmoji(props.text) : null;
+
+    if (leading) {
+      const fontSize = props.fontSize ?? s.body;
+      const emojiSize = fontSize / 72;  // approximate emoji size in inches
+      const gap = 0.08;  // gap between emoji and text
+
+      // Render emoji image at original x position
+      const emojiPromise = renderEmoji(leading.emoji, cfg.emojiSet).then((data) => {
+        slide.addImage({
+          data,
+          x: props.x,
+          y: props.y,
+          w: emojiSize,
+          h: emojiSize,
+        });
+      });
+      if (pending) pending.promises.push(emojiPromise);
+
+      // Shift text to the right
+      slide.addText(leading.rest, {
+        x: props.x + emojiSize + gap,
+        y: props.y,
+        w: props.w - emojiSize - gap,
+        h: props.h ?? 0.5,
+        fontSize,
+        fontFace: props.fontFace ?? f.sans,
+        color: props.color ?? c.textSecondary,
+        bold: props.bold ?? false,
+        italic: props.italic ?? false,
+        valign: "top",
+      });
+    } else {
+      slide.addText(props.text, {
+        x: props.x, y: props.y, w: props.w, h: props.h ?? 0.5,
+        fontSize: props.fontSize ?? s.body,
+        fontFace: props.fontFace ?? f.sans,
+        color: props.color ?? c.textSecondary,
+        bold: props.bold ?? false,
+        italic: props.italic ?? false,
+        valign: "top",
+      });
+    }
   }
 
   // --- Bullet list ---
+  // Supports :emoji: prefix on items — e.g. ":rocket: Launch the product"
+  // Emoji prefixes replace the standard bullet marker via OOXML post-processing.
+
+  let bulletListCounter = 0;
+
   function bulletList(slide: PptxGenJS.Slide, props: BulletListProps): void {
     const fontSize = props.fontSize ?? s.body;
-    const textRows: PptxGenJS.TextProps[] = props.items.map((item) => ({
+
+    // Check for emoji-prefixed items
+    const emojiIndices: number[] = [];
+    const emojiPngs: Promise<string>[] = [];
+    const processedItems = props.items.map((item, i) => {
+      const leading = extractLeadingEmoji(item);
+      if (leading && cfg.emojiSet) {
+        emojiIndices.push(i);
+        emojiPngs.push(renderEmoji(leading.emoji, cfg.emojiSet));
+        return leading.rest;
+      }
+      return item;
+    });
+
+    const hasEmojiBullets = emojiIndices.length > 0;
+    const objName = hasEmojiBullets ? `bl-${bulletListCounter++}` : undefined;
+
+    const textRows: PptxGenJS.TextProps[] = processedItems.map((item) => ({
       text: item,
       options: {
         fontSize,
@@ -88,7 +150,21 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig): ThemeCompo
       x: props.x, y: props.y, w: props.w, h: props.h ?? 4.5,
       valign: "top",
       lineSpacingMultiple: 1.2,
+      objectName: objName,
     });
+
+    // Queue emoji bullet defs for OOXML post-processing
+    if (hasEmojiBullets && emojiDefs && objName) {
+      const emojiPromise = Promise.all(emojiPngs).then((pngs) => {
+        emojiDefs.push({
+          slideIndex: -1,  // resolved per-slide in post-processing (searches all slides)
+          objectName: objName,
+          bulletIndices: emojiIndices,
+          emojiPngs: pngs,
+        });
+      });
+      if (pending) pending.promises.push(emojiPromise);
+    }
   }
 
   // --- Numbered list ---
@@ -140,9 +216,12 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig): ThemeCompo
     const SIDE_PAD = 0.25;  // inches
     const BOT_PAD = 0.35;   // inches below last code line
 
-    // Auto-height
+    // Auto-height: font line height = (pt / 72) * font_internal_ratio * lineSpacingMultiple
+    // Monospace fonts (JetBrains Mono, Menlo) have an internal line ratio of ~1.2
     const lineCount = props.code.split("\n").length;
-    const lineHeightIn = (s.code / 72) * 1.4;
+    const FONT_LINE_RATIO = 1.2;
+    const LINE_SPACING = 1.4; // must match lineSpacingMultiple on the code text box
+    const lineHeightIn = (s.code / 72) * FONT_LINE_RATIO * LINE_SPACING;
     const autoH = CODE_Y + lineCount * lineHeightIn + BOT_PAD;
     const h = props.h ? Math.min(props.h, autoH) : autoH;
 
@@ -582,5 +661,17 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig): ThemeCompo
     }
   }
 
-  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, diagramBox, arrow, hookArrow, container, equation };
+  // --- Standalone emoji image ---
+  async function emoji(slide: PptxGenJS.Slide, props: EmojiProps): Promise<void> {
+    const data = await renderEmoji(props.name, cfg.emojiSet);
+    slide.addImage({
+      data,
+      x: props.x,
+      y: props.y,
+      w: props.w ?? 0.4,
+      h: props.h ?? 0.4,
+    });
+  }
+
+  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
 };

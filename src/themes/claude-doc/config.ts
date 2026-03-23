@@ -15,15 +15,15 @@ export const config: ThemeConfig = {
 
   colors: {
     bgPrimary:      "F4F3EE",    // Cream "Pampas" — page background
-    bgDark:         "0D0D0D",    // Black — title/closing slides
+    bgDark:         "F4F3EE",    // Cream — title/closing slides (matches content bg)
     bgAccent:       "F4F3EE",    // Cream — section dividers
     bgCard:         "FFFFFF",    // White — cards, chat bubbles
 
     text:           "0D0D0D",    // Black — headings, primary text
     textSecondary:  "3B3B39",    // Dark grey — body text
     textMuted:      "B1ADA1",    // Cloudy — captions, borders
-    textOnDark:     "F4F3EE",    // Cream — text on dark backgrounds
-    textOnDarkMuted:"B1ADA1",    // Cloudy — muted text on dark
+    textOnDark:     "0D0D0D",    // Black — text on title slides
+    textOnDarkMuted:"3B3B39",    // Dark grey — subtitle on title slides
 
     accent:         "DA7756",    // Terra cotta — primary accent, CTAs
     accentBlue:     "2D74C9",    // Blue — links, highlights
@@ -62,6 +62,11 @@ export const config: ThemeConfig = {
     marginRight:   0.8,
     marginTop:     0.6,
     marginBottom:  0.5,
+  },
+
+  emojiSet: {
+    style: "openmoji",
+    size: 128,
   },
 
   // One Dark code style (default)

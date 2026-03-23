@@ -1,11 +1,19 @@
 ---
 name: figure
-description: "Generate a figure or diagram for slides using the configured AI provider. Use when the user says '/figure', 'generate a diagram', 'create a figure', 'draw a flowchart', or needs a visual for their deck."
+description: "Generate a raster figure for slides via AI image generation. This is a FALLBACK — first check if the diagram can be built with Glissando's built-in diagramBox, arrow, and container components (see /slides skill). Use this only for visuals that require organic shapes, illustrations, charts, or complex graphics that boxes+arrows cannot express."
 allowed-tools: Bash, Read, Write
 argument-hint: "<description of the figure>"
 ---
 
 Generate a figure based on the user's request: $ARGUMENTS
+
+## Before using this skill
+
+**Ask yourself: can this be built with boxes and arrows?**
+
+If YES → use `deck.blank()` + `deck.components.diagramBox/arrow/container` instead. Built-in components produce vector, editable, themed shapes. See the `/slides` skill for the diagram component API.
+
+If NO (photos, illustrations, charts with curves, complex organic visuals) → proceed below.
 
 ## Prerequisites
 
@@ -20,31 +28,19 @@ The user must have run `npm run init` to configure their AI provider. If not con
 npx tsx scripts/generate-figure.ts "<description>" <output-path.png>
 ```
 
-3. If the generation succeeds, show the user how to use it in their slides:
+3. Reference in slides with absolute path:
 
 ```ts
-deck.image({
-  title: "Architecture Overview",
-  imagePath: "./figure.png",  // relative to the deck folder
-  caption: "Generated diagram",
-});
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const img = (name: string) => resolve(__dirname, name);
+
+deck.image({ title: "Overview", imagePath: img("figure.png") });
 ```
 
-4. If the user wants changes, re-run with an updated prompt.
-
-## Examples
-
-```bash
-# Flowchart
-npx tsx scripts/generate-figure.ts "A flowchart showing user signup: form → validate → create account → send email" examples/my-deck/signup-flow.png
-
-# Architecture diagram
-npx tsx scripts/generate-figure.ts "Microservices architecture with API gateway, 3 services, and a database" examples/my-deck/architecture.png
-
-# Comparison diagram
-npx tsx scripts/generate-figure.ts "Venn diagram comparing supervised learning and reinforcement learning" examples/my-deck/venn.png
-```
+4. If the generation fails or looks bad, re-run with a refined prompt.
 
 ## How it works
 
-The script calls the configured LLM (set via `npm run init`) to generate an SVG, then converts it to a high-resolution PNG via sharp. The PNG can be embedded in slides via `deck.image()`.
+Calls the configured LLM (set via `npm run init`) to generate an SVG, converts to high-res PNG via sharp.

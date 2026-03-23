@@ -210,6 +210,19 @@ function tokenizeLine(line: string, lang: string, style: CodeStyle): Token[] {
 
     // --- Operator / punctuation ---
     if (/[=+\-*/<>!&|^~%?:;,.()\[\]{}@]/.test(line[i])) {
+      // Special handling for negative numbers: - followed by a digit is part of the number
+      if (line[i] === '-' && i + 1 < line.length && /[0-9.]/.test(line[i + 1])) {
+        // Check if this - is a unary minus (not subtraction) by looking at previous char
+        const prevChar = i > 0 ? line[i - 1] : ' ';
+        if (/[\s(,[=:+<>{|]/.test(prevChar)) {
+          // This is a negative number - tokenize it as such
+          let j = i + 1;
+          while (j < line.length && /[0-9.xXa-fA-F_]/.test(line[j])) j++;
+          push(line.slice(i, j), style.number);
+          i = j;
+          continue;
+        }
+      }
       let j = i;
       while (j < line.length && /[=+\-*/<>!&|^~%?]/.test(line[j])) j++;
       if (j === i) j++; // single punctuation char

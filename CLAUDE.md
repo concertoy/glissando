@@ -37,6 +37,11 @@ src/
   types.ts                  TypeScript types for Theme, Components, Layouts
   highlight.ts              Syntax highlighter (per-language keyword coloring)
   icons.ts                  Lucide icon renderer (SVG → PNG via sharp)
+  emoji.ts                  Themed emoji renderer (SVG → PNG via sharp)
+  emoji-data/
+    openmoji.ts             OpenMoji curated SVGs (~47 emojis)
+    twemoji.ts              Twemoji curated SVGs (~47 emojis)
+    aliases.ts              Common emoji name aliases
   themes/
     claude-doc/
       index.ts              Theme object + applyPreset helper
@@ -44,8 +49,14 @@ src/
       components.ts         Pre-designed components (factory)
       layouts.ts            Pre-designed slide layouts
       presets.ts            Font presets (default, macosNative, googleFonts)
+    basic-white/
+      index.ts              Theme object (exports basicWhite)
+      config.ts             White/black/blue colors, Helvetica Neue + Menlo
+      components.ts         Re-exports claude-doc component factory
+      layouts.ts            Clean layouts — no accent bars, centered titles
 examples/
   ai-tooling-tutorial/      Real-world deck (default preset)
+  basic-white-demo/         Basic White theme demo (Keynote-inspired)
   mimic-claude-macos/       macOS native fonts (Iowan Old Style + Avenir Next)
   mimic-claude-google-fonts/  Google Fonts (Libre Baskerville + Space Grotesk)
 build.sh                    Universal build: ./build.sh <path>
@@ -74,6 +85,19 @@ export default function build() {
 }
 ```
 
+### Using Basic White Theme
+
+```ts
+import { Deck } from "../../src/index.js";
+import { basicWhite } from "../../src/themes/basic-white/index.js";
+
+export default function build() {
+  const deck = new Deck(basicWhite);
+  // ... same layout API, Keynote-inspired clean white look
+  return deck;
+}
+```
+
 ### Using a Font Preset
 
 ```ts
@@ -94,6 +118,13 @@ export default function build() {
 | `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
 | `macosNative` | Iowan Old Style | Avenir Next | Menlo | No install needed |
 | `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
+
+## Available Themes
+
+| Theme | Style | Headings | Body | Code | Install |
+|---|---|---|---|---|---|
+| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
 
 ## Available Layouts
 
@@ -129,6 +160,59 @@ Components can be used directly for custom slides via `deck.components`:
 - `hookArrow(slide, { from, to, hookDirection, ... })` — L-shaped elbow arrow
 - `container(slide, { label?, x, y, w, h, border?, fill? })` — dashed-border grouping box returning `ShapeRef`
 - `equation(slide, { latex, x, y, w, h?, color?, label? })` — rendered LaTeX equation (async)
+- `emoji(slide, { name, x, y, w?, h? })` — themed SVG emoji image (async)
+
+## Themed Emojis
+
+Each theme provides a curated set of ~47 SVG emojis with consistent visual style. Two emoji styles are available as presets: **OpenMoji** (default) and **Twemoji**.
+
+### Inline `:emoji:` syntax
+
+Use `:emoji_name:` tokens in `bulletList` and `bodyText` — no manual positioning needed:
+
+```ts
+// Emoji-prefixed bullets (replaces bullet marker with emoji image)
+deck.content({
+  title: "Features",
+  bullets: [
+    ":rocket: Fast builds",
+    ":shield: Enterprise security",
+    ":sparkles: Beautiful defaults",
+    "Regular bullet without emoji",
+  ],
+});
+
+// Leading emoji in body text
+bodyText(slide, { text: ":lightbulb: Pro tip: use emoji for emphasis", x: 0.8, y: 1.5, w: 8 });
+```
+
+### Standalone emoji component
+
+```ts
+await deck.components.emoji(slide, { name: "rocket", x: 1, y: 2, w: 0.5, h: 0.5 });
+```
+
+### Data URI for custom use
+
+```ts
+const img = await deck.emoji("rocket");
+slide.addImage({ data: img, x: 1, y: 2, w: 0.5, h: 0.5 });
+```
+
+### Switching emoji style
+
+Set `emojiSet.style` in the theme config:
+
+```ts
+const theme = { ...claudeDoc, config: { ...claudeDoc.config, emojiSet: { style: "twemoji" } } };
+const deck = new Deck(theme);
+```
+
+### Available emojis (~47)
+
+`rocket`, `fire`, `star`, `checkmark`, `crossmark`, `lightbulb`, `brain`, `gear`, `chart-up`, `target`, `clock`, `calendar`, `lock`, `unlock`, `globe`, `link`, `magnifying-glass`, `pencil`, `book`, `folder`, `document`, `terminal`, `bug`, `warning`, `thumbs-up`, `thumbs-down`, `heart`, `sparkles`, `zap`, `party`, `trophy`, `medal`, `handshake`, `people`, `eye`, `bell`, `pin`, `flag`, `tag`, `gift`, `money`, `diamond`, `key`, `hammer`, `shield`, `robot`, `palette`
+
+Common aliases are supported (e.g. `check` → `checkmark`, `flame` → `fire`, `bolt` → `zap`, `like` → `thumbs-up`). See `src/emoji-data/aliases.ts` for the full list.
 
 ## Callout Block Variants
 

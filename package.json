@@ -7,7 +7,8 @@
   "scripts": {
     "build": "./build.sh",
     "test": "npx tsx scripts/test-examples.ts",
-    "init": "npx tsx scripts/init.ts"
+    "init": "npx tsx scripts/init.ts",
+    "render": "npx tsx scripts/render-slide.ts"
   },
   "dependencies": {
     "mathjax-full": "^3.2.1",

@@ -15,6 +15,13 @@ Create a Glissando slide deck based on the user's request: $ARGUMENTS
 4. Write `slides.ts` in that folder
 5. Build with `./build.sh examples/my-deck`
 6. Confirm the build succeeds
+7. **Visual verification** — render and inspect:
+   ```bash
+   npx tsx scripts/render-slide.ts examples/my-deck/output.pptx --all --output /tmp/vibeslides-render
+   ```
+   Then Read each PNG in `/tmp/vibeslides-render/` to visually check every slide.
+8. If issues found (overlap, truncation, contrast), fix `slides.ts` and rebuild.
+9. Repeat 5-8 until all slides look correct.
 
 ## Diagrams: components first, images last
 

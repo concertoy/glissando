@@ -9,7 +9,7 @@ Interactive CLI that configures AI provider credentials on first use.
 ```
 npx glissando init
 
-Welcome to Glissando!
+Welcome to glissando!
 
 Select AI provider:
   1. Google (Gemini)

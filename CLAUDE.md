@@ -1,4 +1,4 @@
-# VibeSlides
+# glissando
 
 Component-based slide decks for coding agents. Write TypeScript, get native editable PPTX.
 
@@ -55,9 +55,15 @@ src/
       config.ts             White/black/blue colors, Helvetica Neue + Menlo
       components.ts         Re-exports claude-doc component factory
       layouts.ts            Clean layouts — no accent bars, centered titles
+    elegant-bw/
+      index.ts              Theme object (exports elegantBw)
+      config.ts             Monochromatic black/white, Space Grotesk + Inter
+      components.ts         Re-exports claude-doc component factory
+      layouts.ts            Generous whitespace, centered layouts
 examples/
   ai-tooling-tutorial/      Real-world deck (default preset)
   basic-white-demo/         Basic White theme demo (Keynote-inspired)
+  elegant-bw-demo/          Elegant BW theme demo (monochromatic minimalism)
   mimic-claude-macos/       macOS native fonts (Iowan Old Style + Avenir Next)
   mimic-claude-google-fonts/  Google Fonts (Libre Baskerville + Space Grotesk)
 build.sh                    Universal build: ./build.sh <path>
@@ -126,6 +132,7 @@ export default function build() {
 |---|---|---|---|---|---|
 | `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
+| `elegantBw` | Monochromatic black/white | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw` |
 
 ## Available Layouts
 

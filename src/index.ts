@@ -1,5 +1,5 @@
 /**
- * VibeSlides — component-based slide decks for coding agents.
+ * glissando — component-based slide decks for coding agents.
  *
  * Usage:
  *   import { Deck } from "../../src/index.js";

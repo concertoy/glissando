@@ -38,7 +38,7 @@ const pageIdx = args.indexOf("--page");
 const page = pageIdx !== -1 ? parseInt(args[pageIdx + 1]) : undefined;
 const all = args.includes("--all");
 const outIdx = args.indexOf("--output");
-const outputDir = resolve(outIdx !== -1 ? args[outIdx + 1] : "/tmp/vibeslides-render");
+const outputDir = resolve(outIdx !== -1 ? args[outIdx + 1] : "/tmp/glissando-render");
 
 // Clean and create output directory
 if (existsSync(outputDir)) rmSync(outputDir, { recursive: true, force: true });

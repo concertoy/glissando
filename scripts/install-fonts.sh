@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install fonts for VibeSlides themes.
+# Install fonts for glissando themes.
 #
 # Font presets:
 #   default       DM Serif Display + Inter + JetBrains Mono (free, Google Fonts)
@@ -12,6 +12,7 @@
 #   ./scripts/install-fonts.sh claude-doc default     # same as above
 #   ./scripts/install-fonts.sh claude-doc google-fonts
 #   ./scripts/install-fonts.sh claude-doc macos-native
+#   ./scripts/install-fonts.sh elegant-bw             # Space Grotesk + Inter + JetBrains Mono
 #
 # Supports: macOS, Linux
 
@@ -36,7 +37,7 @@ case "$OS" in
     ;;
 esac
 
-echo "=== VibeSlides Font Installer ==="
+echo "=== glissando Font Installer ==="
 echo "Theme:       $THEME"
 echo "Preset:      $PRESET"
 echo "OS:          $OS"
@@ -49,7 +50,7 @@ install_google_font() {
   local CSS_QUERY="$2"       # CSS API query, e.g. "DM+Serif+Display:wght@400"
   local FILE_PREFIX="$3"     # Filename prefix, e.g. "DMSerifDisplay"
 
-  if ls "$INSTALL_DIR"/${FILE_PREFIX}* 2>/dev/null | grep -q .; then
+  if ls "$INSTALL_DIR"/vs-${FILE_PREFIX}* 2>/dev/null | grep -q .; then
     echo "[✓] $FONT_NAME — already installed"
     return 0
   fi
@@ -70,7 +71,7 @@ install_google_font() {
       local URL
       URL=$(echo "$line" | grep -oE 'https://[^ )]+\.ttf')
       if [ -n "$URL" ]; then
-        curl -fsSL "$URL" -o "$INSTALL_DIR/${FILE_PREFIX}-${WEIGHT}.ttf"
+        curl -fsSL "$URL" -o "$INSTALL_DIR/vs-${FILE_PREFIX}-${WEIGHT}.ttf"
         COUNT=$((COUNT + 1))
       fi
     fi
@@ -88,7 +89,7 @@ install_jetbrains_mono() {
   local VERSION="2.304"
   local URL="https://github.com/JetBrains/JetBrainsMono/releases/download/v${VERSION}/JetBrainsMono-${VERSION}.zip"
 
-  if ls "$INSTALL_DIR"/JetBrainsMono* 2>/dev/null | grep -q .; then
+  if ls "$INSTALL_DIR"/vs-JetBrainsMono* 2>/dev/null | grep -q .; then
     echo "[✓] JetBrains Mono — already installed"
     return 0
   fi
@@ -102,7 +103,9 @@ install_jetbrains_mono() {
 
   local STATIC="$TMP/fonts/ttf"
   if [ -d "$STATIC" ]; then
-    cp "$STATIC"/JetBrainsMono-*.ttf "$INSTALL_DIR/"
+    for f in "$STATIC"/JetBrainsMono-*.ttf; do
+      cp "$f" "$INSTALL_DIR/vs-$(basename "$f")"
+    done
     echo "[✓] JetBrains Mono — installed"
   else
     echo "[!] JetBrains Mono — could not find TTF files"
@@ -115,8 +118,16 @@ install_jetbrains_mono() {
 # Install based on selected preset
 # ===================================================================
 
-case "$PRESET" in
-  default)
+case "$THEME-$PRESET" in
+  elegant-bw-*|elegant-bw)
+    # Playfair Display + Space Grotesk + Inter + JetBrains Mono
+    install_google_font "Playfair Display" "Playfair+Display:ital,wght@0,400;0,700;1,400" "PlayfairDisplay"
+    install_google_font "Space Grotesk" "Space+Grotesk:wght@300;400;500;700" "SpaceGrotesk"
+    install_google_font "Inter" "Inter:wght@400;500;600;700" "Inter"
+    install_jetbrains_mono
+    ;;
+
+  *-default|claude-doc-default)
     # DM Serif Display + Inter + JetBrains Mono
     install_google_font "DM Serif Display" "DM+Serif+Display:wght@400" "DMSerifDisplay"
     install_google_font "Inter" "Inter:wght@400;500;600;700" "Inter"
@@ -145,10 +156,11 @@ case "$PRESET" in
   *)
     echo "Error: Unknown preset '$PRESET'"
     echo ""
-    echo "Available presets:"
-    echo "  default       DM Serif Display + Inter + JetBrains Mono"
-    echo "  google-fonts  Libre Baskerville + Space Grotesk + JetBrains Mono"
-    echo "  macos-native  Iowan Old Style + Avenir Next + Menlo"
+    echo "Available themes/presets:"
+    echo "  claude-doc default       DM Serif Display + Inter + JetBrains Mono"
+    echo "  claude-doc google-fonts  Libre Baskerville + Space Grotesk + JetBrains Mono"
+    echo "  claude-doc macos-native  Iowan Old Style + Avenir Next + Menlo"
+    echo "  elegant-bw               Space Grotesk + Inter + JetBrains Mono"
     exit 1
     ;;
 esac
@@ -165,17 +177,25 @@ echo "=== Done ==="
 echo ""
 echo "To use this preset in your slides, add to slides.ts:"
 echo ""
-case "$PRESET" in
-  default)
-    echo '  import { claudeDoc } from "../../src/themes/claude-doc/index.js";'
-    echo '  const deck = new Deck(claudeDoc);'
+case "$THEME" in
+  elegant-bw)
+    echo '  import { elegantBw } from "../../src/themes/elegant-bw/index.js";'
+    echo '  const deck = new Deck(elegantBw);'
     ;;
-  google-fonts)
-    echo '  import { claudeDoc, applyPreset, googleFonts } from "../../src/themes/claude-doc/index.js";'
-    echo '  const deck = new Deck(applyPreset(claudeDoc, googleFonts));'
-    ;;
-  macos-native)
-    echo '  import { claudeDoc, applyPreset, macosNative } from "../../src/themes/claude-doc/index.js";'
-    echo '  const deck = new Deck(applyPreset(claudeDoc, macosNative));'
+  *)
+    case "$PRESET" in
+      default)
+        echo '  import { claudeDoc } from "../../src/themes/claude-doc/index.js";'
+        echo '  const deck = new Deck(claudeDoc);'
+        ;;
+      google-fonts)
+        echo '  import { claudeDoc, applyPreset, googleFonts } from "../../src/themes/claude-doc/index.js";'
+        echo '  const deck = new Deck(applyPreset(claudeDoc, googleFonts));'
+        ;;
+      macos-native)
+        echo '  import { claudeDoc, applyPreset, macosNative } from "../../src/themes/claude-doc/index.js";'
+        echo '  const deck = new Deck(applyPreset(claudeDoc, macosNative));'
+        ;;
+    esac
     ;;
 esac

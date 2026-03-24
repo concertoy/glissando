@@ -8,7 +8,7 @@ Principle: **easy to use, simple, useful.**
 |---|---|---|---|
 | `.claude/` skills + hooks | Very high | Low | Next |
 | Markdown auto-layout API | High | Low-medium | Planned |
-| Beamer → Glissando converter | Medium | Medium | Planned |
+| Beamer → glissando converter | Medium | Medium | Planned |
 | Sketch-to-slides (text prompt) | Medium | Low | Planned |
 | Sketch-to-slides (image) | Medium | Low (prompt only) | Planned |
 | Visual feedback MCP tool | High | Medium | Planned |
@@ -41,9 +41,9 @@ Takes a path to an existing `slides.ts` and a natural language edit instruction.
 
 Examples: "add a slide about X after slide 3", "change the code example to use Python", "replace the quote on the last slide".
 
-#### `/slides-from-tex` — convert Beamer `.tex` to Glissando
+#### `/slides-from-tex` — convert Beamer `.tex` to glissando
 
-Reads a `.tex` file, extracts frames/itemize/code/equations, and emits a `slides.ts`. Includes mapping rules for the common Beamer → Glissando subset (frames → layouts, itemize → bullets, lstlisting → code, equations → equation).
+Reads a `.tex` file, extracts frames/itemize/code/equations, and emits a `slides.ts`. Includes mapping rules for the common Beamer → glissando subset (frames → layouts, itemize → bullets, lstlisting → code, equations → equation).
 
 #### `/slides-from-sketch` — interpret a layout description or image
 
@@ -85,7 +85,7 @@ The pragmatic path: an MCP tool that shells out to LibreOffice headless (if avai
 
 A `deck.fromMarkdown(md)` method that parses `---`-separated sections and auto-selects layouts. Simplest possible agent interface — the agent writes markdown, not TypeScript.
 
-## 3. Beamer → Glissando Converter
+## 3. Beamer → glissando Converter
 
 A `scripts/from-beamer.ts` script. Handle the 80% case: frames, itemize, code listings, equations, sections. Best-effort, not a full LaTeX parser.
 

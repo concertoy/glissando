@@ -1,5 +1,5 @@
 {
-  "name": "vibeslides",
+  "name": "glissando",
   "version": "0.1.0",
   "description": "Component-based slide decks for coding agents — native editable PPTX output",
   "private": true,

@@ -5,7 +5,7 @@ allowed-tools: Bash, Read
 argument-hint: "<path-to-deck-folder-or-pptx> [--page N]"
 ---
 
-Visually inspect a Glissando deck: $ARGUMENTS
+Visually inspect a glissando deck: $ARGUMENTS
 
 ## Workflow
 
@@ -13,9 +13,9 @@ Visually inspect a Glissando deck: $ARGUMENTS
 
 2. **Render to PNG:**
    ```bash
-   npx tsx scripts/render-slide.ts <pptx-path> --all --output /tmp/vibeslides-render
+   npx tsx scripts/render-slide.ts <pptx-path> --all --output /tmp/glissando-render
    ```
-   This produces `/tmp/vibeslides-render/slide.001.png`, `slide.002.png`, etc.
+   This produces `/tmp/glissando-render/slide.001.png`, `slide.002.png`, etc.
 
 3. **Read each PNG** using the Read tool. Claude can see images natively — this is how you "look at" each slide.
 

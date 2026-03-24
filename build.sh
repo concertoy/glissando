@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# VibeSlides build script
+# glissando build script
 #
 # Usage:
 #   ./build.sh <path>          Build PPTX from slides.ts in <path>

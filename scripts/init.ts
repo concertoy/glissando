@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Glissando setup wizard.
+ * glissando setup wizard.
  *
  * Configures AI provider credentials for figure generation.
  * Saves config to ~/.glissando/config.json and API key to ~/.glissando/.env.
@@ -40,7 +40,7 @@ function ask(question: string): Promise<string> {
 }
 
 async function main() {
-  console.log("\n  Welcome to Glissando!\n");
+  console.log("\n  Welcome to glissando!\n");
   console.log("  Select AI provider:\n");
 
   const names = Object.keys(PROVIDERS);

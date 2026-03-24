@@ -15,88 +15,20 @@
 
 ---
 
-Agents provide **content only** — themes handle all positioning, colors, and fonts.
-
-## Setup
-
 ```bash
-npm install
+claude
+/slides a 10-slide pitch deck about on-device AI, with diagrams and code examples
+/slides-dev a dark theme inspired by Dracula, with purple accents and monospace headings
 ```
 
-## Build a deck
+## Themes
 
-```bash
-./build.sh examples/mimic-claude-macos        # → output.pptx
-./build.sh examples/ai-tooling-tutorial        # → output.pptx
-./build.sh <your-folder> --output slides.pptx  # custom output path
-```
+| Theme | Style | Install |
+|---|---|---|
+| `claudeDoc` | Warm cream, terracotta accent, serif headings | `./scripts/install-fonts.sh` |
+| `basicWhite` | Pure white, Apple blue accent, Helvetica Neue | No install needed |
 
-## How it works
-
-A deck is a TypeScript file that calls layout methods:
-
-```ts
-import { Deck } from "../../src/index.js";
-import { claudeDoc } from "../../src/themes/claude-doc/index.js";
-
-export default async function build() {
-  const deck = new Deck(claudeDoc);
-
-  deck.title({ title: "My Talk", subtitle: "Author" });
-  deck.content({ title: "Agenda", bullets: ["One", "Two", "Three"] });
-  deck.code({ title: "Example", code: "print('hello')", language: "python" });
-
-  await deck.equation({
-    title: "Key Formulas",
-    equations: [{ latex: "E = mc^2", label: "Mass-energy equivalence" }],
-  });
-
-  deck.title({ title: "Thank You" });
-  return deck;
-}
-```
-
-Layouts: `title`, `section`, `content`, `twoColumn`, `code`, `quote`, `image`, `table`, `equation`, `blank`.
-
-For custom slides, use `deck.blank()` + `deck.components` to place elements freely.
-
-## Using with a coding agent
-
-Point your agent at this repo and give it a prompt like:
-
-> Create a new folder `examples/my-deck/slides.ts`. Using the Glissando framework (see `CLAUDE.md` for the full API reference), build a 10-slide deck about [your topic]. Use the `claudeDoc` theme. Include a title slide, content slides with bullets, a code example, an equation, and a closing slide. Then run `./build.sh examples/my-deck` to generate the PPTX.
-
-The agent only needs to write one file (`slides.ts`). The theme handles all visual design. See `CLAUDE.md` for the complete list of layouts, components, callout variants, connectors, and font presets.
-
-## Font presets
-
-```ts
-import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";
-import { macosNative } from "../../src/themes/claude-doc/presets.js";
-
-const deck = new Deck(applyPreset(claudeDoc, macosNative));
-```
-
-| Preset | Headings | Body | Code | Install |
-|---|---|---|---|---|
-| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
-| `macosNative` | Iowan Old Style | Avenir Next | Menlo | Pre-installed on macOS |
-| `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
-
-## Tests
-
-```bash
-npm test          # builds all example decks, asserts output.pptx is produced
-npx tsc --noEmit  # type-check
-```
-
-## Release
-
-See [Releases](https://github.com/concertoy/glissando/releases) for changelogs and pre-built artifacts.
-
-## Community
-
-Questions, ideas, or show off your decks — join the [Discord](https://discord.gg/7nBpZ7HHME).
+See `CLAUDE.md` for the full API reference — layouts, components, callout variants, connectors, emojis, and font presets.
 
 ## License
 

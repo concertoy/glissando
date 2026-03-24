@@ -1,6 +1,6 @@
 ---
 name: figure
-description: "Generate a raster figure for slides via AI image generation. This is a FALLBACK — first check if the diagram can be built with Glissando's built-in diagramBox, arrow, and container components (see /slides skill). Use this only for visuals that require organic shapes, illustrations, charts, or complex graphics that boxes+arrows cannot express."
+description: "Generate a raster figure for slides via AI image generation. This is a FALLBACK — first check if the diagram can be built with glissando's built-in diagramBox, arrow, and container components (see /slides skill). Use this only for visuals that require organic shapes, illustrations, charts, or complex graphics that boxes+arrows cannot express."
 allowed-tools: Bash, Read, Write
 argument-hint: "<description of the figure>"
 ---

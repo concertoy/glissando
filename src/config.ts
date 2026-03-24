@@ -1,5 +1,5 @@
 /**
- * Glissando config loader.
+ * glissando config loader.
  *
  * Reads provider settings from ~/.glissando/config.json
  * and API keys from ~/.glissando/.env (or shell environment).
@@ -29,7 +29,7 @@ export interface ProviderConfig {
 export function loadConfig(): ProviderConfig {
   if (!existsSync(CONFIG_PATH)) {
     throw new Error(
-      "Glissando not configured. Run `npm run init` to set up your AI provider."
+      "glissando not configured. Run `npm run init` to set up your AI provider."
     );
   }
 

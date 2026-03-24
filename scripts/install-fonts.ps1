@@ -1,5 +1,5 @@
 #
-# Install fonts for VibeSlides themes (Windows).
+# Install fonts for glissando themes (Windows).
 #
 # Auto-downloads (free, OFL):
 #   - DM Serif Display  (headings)
@@ -44,7 +44,7 @@ if ($IsAdmin) {
     Write-Host "Install mode: Per-user"
 }
 
-Write-Host "=== VibeSlides Font Installer (Windows) ==="
+Write-Host "=== glissando Font Installer (Windows) ==="
 Write-Host "Theme:      $Theme"
 Write-Host "Fonts dir:  $FontsDir"
 Write-Host "Install to: $InstallDir"

@@ -1,5 +1,5 @@
 /**
- * Core types for VibeSlides.
+ * Core types for glissando.
  *
  * Theme = Config + Components + Layouts
  *   - Config:     colors, fonts, sizes, spacing
@@ -126,6 +126,7 @@ export interface HeadingProps {
   w: number;
   color?: string;
   fontSize?: number;
+  bold?: boolean;
 }
 
 export interface BodyTextProps {

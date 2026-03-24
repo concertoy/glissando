@@ -56,7 +56,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       fontSize: props.fontSize ?? s.heading,
       fontFace: f.heading,
       color: props.color ?? c.text,
-      bold: true,
+      bold: props.bold ?? true,
       valign: "bottom",
     });
   }
@@ -218,10 +218,22 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
     // Auto-height: font line height = (pt / 72) * font_internal_ratio * lineSpacingMultiple
     // Monospace fonts (JetBrains Mono, Menlo) have an internal line ratio of ~1.2
-    const lineCount = props.code.split("\n").length;
     const FONT_LINE_RATIO = 1.2;
     const LINE_SPACING = 1.4; // must match lineSpacingMultiple on the code text box
     const lineHeightIn = (s.code / 72) * FONT_LINE_RATIO * LINE_SPACING;
+
+    // Calculate max lines that fit in available space
+    const HARD_MAX = 15;
+    const fitMax = props.h
+      ? Math.floor((props.h - CODE_Y - BOT_PAD) / lineHeightIn)
+      : HARD_MAX;
+    const maxLines = Math.max(1, Math.min(HARD_MAX, fitMax));
+
+    const allLines = props.code.split("\n");
+    const truncated = allLines.length > maxLines
+      ? [...allLines.slice(0, maxLines), "// ..."].join("\n")
+      : props.code;
+    const lineCount = Math.min(allLines.length, maxLines + 1);
     const autoH = CODE_Y + lineCount * lineHeightIn + BOT_PAD;
     const h = props.h ? Math.min(props.h, autoH) : autoH;
 
@@ -262,10 +274,10 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       } as any);
 
       // Shape 4: syntax-highlighted code text (below rule)
-      const lines = highlightCode(props.code, lang, cs);
+      const hlLines = highlightCode(truncated, lang, cs);
       const textRows: PptxGenJS.TextProps[] = [];
-      for (let li = 0; li < lines.length; li++) {
-        const tokens = lines[li];
+      for (let li = 0; li < hlLines.length; li++) {
+        const tokens = hlLines[li];
         for (let ti = 0; ti < tokens.length; ti++) {
           const isLastToken = ti === tokens.length - 1;
           textRows.push({
@@ -290,7 +302,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       });
     } else {
       // No language — code text built into the rounded rect
-      slide.addText(props.code, {
+      slide.addText(truncated, {
         x: props.x, y: props.y, w: props.w, h,
         shape: "roundRect" as any,
         fill: { color: cs.bg },

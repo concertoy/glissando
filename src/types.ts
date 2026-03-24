@@ -73,10 +73,11 @@ export interface CodeStyle {
   label: string;        // Language label color
 }
 
-export type EmojiStyle = "openmoji" | "twemoji";
+export type EmojiStyle = "openmoji" | "twemoji" | "openmoji-outline";
 
 export interface EmojiSet {
   style: EmojiStyle;
+  color?: string;                     // hex WITHOUT #, e.g. "DA7756" — colorizes monochrome SVGs
   size?: number;                      // render size in px (default 128)
   custom?: Record<string, string>;    // name → SVG string overrides
 }

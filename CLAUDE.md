@@ -39,8 +39,9 @@ src/
   icons.ts                  Lucide icon renderer (SVG → PNG via sharp)
   emoji.ts                  Themed emoji renderer (SVG → PNG via sharp)
   emoji-data/
-    openmoji.ts             OpenMoji curated SVGs (~47 emojis)
-    twemoji.ts              Twemoji curated SVGs (~47 emojis)
+    openmoji-outline.ts     Monochrome outline SVGs (~29 elegant emojis, default)
+    openmoji.ts             Full-color OpenMoji SVGs (~47 emojis)
+    twemoji.ts              Full-color Twemoji SVGs (~47 emojis)
     aliases.ts              Common emoji name aliases
   themes/
     claude-doc/
@@ -164,7 +165,15 @@ Components can be used directly for custom slides via `deck.components`:
 
 ## Themed Emojis
 
-Each theme provides a curated set of ~47 SVG emojis with consistent visual style. Two emoji styles are available as presets: **OpenMoji** (default) and **Twemoji**.
+Each theme provides a curated emoji set that matches its visual identity. Emojis are **monochrome outlines colored with the theme's palette** — not full-color stickers. This ensures they integrate elegantly with the slide design, like typographic ornaments rather than distractions.
+
+### Emoji styles
+
+| Style | Description | Use case |
+|---|---|---|
+| `openmoji-outline` | Monochrome outlines, colored with `emojiSet.color` | Elegant/professional themes (default for `claudeDoc`) |
+| `openmoji` | Full-color OpenMoji | Playful/colorful themes |
+| `twemoji` | Full-color Twemoji | Familiar Twitter-style emojis |
 
 ### Inline `:emoji:` syntax
 
@@ -199,20 +208,28 @@ const img = await deck.emoji("rocket");
 slide.addImage({ data: img, x: 1, y: 2, w: 0.5, h: 0.5 });
 ```
 
-### Switching emoji style
-
-Set `emojiSet.style` in the theme config:
+### Configuring emoji style and color
 
 ```ts
-const theme = { ...claudeDoc, config: { ...claudeDoc.config, emojiSet: { style: "twemoji" } } };
-const deck = new Deck(theme);
+// claude-doc default: terracotta outlines
+emojiSet: { style: "openmoji-outline", color: "DA7756" }
+
+// Switch to full-color emojis
+emojiSet: { style: "twemoji" }
+
+// Custom color for outlines (e.g. Apple blue for basic-white)
+emojiSet: { style: "openmoji-outline", color: "007AFF" }
 ```
 
-### Available emojis (~47)
+### Available emojis
 
-`rocket`, `fire`, `star`, `checkmark`, `crossmark`, `lightbulb`, `brain`, `gear`, `chart-up`, `target`, `clock`, `calendar`, `lock`, `unlock`, `globe`, `link`, `magnifying-glass`, `pencil`, `book`, `folder`, `document`, `terminal`, `bug`, `warning`, `thumbs-up`, `thumbs-down`, `heart`, `sparkles`, `zap`, `party`, `trophy`, `medal`, `handshake`, `people`, `eye`, `bell`, `pin`, `flag`, `tag`, `gift`, `money`, `diamond`, `key`, `hammer`, `shield`, `robot`, `palette`
+**Outline set** (~29, curated for professional/documentation use):
+`rocket`, `star`, `checkmark`, `crossmark`, `lightbulb`, `gear`, `chart-up`, `target`, `clock`, `calendar`, `lock`, `unlock`, `globe`, `link`, `magnifying-glass`, `pencil`, `book`, `folder`, `document`, `terminal`, `sparkles`, `diamond`, `key`, `shield`, `palette`, `eye`, `pin`, `flag`, `tag`
 
-Common aliases are supported (e.g. `check` → `checkmark`, `flame` → `fire`, `bolt` → `zap`, `like` → `thumbs-up`). See `src/emoji-data/aliases.ts` for the full list.
+**Full-color sets** (~47 each, broader set including casual emojis):
+Adds `fire`, `brain`, `bug`, `warning`, `thumbs-up`, `thumbs-down`, `heart`, `zap`, `party`, `trophy`, `medal`, `handshake`, `people`, `bell`, `gift`, `money`, `hammer`, `robot`
+
+Common aliases are supported (e.g. `check` → `checkmark`, `settings` → `gear`, `search` → `magnifying-glass`). See `src/emoji-data/aliases.ts` for the full list.
 
 ## Callout Block Variants
 

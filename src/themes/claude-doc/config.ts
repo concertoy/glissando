@@ -65,7 +65,8 @@ export const config: ThemeConfig = {
   },
 
   emojiSet: {
-    style: "openmoji",
+    style: "openmoji-outline",
+    color: "DA7756",  // terracotta accent — monochrome emojis match the theme palette
     size: 128,
   },
 

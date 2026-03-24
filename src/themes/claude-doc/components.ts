@@ -69,7 +69,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
     if (leading) {
       const fontSize = props.fontSize ?? s.body;
-      const emojiSize = fontSize / 72;  // approximate emoji size in inches
+      const emojiSize = (fontSize / 72) * 1.4;  // emoji at ~1.4x cap height
       const gap = 0.08;  // gap between emoji and text
 
       // Render emoji image at original x position

@@ -8,7 +8,8 @@
     "build": "./build.sh",
     "test": "npx tsx scripts/test-examples.ts",
     "init": "npx tsx scripts/init.ts",
-    "render": "npx tsx scripts/render-slide.ts"
+    "render": "npx tsx scripts/render-slide.ts",
+    "docs:dev": "cd docs && npx mintlify dev"
   },
   "dependencies": {
     "mathjax-full": "^3.2.1",

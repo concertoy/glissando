@@ -14,3 +14,6 @@ output/
 **/*.OTF
 **/*.TTF
 **/fonts/*.zip
+
+# Mintlify local cache
+docs/.local/

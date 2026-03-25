@@ -1,0 +1,71 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "glissando",
+  "description": "Component-based slide decks with coding agents. Write TypeScript, get native editable PPTX.",
+  "theme": "mint",
+  "icons": {
+    "library": "lucide"
+  },
+  "logo": {
+    "light": "/assets/light.png",
+    "dark": "/assets/badge.png"
+  },
+  "fonts": {
+    "heading": {
+      "family": "DM Sans"
+    },
+    "body": {
+      "family": "Inter"
+    }
+  },
+  "favicon": "/assets/favicon.png",
+  "rounded": "group",
+  "colors": {
+    "primary": "#2A9D8F",
+    "dark": "#2A9D8F",
+    "light": "#D4A853"
+  },
+  "styling": {
+    "codeblocks": {
+      "theme": {
+        "dark": "one-dark-pro",
+        "light": "min-light"
+      }
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/concertoy/glissando",
+        "icon": "github"
+      },
+      {
+        "label": "Discord",
+        "href": "https://discord.gg/7nBpZ7HHME",
+        "icon": "discord"
+      }
+    ]
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["index", "getting-started"]
+          },
+          {
+            "group": "Guide",
+            "pages": ["guide/creating-decks", "guide/themes", "guide/custom-slides"]
+          },
+          {
+            "group": "API Reference",
+            "pages": ["api/layouts", "api/components", "api/emojis"]
+          }
+        ]
+      }
+    ]
+  }
+}

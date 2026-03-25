@@ -9,16 +9,30 @@ Create a glissando slide deck based on the user's request: $ARGUMENTS
 
 ## Workflow
 
+### Phase 1: Plan content
+
 1. Pick a theme: `claudeDoc` (warm cream, default) or `basicWhite` (clean white)
-2. Create a new folder under `examples/`
-3. Write `slides.ts` using the layout API
-4. Build: `./build.sh examples/<folder>`
-5. Visually verify:
+2. Write a per-slide content plan as a bullet-point checklist. For each slide list:
+   - Slide number, layout method (e.g. `content`, `code`, `twoColumn`)
+   - Title, subtitle, and full content (bullet text, code snippets, quote text, etc.)
+   - Graphical elements, if any: inline emojis (`:rocket:`, `:shield:`), standalone emojis, diagrams (`diagramBox` + `arrow` on `blank()` slides), or images requiring `/figure` generation
+3. Flag any slide that needs `/figure` (organic shapes, illustrations, charts that built-in components can't express)
+
+### Phase 2: Implement
+
+4. Create a new folder under `examples/`
+5. Write `slides.ts` from the plan. Track progress with a checklist — check off each slide as implemented.
+6. For slides flagged for `/figure`, generate the figure before writing that slide's code.
+7. Build: `./build.sh examples/<folder>`
+
+### Phase 3: Verify
+
+8. Visually verify:
    ```bash
    npx tsx scripts/render-slide.ts examples/<folder>/output.pptx --all --output /tmp/glissando-render
    ```
    Read each PNG in `/tmp/glissando-render/` to check every slide.
-6. If issues found, fix `slides.ts`, rebuild, re-verify. Repeat until clean.
+9. If issues found, fix `slides.ts`, rebuild, re-verify. Repeat until clean.
 
 ## Themes
 

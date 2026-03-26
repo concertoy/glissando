@@ -60,28 +60,14 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 ### Phase 2: Plan Content
 
-8. **Create a slide plan** (target 15-25 slides) as a bullet-point checklist:
+8. **Delegate content planning** to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
+   - The path to the LaTeX project directory so it can read `.tex` files directly
+   - Target slide count: 15–25
+   - Paper classification from step 7 (figure-intensive / equation-intensive / mixed)
+   - The figure inventory from step 4 (which images exist and their formats)
+   The agent reads the paper source and returns a markdown content plan — one `## Slide N` section per slide with full content (text, equations as `$$...$$`, figure refs as `![](filename)`). Slides will be rich: equations alongside their explanation, theorems with their intuition.
 
-   | Slide type | Layout | Source |
-   |---|---|---|
-   | Title | `title` | Paper title + authors |
-   | Motivation | `content` (2-3 slides) | Abstract + Introduction |
-   | Section divider | `section` | Each major section |
-   | Key content | varies per section | See selection rules below |
-   | Conclusion | `content` (1-2 slides) | Conclusion section |
-   | Closing | `title` | "Thank You" or similar |
-
-   **Content selection rules:**
-   - Include every named theorem/definition from the main body
-   - Include every numbered figure from the main body
-   - Skip appendix content entirely
-   - Skip or condense Related Work to 1 slide
-   - For proofs: 1-2 bullet intuitions, never the full proof
-   - Cap display equations at ~8 total; choose the most important
-   - One idea per slide, 3-5 bullets max per content slide
-   - For figure-intensive papers: consider 2 figures per slide using `blank` + manual placement
-
-9. **Flag figure preparation needs:**
+9. **Faithfully implement the plan.** Do not thin, split, or rewrite the planner's content. Cross-reference with your macro collection from step 6. Flag figure preparation needs:
    - PNG/JPG: ready to use
    - PDF/EPS: needs conversion (Phase 3)
    - TikZ/PGFPlots `.tex`: needs compilation or re-creation (Phase 3)
@@ -133,7 +119,7 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 14. **Copy/move prepared images** into the deck folder.
 
-15. **Write `slides.ts`** from the plan. Key patterns:
+15. **Write `slides.ts`** by faithfully translating the planner's markdown into code. Preserve content density — do not thin or split slides. Rich slides with mixed content (text + equations + callouts) use `deck.blank()` with components. Key patterns:
 
     ```ts
     import { Deck } from "../../src/index.js";
@@ -271,9 +257,14 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 ## Theme Selection
 
-- `claudeDoc` (default) — warm cream with terracotta, good for conference talks
-- `basicWhite` — clean white with blue accent, good for academic presentations
-- `elegantBw` — monochromatic, good for formal/theory-heavy presentations
+Before choosing a theme, check if its fonts are installed (`fc-list` or `ls ~/Library/Fonts/`). If missing, either run the installer or fall back to a no-install option.
+
+| Theme | Install needed | Fonts to check |
+|---|---|---|
+| `claudeDoc` | `./scripts/install-fonts.sh` | DM Serif Display, Inter, JetBrains Mono |
+| `elegantBw` | `./scripts/install-fonts.sh elegant-bw` | Playfair Display, Space Grotesk, Inter |
+| `basicWhite` | **None** | Helvetica Neue, Menlo (macOS built-in) |
+| `claudeDoc` + `macosNative` preset | **None** | Iowan Old Style, Avenir Next, Menlo (macOS built-in) |
 
 ## Reference
 

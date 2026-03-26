@@ -40,6 +40,7 @@ bulletList(slide, { items: ["Point A", "Point B"], x: 0.8, y: 1.5, w: 10 });
 | `quoteBox` | `(slide, { quote, x, y, w, h, attribution? })` | Serif quote with accent bar |
 | `table` | `(slide, { headers, rows, x, y, w })` | Themed table |
 | `calloutBlock` | `(slide, { variant, x, y, w, h?, title?, body?, bullets?, icon? })` | Round-cornered callout panel (async) |
+| `textBlock` | `(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` | Icon-free rounded panel with title/subtitle |
 
 ### Decoration
 

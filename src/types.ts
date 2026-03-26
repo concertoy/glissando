@@ -207,6 +207,20 @@ export interface CalloutBlockProps {
   icon?: string;        // optional leading icon/emoji
 }
 
+export interface TextBlockProps {
+  x: number;
+  y: number;
+  w: number;
+  h?: number;           // auto-sizes to content if omitted
+  title?: string;       // bold heading inside the block
+  subtitle?: string;    // smaller muted text below title
+  body?: string;        // paragraph text
+  bullets?: string[];   // bullet list
+  fill?: string;        // background hex (default: theme bgCard)
+  border?: string;      // border hex (default: theme textMuted)
+  textColor?: string;   // override body text color (default: theme text)
+}
+
 // ---------------------------------------------------------------------------
 // Diagram props — boxes, arrows, connectors, containers
 // ---------------------------------------------------------------------------
@@ -330,6 +344,7 @@ export interface ThemeComponents {
   table: (slide: PptxGenJS.Slide, props: TableProps) => void;
   caption: (slide: PptxGenJS.Slide, props: CaptionProps) => void;
   calloutBlock: (slide: PptxGenJS.Slide, props: CalloutBlockProps) => Promise<void>;
+  textBlock: (slide: PptxGenJS.Slide, props: TextBlockProps) => void;
   diagramBox: (slide: PptxGenJS.Slide, props: DiagramBoxProps) => ShapeRef;
   arrow: (slide: PptxGenJS.Slide, props: ArrowProps) => void;
   hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;

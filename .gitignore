@@ -17,3 +17,4 @@ output/
 
 # Mintlify local cache
 docs/.local/
+third_party/

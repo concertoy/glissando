@@ -163,6 +163,7 @@ Components can be used directly for custom slides via `deck.components`:
 - `table(slide, { headers, rows, x, y, w })` — themed table
 - `caption(slide, { text, x, y, w })` — small muted text
 - `calloutBlock(slide, { variant, x, y, w, h?, body?, bullets? })` — round-cornered callout panel (async)
+- `textBlock(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` — icon-free rounded panel with optional title/subtitle
 - `diagramBox(slide, { text, x, y, w, h, fill?, border?, textColor? })` — rounded box returning `ShapeRef` with connection points
 - `arrow(slide, { from, to, color?, width?, head?, tail?, dashed? })` — straight arrow between coordinates
 - `hookArrow(slide, { from, to, hookDirection, ... })` — L-shaped elbow arrow

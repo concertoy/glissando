@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/badge.png" alt="glissando" width="500">
+  <img src="assets/light.png" alt="glissando" width="500">
 </p>
 
 <p align="center">

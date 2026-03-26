@@ -417,8 +417,17 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const autoH = contentLines * bodyLineH + padding;
     const h = props.h ?? Math.max(autoH, 0.7);
 
-    // Left margin in points to leave room for the icon
-    const iconInset = 48; // ~0.63 inches in points (icon 0.28" + padding)
+    // Icon geometry (inches)
+    const iconPadLeft = 0.2;
+    const iconSize = 0.28;
+    const iconTextGap = 0.12;
+    // Left margin in points to clear the icon
+    const iconInset = Math.round((iconPadLeft + iconSize + iconTextGap) * 72); // ~43pt
+    const topPad = 14; // points
+
+    // NOTE: pptxgenjs addText margin array order is [left, right, bottom, top]
+    // (despite docs claiming CSS order). See pptxgen.cjs.js lines 5386-5389.
+    const margin: [number, number, number, number] = [iconInset, 14, 14, topPad];
 
     // Shape: rounded rect with text built-in
     if (props.body) {
@@ -432,7 +441,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         color: style.textColor,
         valign: "top",
         lineSpacingMultiple: 1.4,
-        margin: [14, 14, 14, iconInset],
+        margin,
         objectName: `co-${gid}-bg`,
       });
     } else if (props.bullets) {
@@ -453,17 +462,20 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         line: { color: style.border, width: 1 },
         valign: "top",
         lineSpacingMultiple: 1.2,
-        margin: [14, 14, 14, iconInset],
+        margin,
         objectName: `co-${gid}-bg`,
       });
     }
 
-    // Lucide PNG icon (top-left, grouped with the shape via post-processing)
+    // Lucide PNG icon — vertically centered on the first text line
+    const textTopInches = topPad / 72;
+    const lineH = (s.small / 72) * 1.4; // matches lineSpacingMultiple
+    const iconY = props.y + textTopInches + (lineH - iconSize) / 2;
     const iconData = await lucideIcon(style.iconName, style.border, 96);
     slide.addImage({
       data: iconData,
-      x: props.x + 0.2, y: props.y + 0.18,
-      w: 0.28, h: 0.28,
+      x: props.x + iconPadLeft, y: iconY,
+      w: iconSize, h: iconSize,
       objectName: `co-${gid}-icon`,
     } as any);
   }

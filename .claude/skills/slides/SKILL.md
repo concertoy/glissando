@@ -9,16 +9,40 @@ Create a glissando slide deck based on the user's request: $ARGUMENTS
 
 ## Workflow
 
-1. Pick a theme: `claudeDoc` (warm cream, default) or `basicWhite` (clean white)
-2. Create a new folder under `examples/`
-3. Write `slides.ts` using the layout API
-4. Build: `./build.sh examples/<folder>`
-5. Visually verify:
+### Phase 1: Plan content
+
+1. **Pick a theme with font check.** Run `fc-list` or check `~/Library/Fonts/` to verify required fonts are installed. Choose accordingly:
+   - `claudeDoc` (warm cream) — needs DM Serif Display + Inter + JetBrains Mono (`./scripts/install-fonts.sh`)
+   - `elegantBw` (monochromatic) — needs Playfair Display + Space Grotesk + Inter (`./scripts/install-fonts.sh elegant-bw`)
+   - `basicWhite` (clean white) — Helvetica Neue + Menlo, **no install needed**
+   - `claudeDoc` + `macosNative` preset — Iowan Old Style + Avenir Next + Menlo, **no install needed**
+   If the needed fonts are missing, either run the installer or fall back to a no-install theme.
+2. **Delegate content planning** to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
+   - The user's deck description / topic
+   - Target slide count (8–12 for general decks)
+   - If the user provided a GitHub repo or codebase path, pass that path so the agent can read the source directly
+   The agent returns a markdown content plan — one `## Slide N` section per slide with full content (text, equations, code, figure refs).
+3. Review the plan. Flag any slide that needs `/figure`.
+
+### Phase 2: Implement
+
+4. Create a new folder under `examples/`
+5. **Faithfully translate** the plan into `slides.ts`. Preserve the planner's content density — do not thin, split, or rewrite slides. Map markdown elements to the appropriate layout/component API:
+   - Slides with only bullets → `deck.content()`
+   - Slides with mixed content (text + equations + callouts) → `deck.blank()` with components
+   - Slides with figures → `deck.image()` or manual placement on `blank()`
+   - `$$...$$` blocks → `equation` component; `> blockquote` → `calloutBlock`; `**bold heading**` → section within a slide
+6. For slides flagged for `/figure`, generate the figure before writing that slide's code.
+7. Build: `./build.sh examples/<folder>`
+
+### Phase 3: Verify
+
+8. Visually verify:
    ```bash
    npx tsx scripts/render-slide.ts examples/<folder>/output.pptx --all --output /tmp/glissando-render
    ```
    Read each PNG in `/tmp/glissando-render/` to check every slide.
-6. If issues found, fix `slides.ts`, rebuild, re-verify. Repeat until clean.
+9. If issues found, fix `slides.ts`, rebuild, re-verify. Repeat until clean.
 
 ## Themes
 

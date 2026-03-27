@@ -21,6 +21,7 @@ import type {
   CaptionProps,
   CalloutBlockProps,
   CalloutVariant,
+  TextBlockProps,
   DiagramBoxProps,
   ShapeRef,
   ArrowProps,
@@ -417,8 +418,17 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const autoH = contentLines * bodyLineH + padding;
     const h = props.h ?? Math.max(autoH, 0.7);
 
-    // Left margin in points to leave room for the icon
-    const iconInset = 48; // ~0.63 inches in points (icon 0.28" + padding)
+    // Icon geometry (inches)
+    const iconPadLeft = 0.2;
+    const iconSize = 0.28;
+    const iconTextGap = 0.12;
+    // Left margin in points to clear the icon
+    const iconInset = Math.round((iconPadLeft + iconSize + iconTextGap) * 72); // ~43pt
+    const topPad = 14; // points
+
+    // NOTE: pptxgenjs addText margin array order is [left, right, bottom, top]
+    // (despite docs claiming CSS order). See pptxgen.cjs.js lines 5386-5389.
+    const margin: [number, number, number, number] = [iconInset, 14, 14, topPad];
 
     // Shape: rounded rect with text built-in
     if (props.body) {
@@ -432,7 +442,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         color: style.textColor,
         valign: "top",
         lineSpacingMultiple: 1.4,
-        margin: [14, 14, 14, iconInset],
+        margin,
         objectName: `co-${gid}-bg`,
       });
     } else if (props.bullets) {
@@ -453,19 +463,98 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         line: { color: style.border, width: 1 },
         valign: "top",
         lineSpacingMultiple: 1.2,
-        margin: [14, 14, 14, iconInset],
+        margin,
         objectName: `co-${gid}-bg`,
       });
     }
 
-    // Lucide PNG icon (top-left, grouped with the shape via post-processing)
+    // Lucide PNG icon — vertically centered on the first text line
+    const textTopInches = topPad / 72;
+    const lineH = (s.small / 72) * 1.4; // matches lineSpacingMultiple
+    const iconY = props.y + textTopInches + (lineH - iconSize) / 2;
     const iconData = await lucideIcon(style.iconName, style.border, 96);
     slide.addImage({
       data: iconData,
-      x: props.x + 0.2, y: props.y + 0.18,
-      w: 0.28, h: 0.28,
+      x: props.x + iconPadLeft, y: iconY,
+      w: iconSize, h: iconSize,
       objectName: `co-${gid}-icon`,
     } as any);
+  }
+
+  // --- Text block — icon-free rounded panel with optional title/subtitle ---
+
+  function textBlock(slide: PptxGenJS.Slide, props: TextBlockProps): void {
+    const fillColor = props.fill ?? c.bgCard;
+    const borderColor = props.border ?? c.textMuted;
+    const bodyColor = props.textColor ?? c.text;
+    const pad = 14; // points, uniform on all sides
+    const margin: [number, number, number, number] = [pad, pad, pad, pad];
+
+    // Build text rows top-to-bottom: title, subtitle, then body/bullets
+    const rows: PptxGenJS.TextProps[] = [];
+
+    if (props.title) {
+      rows.push({
+        text: props.title,
+        options: {
+          fontSize: s.body, fontFace: f.sans, color: c.text,
+          bold: true, paraSpaceAfter: props.subtitle ? 2 : 6,
+        },
+      });
+    }
+
+    if (props.subtitle) {
+      rows.push({
+        text: props.subtitle,
+        options: {
+          fontSize: s.small, fontFace: f.sans, color: c.textMuted,
+          paraSpaceAfter: 6,
+        },
+      });
+    }
+
+    if (props.body) {
+      rows.push({
+        text: props.body,
+        options: {
+          fontSize: s.small, fontFace: f.sans, color: bodyColor,
+          lineSpacingMultiple: 1.4,
+        },
+      });
+    }
+
+    if (props.bullets) {
+      for (const item of props.bullets) {
+        rows.push({
+          text: item,
+          options: {
+            fontSize: s.small, fontFace: f.sans, color: bodyColor,
+            bullet: { type: "bullet", color: borderColor } as any,
+            paraSpaceAfter: 4,
+          },
+        });
+      }
+    }
+
+    // Auto-height: estimate from content
+    const titleH = props.title ? (s.body / 72) * 1.4 : 0;
+    const subtitleH = props.subtitle ? (s.small / 72) * 1.4 : 0;
+    const bodyLineH = (s.small / 72) * 1.5;
+    let contentLines = 0;
+    if (props.body) contentLines += Math.ceil(props.body.length / 55);
+    if (props.bullets) contentLines += props.bullets.length;
+    const autoH = titleH + subtitleH + contentLines * bodyLineH + 0.45;
+    const h = props.h ?? Math.max(autoH, 0.6);
+
+    slide.addText(rows, {
+      x: props.x, y: props.y, w: props.w, h,
+      shape: "roundRect" as any,
+      fill: { color: fillColor },
+      rectRadius: 0.08,
+      line: { color: borderColor, width: 1 },
+      valign: "top",
+      margin,
+    });
   }
 
   // =========================================================================
@@ -685,5 +774,5 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     });
   }
 
-  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
+  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
 };

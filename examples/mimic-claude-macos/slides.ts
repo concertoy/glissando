@@ -129,6 +129,49 @@ export default async function build() {
     });
   }
 
+  // --- Text blocks showcase ---
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: h, accentBar: bar, textBlock: tb } = deck.components;
+    const sp = deck.config.spacing;
+    const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
+
+    h(slide, { text: "Text Blocks", x: sp.marginLeft, y: sp.marginTop, w: contentW });
+    bar(slide, { x: sp.marginLeft, y: sp.marginTop + 0.8, w: 1.5 });
+
+    const colW = (contentW - 0.4) / 2;
+    const rightX = sp.marginLeft + colW + 0.4;
+
+    // Title + subtitle + body
+    tb(slide, {
+      x: sp.marginLeft, y: sp.marginTop + 1.2, w: colW,
+      title: "What is glissando?",
+      subtitle: "A TypeScript library for slide decks",
+      body: "Write code, get native editable PPTX. Designed for AI coding agents — the agent provides content, the theme handles all visual design.",
+    });
+
+    // Title + bullets
+    tb(slide, {
+      x: rightX, y: sp.marginTop + 1.2, w: colW,
+      title: "Key Features",
+      subtitle: "Why choose glissando",
+      bullets: [
+        "Native PPTX output — editable in PowerPoint",
+        "Theme system with font presets",
+        "Built-in syntax highlighting",
+        "Diagram components with OOXML connectors",
+      ],
+    });
+
+    // Full-width with custom colors
+    tb(slide, {
+      x: sp.marginLeft, y: sp.marginTop + 4.4, w: contentW,
+      title: "Custom Styling",
+      body: "Text blocks accept custom fill, border, and text colors. This block uses a warm accent background with a terra cotta border.",
+      fill: "FAF0EB", border: "C9A08E",
+    });
+  }
+
   // --- Diagram: Coding Assistant Architecture ---
   {
     const slide = deck.blank({ bg: "primary" });

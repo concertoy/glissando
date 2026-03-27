@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/badge.png" alt="glissando" width="500">
+  <img src="assets/light.png" alt="glissando" width="500">
 </p>
 
 <p align="center">
@@ -19,6 +19,9 @@
 claude
 /slides a 10-slide pitch deck about on-device AI, with diagrams and code examples
 /slides-dev a dark theme inspired by Dracula, with purple accents and monospace headings
+/slides-inv reverse-engineer this pptx back into slides.ts
+/visual-feedback check the slides for layout issues
+/figure generate an architecture diagram for slide 4
 ```
 
 ## Themes
@@ -27,9 +30,10 @@ claude
 |---|---|---|
 | `claudeDoc` | Warm cream, terracotta accent, serif headings | `./scripts/install-fonts.sh` |
 | `basicWhite` | Pure white, Apple blue accent, Helvetica Neue | No install needed |
+| `elegantBw` | Monochromatic black/white, Space Grotesk + Inter | `./scripts/install-fonts.sh elegant-bw` |
 
 See `CLAUDE.md` for the full API reference — layouts, components, callout variants, connectors, emojis, and font presets.
 
 ## License
 
-[MIT](LICENSE)
+MIT License &copy; 2026 [Tianzhe Chu](https://tianzhechu.com)

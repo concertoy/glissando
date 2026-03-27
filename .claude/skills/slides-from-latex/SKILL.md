@@ -207,6 +207,30 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 ## Equation Tips
 
+- **Include variable definitions**: when the content plan includes a "where" block with variable definitions, render the equation on a `blank()` slide with `equation()` + `bulletList()` components instead of `deck.equation()` layout:
+  ```ts
+  const slide = deck.blank({ bg: "primary" });
+  const { heading, accentBar, equation, bulletList } = deck.components;
+  const sp = deck.config.spacing;
+  const cw = sp.slideWidth - sp.marginLeft - sp.marginRight;
+
+  heading(slide, { text: "Forward Diffusion", x: sp.marginLeft, y: sp.marginTop, w: cw });
+  accentBar(slide, { x: sp.marginLeft, y: sp.marginTop + 0.8, w: 1.5 });
+  await equation(slide, {
+    latex: macros + String.raw`X_t = \sqrt{\alpha_t}\, X_0 + \sqrt{1 - \alpha_t}\, Z`,
+    x: sp.marginLeft, y: sp.marginTop + 1.3, w: cw,
+  });
+  bulletList(slide, {
+    items: [
+      "X_t — noisy state at time t",
+      "α_t — noise schedule coefficient",
+      "X_0 — clean data sample",
+      "Z ~ N(0, I) — standard Gaussian noise",
+    ],
+    x: sp.marginLeft, y: sp.marginTop + 3.0, w: cw,
+  });
+  ```
+  Reserve `deck.equation()` layout for well-known equations that need no explanation (e.g., E = mc²).
 - **Always prepend the macro preamble** to every `latex` string
 - **Strip non-math commands** from equations: `\label{...}`, `\tag{...}`, `\nonumber`, `\notag`
 - **`\compressstyle`**: remove it (display-only formatting hint)

@@ -7,7 +7,7 @@
  * Build:  ./build.sh examples/mimic-claude-macos
  */
 
-import { Deck } from "../../src/index.js";
+import { Deck, columns, rows, below } from "../../src/index.js";
 import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";
 import { macosNative } from "../../src/themes/claude-doc/presets.js";
 
@@ -281,6 +281,84 @@ export default async function build() {
     quote: "Typography is the craft of endowing human language with a durable visual form.",
     attribution: "Robert Bringhurst",
   });
+
+  // === MULTI-COMPONENT LAYOUT DEMOS ===
+
+  deck.section({ title: "Layout Helpers", subtitle: "Arranging multiple components on a single slide" });
+
+  // --- Two-column: code + callout ---
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, codeBlock: cb, calloutBlock: co } = deck.components;
+    const area = deck.contentArea();
+
+    hd(slide, { text: "Two-Column Layout", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+
+    const [left, right] = columns(area, 2, 0.4);
+    cb(slide, { code: "const area = deck.contentArea();\nconst [left, right] = columns(area, 2);\ncodeBlock(slide, { ...left });\ncalloutBlock(slide, { ...right });", language: "typescript", ...left });
+    await co(slide, { variant: "info", ...right, body: "Layout helpers split the content area into columns. Spread the Rect into component props — x, y, w, h are filled automatically." });
+  }
+
+  // --- Three-column cards ---
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, textBlock: tb } = deck.components;
+    const area = deck.contentArea();
+
+    hd(slide, { text: "Three-Column Cards", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+
+    const cols = columns(area, 3, 0.3);
+    tb(slide, { ...cols[0], title: "Theme", subtitle: "Config + Components + Layouts", body: "The theme handles colors, fonts, and spacing. Agents only provide content." });
+    tb(slide, { ...cols[1], title: "Components", subtitle: "Pre-designed elements", body: "Code blocks, callouts, equations, diagrams — each themed and auto-sized." });
+    tb(slide, { ...cols[2], title: "Layouts", subtitle: "Slide arrangements", body: "Title, content, two-column, code, quote, image, table, equation, and blank." });
+  }
+
+  // --- Vertical stacking with auto-height ---
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, equation: eq, bulletList: bl } = deck.components;
+    const area = deck.contentArea();
+
+    hd(slide, { text: "Vertical Stacking", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+
+    const eqRect = await eq(slide, {
+      latex: "\\mathcal{L}(\\theta) = -\\mathbb{E}_{q(z|x)}\\left[\\log p_\\theta(x|z)\\right] + D_{KL}\\left(q(z|x) \\| p(z)\\right)",
+      x: area.x, y: area.y, w: area.w,
+    });
+
+    const rest = below(area, eqRect.h, 0.2);
+    bl(slide, {
+      items: [
+        "L(theta) — the variational loss (ELBO)",
+        "q(z|x) — encoder (approximate posterior)",
+        "p(x|z) — decoder (generative model)",
+        "D_KL — KL divergence regularizer",
+      ],
+      ...rest,
+    });
+  }
+
+  // --- 2x2 grid ---
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, calloutBlock: co } = deck.components;
+    const area = deck.contentArea();
+
+    hd(slide, { text: "2x2 Grid Layout", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+
+    const [top, bot] = rows(area, 2, 0.3);
+    const [tl, tr] = columns(top, 2, 0.4);
+    const [bl, br] = columns(bot, 2, 0.4);
+
+    await co(slide, { variant: "card", ...tl, body: "Top-left: rows() splits vertically, columns() splits horizontally." });
+    await co(slide, { variant: "info", ...tr, body: "Top-right: combine rows + columns for any grid arrangement." });
+    await co(slide, { variant: "warning", ...bl, body: "Bottom-left: each cell is a Rect with { x, y, w, h } — spread into any component." });
+    await co(slide, { variant: "accent", ...br, bullets: ["below() for vertical stacking", "columns() for side-by-side", "rows() for row-based grids", "inset() to add padding"] });
+  }
 
   deck.title({
     title: "Thank You",

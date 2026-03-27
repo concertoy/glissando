@@ -31,8 +31,13 @@ import type {
   PendingWork,
 } from "./types.js";
 import { renderEmoji } from "./emoji.js";
+import {
+  contentArea as _contentArea,
+  contentAreaBelow as _contentAreaBelow,
+} from "./layout.js";
 
-export type { Theme, ShapeRef, ConnectionPoint } from "./types.js";
+export type { Theme, ShapeRef, ConnectionPoint, Rect } from "./types.js";
+export { contentArea, contentAreaBelow, columns, rows, below, inset } from "./layout.js";
 
 export class Deck {
   private pres: PptxGenJS;
@@ -168,6 +173,16 @@ export class Deck {
   /** Access the theme config (colors, fonts, sizes). */
   get config() {
     return this.theme.config;
+  }
+
+  /** Full usable area inside slide margins. */
+  area() {
+    return _contentArea(this.theme.config.spacing);
+  }
+
+  /** Content area below a standard heading + accent bar. */
+  contentArea() {
+    return _contentAreaBelow(this.theme.config.spacing);
   }
 
   /** Render an emoji to a base64 PNG data URI (for use with addImage). */

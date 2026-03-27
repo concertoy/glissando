@@ -36,9 +36,14 @@ claude
 | `/visual-feedback` | Render slides to PNG and diagnose layout, styling, or content issues. |
 | `/figure` | Generate a raster figure via AI image generation — fallback for visuals that built-in diagram components can't express. |
 
-### Content Planner Agent
+### Planning Agents
 
-Both `/slides` and `/slides-from-latex` delegate content planning to a dedicated Opus sub-agent (`.claude/agents/slides-content-planner.md`). The planner reads source material directly (repos, `.tex` files, READMEs) in an isolated context — it never sees existing example decks — and outputs structured markdown per slide. The implementer then faithfully translates the plan into themed TypeScript without thinning or rewriting content.
+Both `/slides` and `/slides-from-latex` use a two-pass merge-and-conquer protocol with two Opus sub-agents:
+
+1. **Outline pass** (`slides-content-planner`) — reads source material and produces a numbered outline with type tags (e.g., `[content,equation]`), preserving narrative arc
+2. **Detail pass** (`slide-detail-planner`) — called per-slide with the full outline for context, reads source material directly, produces rich mixed-content plans for each slide
+
+Both agents read source material directly (repos, `.tex` files, READMEs) in isolated context — they never see existing example decks. The skill assembles all detail outputs and the implementer faithfully translates the assembled plan into themed TypeScript.
 
 ## Themes
 

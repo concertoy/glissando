@@ -10,6 +10,7 @@ import type {
   ThemeConfig,
   ThemeComponents,
   ComponentFactory,
+  Rect,
   AccentBarProps,
   HeadingProps,
   BodyTextProps,
@@ -41,31 +42,35 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   const { colors: c, fonts: f, sizes: s } = cfg;
 
   // --- Accent bar ---
-  function accentBar(slide: PptxGenJS.Slide, props: AccentBarProps): void {
+  function accentBar(slide: PptxGenJS.Slide, props: AccentBarProps): Rect {
+    const w = props.w ?? 2, h = props.h ?? 0.04;
     slide.addShape("rect", {
-      x: props.x, y: props.y,
-      w: props.w ?? 2, h: props.h ?? 0.04,
+      x: props.x, y: props.y, w, h,
       fill: { color: c.accent },
       line: { color: c.accent, width: 0.5 },
     });
+    return { x: props.x, y: props.y, w, h };
   }
 
   // --- Heading ---
-  function heading(slide: PptxGenJS.Slide, props: HeadingProps): void {
+  function heading(slide: PptxGenJS.Slide, props: HeadingProps): Rect {
+    const h = 0.7;
     slide.addText(props.text, {
-      x: props.x, y: props.y, w: props.w, h: 0.7,
+      x: props.x, y: props.y, w: props.w, h,
       fontSize: props.fontSize ?? s.heading,
       fontFace: f.heading,
       color: props.color ?? c.text,
       bold: props.bold ?? true,
       valign: "bottom",
     });
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Body text ---
   // Supports leading :emoji: — e.g. ":rocket: Launch the product"
   // Emoji is placed as an image before the text, text is shifted right.
-  function bodyText(slide: PptxGenJS.Slide, props: BodyTextProps): void {
+  function bodyText(slide: PptxGenJS.Slide, props: BodyTextProps): Rect {
+    const h = props.h ?? 0.5;
     const leading = cfg.emojiSet ? extractLeadingEmoji(props.text) : null;
 
     if (leading) {
@@ -90,7 +95,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         x: props.x + emojiSize + gap,
         y: props.y,
         w: props.w - emojiSize - gap,
-        h: props.h ?? 0.5,
+        h,
         fontSize,
         fontFace: props.fontFace ?? f.sans,
         color: props.color ?? c.textSecondary,
@@ -100,7 +105,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       });
     } else {
       slide.addText(props.text, {
-        x: props.x, y: props.y, w: props.w, h: props.h ?? 0.5,
+        x: props.x, y: props.y, w: props.w, h,
         fontSize: props.fontSize ?? s.body,
         fontFace: props.fontFace ?? f.sans,
         color: props.color ?? c.textSecondary,
@@ -109,6 +114,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         valign: "top",
       });
     }
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Bullet list ---
@@ -117,8 +123,9 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let bulletListCounter = 0;
 
-  function bulletList(slide: PptxGenJS.Slide, props: BulletListProps): void {
+  function bulletList(slide: PptxGenJS.Slide, props: BulletListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
+    const h = props.h ?? 4.5;
 
     // Check for emoji-prefixed items
     const emojiIndices: number[] = [];
@@ -148,7 +155,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       },
     }));
     slide.addText(textRows, {
-      x: props.x, y: props.y, w: props.w, h: props.h ?? 4.5,
+      x: props.x, y: props.y, w: props.w, h,
       valign: "top",
       lineSpacingMultiple: 1.2,
       objectName: objName,
@@ -166,11 +173,13 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       });
       if (pending) pending.promises.push(emojiPromise);
     }
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Numbered list ---
-  function numberedList(slide: PptxGenJS.Slide, props: NumberedListProps): void {
+  function numberedList(slide: PptxGenJS.Slide, props: NumberedListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
+    const h = props.h ?? 4.5;
     const textRows: PptxGenJS.TextProps[] = props.items.map((item) => ({
       text: item,
       options: {
@@ -182,10 +191,11 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       },
     }));
     slide.addText(textRows, {
-      x: props.x, y: props.y, w: props.w, h: props.h ?? 4.5,
+      x: props.x, y: props.y, w: props.w, h,
       valign: "top",
       lineSpacingMultiple: 1.2,
     });
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Code block (with syntax highlighting) ---
@@ -205,7 +215,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let codeBlockCounter = 0;
 
-  function codeBlock(slide: PptxGenJS.Slide, props: CodeBlockProps): void {
+  function codeBlock(slide: PptxGenJS.Slide, props: CodeBlockProps): Rect {
     const cs = cfg.codeStyle;
     const lang = props.language ?? "";
     const gid = lang ? codeBlockCounter++ : -1;
@@ -319,10 +329,11 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         margin: [18, 22, 10, 22],
       });
     }
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Quote box ---
-  function quoteBox(slide: PptxGenJS.Slide, props: QuoteBoxProps): void {
+  function quoteBox(slide: PptxGenJS.Slide, props: QuoteBoxProps): Rect {
     slide.addShape("rect", {
       x: props.x, y: props.y, w: 0.06, h: props.h,
       fill: { color: c.accent },
@@ -346,10 +357,11 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         valign: "bottom",
       });
     }
+    return { x: props.x, y: props.y, w: props.w, h: props.h };
   }
 
   // --- Table ---
-  function table(slide: PptxGenJS.Slide, props: TableProps): void {
+  function table(slide: PptxGenJS.Slide, props: TableProps): Rect {
     const headerRow: PptxGenJS.TableCell[] = props.headers.map((h) => ({
       text: h,
       options: {
@@ -379,15 +391,21 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       x: props.x, y: props.y, w: props.w,
       colW: Array(props.headers.length).fill(props.w / props.headers.length),
     });
+    // Estimate table height: ~0.35" per row (header + data)
+    const rowH = 0.35;
+    const h = (1 + props.rows.length) * rowH;
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Caption ---
-  function caption(slide: PptxGenJS.Slide, props: CaptionProps): void {
+  function caption(slide: PptxGenJS.Slide, props: CaptionProps): Rect {
+    const h = 0.35;
     slide.addText(props.text, {
-      x: props.x, y: props.y, w: props.w, h: 0.35,
+      x: props.x, y: props.y, w: props.w, h,
       fontSize: s.caption, fontFace: f.sans, color: c.textMuted,
       italic: true, align: "center",
     });
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Callout block — round-cornered panels (card, info, warning, accent, code) ---
@@ -405,7 +423,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let calloutCounter = 0;
 
-  async function calloutBlock(slide: PptxGenJS.Slide, props: CalloutBlockProps): Promise<void> {
+  async function calloutBlock(slide: PptxGenJS.Slide, props: CalloutBlockProps): Promise<Rect> {
     const style = calloutStyles[props.variant];
     const gid = calloutCounter++;
 
@@ -479,11 +497,12 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       w: iconSize, h: iconSize,
       objectName: `co-${gid}-icon`,
     } as any);
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // --- Text block — icon-free rounded panel with optional title/subtitle ---
 
-  function textBlock(slide: PptxGenJS.Slide, props: TextBlockProps): void {
+  function textBlock(slide: PptxGenJS.Slide, props: TextBlockProps): Rect {
     const fillColor = props.fill ?? c.bgCard;
     const borderColor = props.border ?? c.textMuted;
     const bodyColor = props.textColor ?? c.text;
@@ -555,6 +574,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       valign: "top",
       margin,
     });
+    return { x: props.x, y: props.y, w: props.w, h };
   }
 
   // =========================================================================
@@ -570,6 +590,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       right:  { x: x + w,     y: y + h / 2, idx: 1, _shapeName: name },
       bottom: { x: x + w / 2, y: y + h,     idx: 2, _shapeName: name },
       left:   { x,            y: y + h / 2, idx: 3, _shapeName: name },
+      rect:   { x, y, w, h },
     };
   }
 
@@ -728,7 +749,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Equation — LaTeX rendered to PNG via MathJax + sharp ---
-  async function equation(slide: PptxGenJS.Slide, props: EquationProps): Promise<void> {
+  async function equation(slide: PptxGenJS.Slide, props: EquationProps): Promise<Rect> {
     const color = props.color ?? c.text;
     const result = await renderEquation(props.latex, color);
 
@@ -747,6 +768,8 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       sizing: { type: "contain", w, h },
     });
 
+    const totalH = h + (props.label ? 0.35 : 0);
+
     if (props.label) {
       slide.addText(props.label, {
         x: props.x,
@@ -760,18 +783,20 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         align: "center",
       });
     }
+    return { x: props.x, y: props.y, w: props.w, h: totalH };
   }
 
   // --- Standalone emoji image ---
-  async function emoji(slide: PptxGenJS.Slide, props: EmojiProps): Promise<void> {
+  async function emoji(slide: PptxGenJS.Slide, props: EmojiProps): Promise<Rect> {
+    const w = props.w ?? 0.4, h = props.h ?? 0.4;
     const data = await renderEmoji(props.name, cfg.emojiSet);
     slide.addImage({
       data,
       x: props.x,
       y: props.y,
-      w: props.w ?? 0.4,
-      h: props.h ?? 0.4,
+      w, h,
     });
+    return { x: props.x, y: props.y, w, h };
   }
 
   return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji };

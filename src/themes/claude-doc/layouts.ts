@@ -402,7 +402,7 @@ async function equationLayout(
   const eqX = sp.marginLeft + (contentW - eqW) / 2;
 
   for (const eq of props.equations) {
-    await comp.equation(slide, {
+    const rect = await comp.equation(slide, {
       latex: eq.latex,
       x: eqX,
       y: curY,
@@ -410,11 +410,7 @@ async function equationLayout(
       label: eq.label,
     });
 
-    // Advance Y by capped equation height (matches component's 0.6" cap)
-    const { renderEquation } = await import("../../equation.js");
-    const result = await renderEquation(eq.latex, c.text);
-    const eqH = Math.min(eqW / result.aspectRatio, 0.6);
-    curY += eqH + (eq.label ? 0.55 : 0.35);
+    curY += rect.h + 0.2;
   }
 }
 

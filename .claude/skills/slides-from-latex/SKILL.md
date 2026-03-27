@@ -60,12 +60,27 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 ### Phase 2: Plan Content
 
-8. **Delegate content planning** to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
+8. **Outline pass.** Delegate to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
    - The path to the LaTeX project directory so it can read `.tex` files directly
    - Target slide count: 15–25
    - Paper classification from step 7 (figure-intensive / equation-intensive / mixed)
    - The figure inventory from step 4 (which images exist and their formats)
-   The agent reads the paper source and returns a markdown content plan — one `## Slide N` section per slide with full content (text, equations as `$$...$$`, figure refs as `![](filename)`). Slides will be rich: equations alongside their explanation, theorems with their intuition.
+   The agent returns a numbered outline — one line per slide with type tags, title, and purpose.
+
+8b. **Detail pass.** For each slide, call the `slide-detail-planner` agent (subagent_type: `slide-detail-planner`). Pass it:
+    - The full outline from step 8
+    - The specific slide number(s) to detail
+    - The LaTeX project path (so the agent can read `.tex` files directly)
+
+    **Batching rules:**
+    - `[title]`, `[section]` slides: batch up to 5 together
+    - `[content]`, `[image]` slides: batch 2-3 together
+    - Any slide tagged `[equation]`, `[code]`, or `[diagram]`: detail alone (batch of 1)
+    - Mixed-tag slides (e.g., `[content,equation]`): detail alone
+
+    Each call returns detailed content in `## Slide N: Title` markdown format.
+
+8c. **Assemble.** Concatenate all detail outputs in slide order into a single markdown document. Slides will be rich: equations alongside their explanation, theorems with their intuition.
 
 9. **Faithfully implement the plan.** Do not thin, split, or rewrite the planner's content. Cross-reference with your macro collection from step 6. Flag figure preparation needs:
    - PNG/JPG: ready to use

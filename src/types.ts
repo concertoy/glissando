@@ -10,6 +10,18 @@
 import type PptxGenJS from "pptxgenjs";
 
 // ---------------------------------------------------------------------------
+// Layout geometry
+// ---------------------------------------------------------------------------
+
+/** A rectangle region on a slide (inches). Spreadable into component props. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// ---------------------------------------------------------------------------
 // Theme config
 // ---------------------------------------------------------------------------
 
@@ -239,6 +251,7 @@ export interface ShapeRef {
   right: ConnectionPoint;
   bottom: ConnectionPoint;
   left: ConnectionPoint;
+  rect: Rect;
 }
 
 export interface DiagramBoxProps {
@@ -334,23 +347,23 @@ export interface EquationProps {
 // ---------------------------------------------------------------------------
 
 export interface ThemeComponents {
-  accentBar: (slide: PptxGenJS.Slide, props: AccentBarProps) => void;
-  heading: (slide: PptxGenJS.Slide, props: HeadingProps) => void;
-  bodyText: (slide: PptxGenJS.Slide, props: BodyTextProps) => void;
-  bulletList: (slide: PptxGenJS.Slide, props: BulletListProps) => void;
-  numberedList: (slide: PptxGenJS.Slide, props: NumberedListProps) => void;
-  codeBlock: (slide: PptxGenJS.Slide, props: CodeBlockProps) => void;
-  quoteBox: (slide: PptxGenJS.Slide, props: QuoteBoxProps) => void;
-  table: (slide: PptxGenJS.Slide, props: TableProps) => void;
-  caption: (slide: PptxGenJS.Slide, props: CaptionProps) => void;
-  calloutBlock: (slide: PptxGenJS.Slide, props: CalloutBlockProps) => Promise<void>;
-  textBlock: (slide: PptxGenJS.Slide, props: TextBlockProps) => void;
+  accentBar: (slide: PptxGenJS.Slide, props: AccentBarProps) => Rect;
+  heading: (slide: PptxGenJS.Slide, props: HeadingProps) => Rect;
+  bodyText: (slide: PptxGenJS.Slide, props: BodyTextProps) => Rect;
+  bulletList: (slide: PptxGenJS.Slide, props: BulletListProps) => Rect;
+  numberedList: (slide: PptxGenJS.Slide, props: NumberedListProps) => Rect;
+  codeBlock: (slide: PptxGenJS.Slide, props: CodeBlockProps) => Rect;
+  quoteBox: (slide: PptxGenJS.Slide, props: QuoteBoxProps) => Rect;
+  table: (slide: PptxGenJS.Slide, props: TableProps) => Rect;
+  caption: (slide: PptxGenJS.Slide, props: CaptionProps) => Rect;
+  calloutBlock: (slide: PptxGenJS.Slide, props: CalloutBlockProps) => Promise<Rect>;
+  textBlock: (slide: PptxGenJS.Slide, props: TextBlockProps) => Rect;
   diagramBox: (slide: PptxGenJS.Slide, props: DiagramBoxProps) => ShapeRef;
   arrow: (slide: PptxGenJS.Slide, props: ArrowProps) => void;
   hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;
   container: (slide: PptxGenJS.Slide, props: ContainerProps) => ShapeRef;
-  equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<void>;
-  emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<void>;
+  equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<Rect>;
+  emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<Rect>;
 }
 
 // ---------------------------------------------------------------------------

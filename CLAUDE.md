@@ -12,11 +12,32 @@ npm install
 
 ## Build, Test, and Development Commands
 
-- `npm install` — install runtime (pptxgenjs, sharp) and tooling dependencies.
+- `npm install` — install runtime (pptxgenjs, sharp, mathjax-full) and tooling dependencies.
 - `./build.sh examples/<deck>` — compile `slides.ts` into `output.pptx` inside that example folder.
 - `npx tsx runner.ts <path-to-deck>` — run the builder directly when debugging runner changes.
+- `npx tsx scripts/render-slide.ts <path>.pptx --all --output /tmp/render` — render PPTX slides to PNG for visual verification.
 - `npx tsc --noEmit` — type-check the library; keep the tree free of TypeScript errors before opening a PR.
 - `npm test` — smoke-test all example decks (builds each, asserts output.pptx is produced).
+
+## Skills
+
+| Skill | Trigger | Description |
+|---|---|---|
+| `/slides` | "create a deck", "make slides about" | Create a deck from natural language. Delegates content planning to an Opus sub-agent. |
+| `/slides-from-latex` | "convert this paper", "arXiv to slides" | Convert LaTeX paper to deck. Handles macros, TikZ, theorems, display math. |
+| `/slides-dev` | "create a theme", "design a theme" | Create a new visual theme from a description. |
+| `/slides-inv` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
+| `/visual-feedback` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
+| `/figure` | "generate a figure", "architecture diagram" | AI-generated raster figure (fallback when diagram components can't express it). |
+
+### Planning Agents
+
+Both `/slides` and `/slides-from-latex` use a two-pass planning protocol with two Opus sub-agents:
+
+1. **Outline pass** — `slides-content-planner` reads source material and produces a numbered outline — one line per slide with type tags (e.g., `[content,equation]`), title, and purpose. This preserves narrative coherence.
+2. **Detail pass** — `slide-detail-planner` is called once per slide (or small batch) with the full outline for context. It reads source material directly and produces rich markdown content for each assigned slide. Complex slides (`[equation]`, `[code]`, `[diagram]`, mixed tags) are detailed alone; simple slides (`[title]`, `[section]`) are batched.
+
+Both agents operate in isolated context (no access to `examples/` or `src/`). The skill assembles all detail outputs into a single markdown plan. The implementer faithfully translates it into themed TypeScript without thinning or rewriting content.
 
 ## Architecture
 
@@ -35,6 +56,8 @@ src/
   index.ts                  Deck class (public API)
   pptx-patch.ts             PPTX post-processing (font patching, connectors, grouping)
   types.ts                  TypeScript types for Theme, Components, Layouts
+  config.ts                 CLI config loader (~/.glissando/config.json)
+  equation.ts               LaTeX renderer (MathJax → SVG → PNG via sharp)
   highlight.ts              Syntax highlighter (per-language keyword coloring)
   icons.ts                  Lucide icon renderer (SVG → PNG via sharp)
   emoji.ts                  Themed emoji renderer (SVG → PNG via sharp)
@@ -64,13 +87,35 @@ examples/
   ai-tooling-tutorial/      Real-world deck (default preset)
   basic-white-demo/         Basic White theme demo (Keynote-inspired)
   elegant-bw-demo/          Elegant BW theme demo (monochromatic minimalism)
+  emoji-showcase/           Emoji styles and inline syntax demo
   mimic-claude-macos/       macOS native fonts (Iowan Old Style + Avenir Next)
   mimic-claude-google-fonts/  Google Fonts (Libre Baskerville + Space Grotesk)
+  on-device-ai/             Full deck with diagrams and equations
+  memorization-diffusion/   LaTeX paper conversion example
+  slides-from-tex/          arXiv paper source for /slides-from-latex testing
 build.sh                    Universal build: ./build.sh <path>
 runner.ts                   Build runner (called by build.sh)
 scripts/
   install-fonts.sh          Font installer (macOS/Linux)
   install-fonts.ps1         Font installer (Windows)
+  render-slide.ts           Render PPTX slides to PNG for visual verification
+  generate-figure.ts        AI figure generation (used by /figure skill)
+  pptx-to-ts.ts             Reverse-engineer PPTX to slides.ts (used by /slides-inv)
+  init.ts                   CLI init wizard
+  test-examples.ts          Smoke-test all example decks
+.claude/
+  skills/
+    slides/                 /slides — create deck from description
+    slides-from-latex/      /slides-from-latex — LaTeX paper to deck
+    slides-dev/             /slides-dev — create new themes
+    slides-inv/             /slides-inv — reverse-engineer PPTX
+    visual-feedback/        /visual-feedback — render and diagnose slides
+    figure/                 /figure — AI figure generation
+  agents/
+    slides-content-planner.md  Opus sub-agent for deck outline planning
+    slide-detail-planner.md    Opus sub-agent for per-slide content detail
+    pptx-visual-debugger.md    Visual verification agent
+    pptx-component-designer.md Component design agent
 ```
 
 ## Creating a New Deck
@@ -170,6 +215,39 @@ Components can be used directly for custom slides via `deck.components`:
 - `container(slide, { label?, x, y, w, h, border?, fill? })` — dashed-border grouping box returning `ShapeRef`
 - `equation(slide, { latex, x, y, w, h?, color?, label? })` — rendered LaTeX equation (async)
 - `emoji(slide, { name, x, y, w?, h? })` — themed SVG emoji image (async)
+
+All components return a `Rect` (`{ x, y, w, h }`) representing their actual bounding box, enabling vertical stacking and layout chaining.
+
+## Layout Helpers
+
+Pure functions for computing component positions. Import from `src/index.js`:
+
+```ts
+import { Deck, columns, rows, below, inset } from "../../src/index.js";
+```
+
+| Function | Description |
+|---|---|
+| `deck.area()` | Full usable area inside slide margins |
+| `deck.contentArea()` | Area below heading + accent bar |
+| `columns(area, n, gap?)` | Split rect into N equal columns |
+| `rows(area, n, gap?)` | Split rect into N equal rows |
+| `below(area, usedH, gap?)` | Sub-rect below a placed component |
+| `inset(area, top, right?, bottom?, left?)` | Inset a rect (CSS-style) |
+
+`Rect` has `{ x, y, w, h }` — same shape as component props. Use spread syntax:
+
+```ts
+const area = deck.contentArea();
+const [left, right] = columns(area, 2, 0.4);
+codeBlock(slide, { code: "...", language: "python", ...left });
+await calloutBlock(slide, { variant: "info", ...right, body: "Note" });
+
+// Vertical stacking with auto-height
+const eqRect = await equation(slide, { latex: "E = mc^2", ...area });
+const rest = below(area, eqRect.h, 0.3);
+bulletList(slide, { items: ["E — energy", "m — mass"], ...rest });
+```
 
 ## Themed Emojis
 

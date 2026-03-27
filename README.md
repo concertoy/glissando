@@ -18,11 +18,27 @@
 ```bash
 claude
 /slides a 10-slide pitch deck about on-device AI, with diagrams and code examples
+/slides-from-latex path/to/arxiv-paper/
 /slides-dev a dark theme inspired by Dracula, with purple accents and monospace headings
 /slides-inv reverse-engineer this pptx back into slides.ts
 /visual-feedback check the slides for layout issues
 /figure generate an architecture diagram for slide 4
 ```
+
+## Skills
+
+| Skill | Description |
+|---|---|
+| `/slides` | Create a slide deck from a natural language description. Delegates content planning to an Opus-powered sub-agent, then builds themed PPTX. |
+| `/slides-from-latex` | Convert a LaTeX paper (Overleaf project, arXiv source) into a slide deck. Handles macros, TikZ figures, theorems, and display math. |
+| `/slides-dev` | Design a new visual theme from a description (colors, fonts, spacing). |
+| `/slides-inv` | Reverse-engineer an existing PPTX back into `slides.ts` source code. |
+| `/visual-feedback` | Render slides to PNG and diagnose layout, styling, or content issues. |
+| `/figure` | Generate a raster figure via AI image generation — fallback for visuals that built-in diagram components can't express. |
+
+### Content Planner Agent
+
+Both `/slides` and `/slides-from-latex` delegate content planning to a dedicated Opus sub-agent (`.claude/agents/slides-content-planner.md`). The planner reads source material directly (repos, `.tex` files, READMEs) in an isolated context — it never sees existing example decks — and outputs structured markdown per slide. The implementer then faithfully translates the plan into themed TypeScript without thinning or rewriting content.
 
 ## Themes
 

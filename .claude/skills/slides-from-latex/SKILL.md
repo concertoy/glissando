@@ -203,6 +203,38 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 16. **Build:** `./build.sh examples/<paper-short-name>`
 
+17. **Write `equations.md`** — an equation manifest for manual editing. Equations are rendered as PNG images (not natively editable in Keynote/PowerPoint). This manifest lets the user re-create any equation using Keynote's Insert → Equation editor (which accepts LaTeX).
+
+    Format — one entry per equation, grouped by slide:
+
+    ```markdown
+    # Equation Reference
+
+    ## Slide 3: Forward Diffusion
+    ```latex
+    X_t = \sqrt{\alpha_t}\, X_0 + \sqrt{1 - \alpha_t}\, Z
+    ```
+
+    ## Slide 5: ELBO
+    ```latex
+    \mathcal{L}(\theta) = -\mathbb{E}_{q(z|x)}\left[\log p_\theta(x|z)\right] + D_{KL}\left(q(z|x) \| p(z)\right)
+    ```
+    ```
+
+    Include **every** equation used in the deck. Use the **clean LaTeX** (without the macro preamble) so it can be pasted directly into Keynote's equation editor. If the equation uses custom macros, expand them inline in a second block:
+
+    ```markdown
+    ## Slide 7: Score Matching
+    With macros (as used in slides.ts):
+    ```latex
+    \vx_t = \sqrt{\bar\alpha_t}\,\vx_0 + \sqrt{1-\bar\alpha_t}\,\vepsilon
+    ```
+    Expanded (paste into Keynote):
+    ```latex
+    \boldsymbol{x}_t = \sqrt{\bar\alpha_t}\,\boldsymbol{x}_0 + \sqrt{1-\bar\alpha_t}\,\boldsymbol{\epsilon}
+    ```
+    ```
+
 ### Phase 5: Verify
 
 17. **Render and inspect:**

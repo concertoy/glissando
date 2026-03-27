@@ -48,6 +48,7 @@ Create a glissando slide deck based on the user's request: $ARGUMENTS
    - `$$...$$` blocks → `equation` component; `> blockquote` → `calloutBlock`; `**bold heading**` → section within a slide
 6. For slides flagged for `/figure`, generate the figure before writing that slide's code.
 7. Build: `./build.sh examples/<folder>`
+8. **If the deck contains equations**, write `equations.md` in the deck folder — a manifest listing every equation's LaTeX source grouped by slide number and title. This lets the user re-create any equation in Keynote (Insert → Equation accepts LaTeX). Use clean LaTeX without code-level wrappers (no `String.raw`, no macro preamble concatenation).
 
 ### Phase 3: Verify
 

@@ -85,7 +85,7 @@ export default async function build() {
         "Encoder: transforms pixels into volumetric 3D Gaussians",
         "Output: queryable scene graph with spatial relationships",
       ],
-      x: sp.marginLeft, y: cy + bh + 1.0, w: cw,
+      x: sp.marginLeft, y: cy + bh + 1.8, w: cw,
     });
   }
 

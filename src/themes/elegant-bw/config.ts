@@ -59,6 +59,11 @@ export const config: ThemeConfig = {
     marginBottom:  0.6,
   },
 
+  emojiSet: {
+    style: "openmoji-outline",
+    color: "000000",              // Black outlines — monochromatic
+  },
+
   codeStyle: {
     bg:       "F5F5F5",
     text:     "1A1A1A",

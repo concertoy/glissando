@@ -10,5 +10,5 @@
     "declaration": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "templates/**/*", "examples/**/*", "runner.ts"]
+  "include": ["src/**/*", "templates/**/*", "examples/**/*", "scripts/**/*"]
 }

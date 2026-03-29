@@ -93,7 +93,7 @@ Install glissando, create a `slides.ts` file, and build a `.pptx` in under 2 min
 | Command | Purpose |
 |---|---|
 | `./build.sh examples/<deck>` | Build a deck to `output.pptx` |
-| `npx tsx runner.ts <path>` | Run the builder directly |
+| `npx tsx scripts/runner.ts <path>` | Run the builder directly |
 | `npx tsc --noEmit` | Type-check the library |
 | `npm test` | Smoke-test all example decks |
 

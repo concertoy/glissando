@@ -29,7 +29,7 @@ import type {
 function title(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: TitleLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   slide.background = { color: c.bgDark };
@@ -62,6 +62,7 @@ function title(
       color: c.textOnDarkMuted,
     });
   }
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ function title(
 function section(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: SectionLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   slide.background = { color: c.bgAccent };
@@ -101,6 +102,7 @@ function section(
       color: c.textMuted,
     });
   }
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +112,7 @@ function section(
 function content(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: ContentLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -150,6 +152,7 @@ function content(
     w: contentW - 0.15,
     h: sp.slideHeight - bulletTop - sp.marginBottom,
   });
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +162,7 @@ function content(
 function twoColumn(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: TwoColumnLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -224,6 +227,7 @@ function twoColumn(
     w: colW - 0.1,
     h: listH,
   });
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +237,7 @@ function twoColumn(
 function code(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: CodeLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -257,6 +261,7 @@ function code(
     w: contentW,
     h: sp.slideHeight - codeTop - sp.marginBottom,
   });
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,7 +271,7 @@ function code(
 function quote(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: QuoteLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   slide.background = { color: c.bgAccent };
@@ -279,6 +284,7 @@ function quote(
     w: sp.slideWidth - sp.marginLeft - sp.marginRight - 1,
     h: 5,
   });
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +294,7 @@ function quote(
 function image(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: ImageLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -324,6 +330,7 @@ function image(
       w: contentW,
     });
   }
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +340,7 @@ function image(
 function tableLayout(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: TableLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -355,6 +362,7 @@ function tableLayout(
     y: sp.marginTop + 1.15,
     w: contentW,
   });
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -364,7 +372,7 @@ function tableLayout(
 function blank(
   pres: PptxGenJS, cfg: ThemeConfig, _comp: ThemeComponents,
   props: BlankLayoutProps,
-): void {
+): PptxGenJS.Slide {
   const slide = pres.addSlide();
   const bgMap = {
     primary: cfg.colors.bgPrimary,
@@ -372,6 +380,7 @@ function blank(
     accent: cfg.colors.bgAccent,
   };
   slide.background = { color: bgMap[props.bg ?? "primary"] };
+  return slide;
 }
 
 // ---------------------------------------------------------------------------
@@ -381,7 +390,7 @@ function blank(
 async function equationLayout(
   pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
   props: EquationLayoutProps,
-): Promise<void> {
+): Promise<PptxGenJS.Slide> {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -412,6 +421,7 @@ async function equationLayout(
 
     curY += rect.h + 0.2;
   }
+  return slide;
 }
 
 // ---------------------------------------------------------------------------

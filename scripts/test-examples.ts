@@ -6,9 +6,11 @@
  */
 
 import { readdirSync, existsSync, unlinkSync, statSync } from "fs";
-import { resolve, join } from "path";
+import { resolve, join, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const examplesDir = resolve(import.meta.dirname ?? ".", "..", "examples");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const examplesDir = resolve(__dirname, "..", "examples");
 const dirs = readdirSync(examplesDir).filter((d) =>
   statSync(join(examplesDir, d)).isDirectory() &&
   existsSync(join(examplesDir, d, "slides.ts"))

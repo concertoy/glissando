@@ -172,6 +172,18 @@ export default async function build() {
     });
   }
 
+  // --- Inline math demo ---
+  deck.content({
+    title: "Inline Math ($...$)",
+    bullets: [
+      "$c_i$ — per-Gaussian color coefficient",
+      "$\\alpha_t$ — noise schedule at time $t$",
+      "$X_{t-1}^2$ — squared previous state",
+      "$\\hat{x}$ — estimated value with hat accent",
+      "Plain bullet without any math",
+    ],
+  });
+
   // --- Diagram: Coding Assistant Architecture ---
   {
     const slide = deck.blank({ bg: "primary" });

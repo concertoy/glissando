@@ -343,3 +343,4 @@ Before choosing a theme, check if its fonts are installed (`fc-list` or `ls ~/Li
 - See `/slides` skill for general slide-building patterns
 - See `/figure` skill for generating raster figures when TikZ cannot be compiled
 - See `/slides-check` skill for the verification workflow
+- **Inline math in text**: Wrap variable names and short expressions in `$...$` for proper rendering in bullet lists, body text, and callout blocks. For example: `"$X_t$ — noisy state at time t"` renders `X` with subscript `t`. Supports subscripts (`$c_i$`), superscripts (`$x^2$`), Greek letters (`$\alpha$`), and combinations (`$\alpha_t$`). Complex expressions (`\frac`, `\sqrt`) should use the standalone `equation()` component instead.

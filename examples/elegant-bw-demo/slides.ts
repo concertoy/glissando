@@ -12,6 +12,20 @@ import { elegantBw } from "../../src/themes/elegant-bw/index.js";
 
 export default async function build() {
   const deck = new Deck(elegantBw);
+
+  // Footer: slide numbers + static text + academic citations
+  deck.footer({
+    slideNumber: true,
+    text: "Spatial Intelligence — 2026",
+    citationStyle: "author-year",
+    skip: [1, 10],  // skip title and closing slides
+  });
+
+  // Bibliography
+  deck.bib("mildenhall2020", { authors: ["Mildenhall", "Srinivasan", "Tancik", "Barron", "Ramamoorthi", "Ng"], year: 2020 });
+  deck.bib("kerbl2023", { authors: ["Kerbl", "Kopanas", "Leimkühler", "Drettakis"], year: 2023 });
+  deck.bib("li2024", { authors: ["Li", "Müller", "Evans", "Taylor", "Unberath"], year: 2024 });
+
   const {
     heading, accentBar, bodyText, bulletList, calloutBlock,
     codeBlock, equation, diagramBox, container, quoteBox,
@@ -89,6 +103,8 @@ export default async function build() {
     });
   }
 
+  deck.cite("li2024"); // Spatial AI pipeline references
+
   // ── 6. Code ──
   deck.code({
     title: "Scene Encoding",
@@ -140,6 +156,8 @@ print(f"Distance: {dist:.2f}m")`,
       ...rest,
     });
   }
+
+  deck.cite("kerbl2023", "mildenhall2020"); // Gaussian splatting + NeRF
 
   // ── 8. Table ──
   deck.table({

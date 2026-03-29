@@ -30,12 +30,26 @@ $$X_t = \sqrt{\alpha_t}\, X_0 + \sqrt{1 - \alpha_t}\, Z$$
 - **Z ~ N(0, I)**: standard Gaussian noise
 ```
 
+### Inline Math in Variable Definitions
+
+When listing variables after an equation (the "where" block), wrap each variable name in `$...$` for inline math rendering:
+
+```
+- **$X_t$**: noisy state at time t
+- **$\alpha_t$**: noise schedule coefficient
+- **$X_0$**: clean data sample
+```
+
+This renders subscripts, superscripts, and Greek letters natively in the slide text. Use `$...$` for simple expressions only — complex math (`\frac`, `\sqrt`) should use the standalone `equation()` component.
+
 ### Conventions
 
 - LaTeX equations: `$$...$$` blocks with raw LaTeX (copy from source, strip `\label{}`, `\tag{}`, `\nonumber`)
+- Inline math in text: `$...$` for variable names with subscripts/superscripts/Greek (e.g., `$c_i$`, `$\alpha_t$`)
 - Figures: `![caption](filename.png)` — use actual filenames from the project
 - Code: fenced code blocks with language tag
 - Two-column layouts: `| Left | Right |` marker
+- Citations: if a slide references specific prior work, add `> Citations: key1, key2` at the end. The implementer translates this to `deck.cite()` calls.
 
 ## Principles
 

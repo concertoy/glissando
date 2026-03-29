@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "./build.sh",
+    "check": "tsc --noEmit",
     "test": "npx tsx scripts/test-examples.ts",
     "init": "npx tsx scripts/init.ts",
     "render": "npx tsx scripts/render-slide.ts",

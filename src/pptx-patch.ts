@@ -8,7 +8,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import JSZip from "jszip";
-import type { ConnectorDef, EmojiDef } from "./types.js";
+import type { ConnectorDef, EmojiDef, FooterDef, ThemeSpacing } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -16,8 +16,13 @@ import type { ConnectorDef, EmojiDef } from "./types.js";
 
 export interface PatchOptions {
   fonts: { heading: string; sans: string };
+  spacing?: ThemeSpacing;
+  footerFont?: string;
+  footerSize?: number;     // pt
+  footerColor?: string;    // hex WITHOUT #
   connectorDefs: ConnectorDef[];
   emojiDefs?: EmojiDef[];
+  footerDefs?: FooterDef[];
 }
 
 /**
@@ -70,6 +75,16 @@ export async function patchPptx(pptxPath: string, opts: PatchOptions): Promise<v
   // --- Patch emoji bullets (<a:buChar> → <a:buBlip>) ---
   if (opts.emojiDefs && opts.emojiDefs.length > 0) {
     await patchEmojiBullets(zip, opts.emojiDefs);
+  }
+
+  // --- Inject footer text / slide numbers / citations ---
+  if (opts.footerDefs && opts.footerDefs.length > 0 && opts.spacing) {
+    await injectFooters(zip, opts.footerDefs, {
+      spacing: opts.spacing,
+      font: opts.footerFont ?? "Inter",
+      size: opts.footerSize ?? 12,
+      color: opts.footerColor ?? "999999",
+    });
   }
 
   // Write back
@@ -686,4 +701,117 @@ async function patchEmojiBullets(zip: JSZip, emojiDefs: EmojiDef[]): Promise<voi
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Footer / slide number injection
+// ---------------------------------------------------------------------------
+
+interface FooterStyle {
+  spacing: ThemeSpacing;
+  font: string;
+  size: number;   // pt
+  color: string;  // hex WITHOUT #
+}
+
+async function injectFooters(
+  zip: JSZip,
+  footerDefs: FooterDef[],
+  style: FooterStyle,
+): Promise<void> {
+  const EMU = 914400;
+  const sp = style.spacing;
+  const szHundredths = style.size * 100; // OOXML uses hundredths of a point
+
+  // Position: y is near the bottom of the slide
+  const footerY = Math.round((sp.slideHeight - 0.35) * EMU);
+  const footerH = Math.round(0.25 * EMU);
+
+  // Left region: static text + citations
+  const leftX = Math.round(sp.marginLeft * EMU);
+  const leftW = Math.round((sp.slideWidth - sp.marginLeft - sp.marginRight - 1.5) * EMU);
+
+  // Right region: slide number
+  const rightW = Math.round(1.2 * EMU);
+  const rightX = Math.round((sp.slideWidth - sp.marginRight) * EMU) - rightW;
+
+  for (const def of footerDefs) {
+    const slidePath = `ppt/slides/slide${def.slideIndex + 1}.xml`;
+    const entry = zip.file(slidePath);
+    if (!entry) continue;
+    let xml = await entry.async("string");
+
+    // Find max existing shape ID
+    let maxId = 0;
+    const idRegex = /id="(\d+)"/g;
+    let m;
+    while ((m = idRegex.exec(xml)) !== null) {
+      maxId = Math.max(maxId, parseInt(m[1]));
+    }
+
+    const shapes: string[] = [];
+
+    // Slide number (right-aligned)
+    if (def.slideNumber) {
+      maxId++;
+      shapes.push(footerTextBox(maxId, "SlideNum", rightX, footerY, rightW, footerH, "r", def.slideNumber, style));
+    }
+
+    // Static text + citations (left-aligned)
+    const leftParts: string[] = [];
+    if (def.text) leftParts.push(def.text);
+    if (def.citations) leftParts.push(def.citations);
+    if (leftParts.length > 0) {
+      maxId++;
+      const combined = leftParts.join("  ·  ");
+      shapes.push(footerTextBox(maxId, "FooterText", leftX, footerY, leftW, footerH, "l", combined, style));
+    }
+
+    if (shapes.length > 0) {
+      xml = xml.replace("</p:spTree>", shapes.join("") + "</p:spTree>");
+      zip.file(slidePath, xml);
+    }
+  }
+}
+
+function footerTextBox(
+  id: number,
+  name: string,
+  x: number, y: number, w: number, h: number,
+  align: "l" | "r" | "ctr",
+  text: string,
+  style: FooterStyle,
+): string {
+  const szHundredths = style.size * 100;
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="${name}"/>` +
+    `<p:cNvSpPr txBox="1"/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm>` +
+    `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>` +
+    `<a:noFill/>` +
+    `</p:spPr>` +
+    `<p:txBody>` +
+    `<a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="b"/>` +
+    `<a:lstStyle/>` +
+    `<a:p>` +
+    `<a:pPr algn="${align}"/>` +
+    `<a:r>` +
+    `<a:rPr lang="en-US" sz="${szHundredths}" dirty="0">` +
+    `<a:solidFill><a:srgbClr val="${style.color}"/></a:solidFill>` +
+    `<a:latin typeface="${style.font}"/>` +
+    `</a:rPr>` +
+    `<a:t>${escapeXml(text)}</a:t>` +
+    `</a:r>` +
+    `</a:p>` +
+    `</p:txBody>` +
+    `</p:sp>`
+  );
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

@@ -2,13 +2,13 @@
 
 ## Near-term (cleanup)
 
-- [ ] Add `npm run check` — wire up `tsc --noEmit` in package.json scripts for CI readiness.
-- [ ] Move `runner.ts` to `scripts/` — currently at project root, inconsistent with other scripts.
+- [x] Add `npm run check` — wire up `tsc --noEmit` in package.json scripts for CI readiness.
+- [x] Move `runner.ts` to `scripts/` — currently at project root, inconsistent with other scripts.
 
 ## Medium-term (features)
 
-- [ ] **Speaker notes** — add optional `notes?: string` to every layout method and a `speakerNote(slide, text)` component. pptxgenjs supports `slide.addNotes()`.
-- [ ] **Slide numbering / footers** — a `Deck`-level option that auto-adds page numbers and optional footer text to every slide.
+- [x] **Speaker notes** — add optional `notes?: string` to every layout method and a `speakerNote(slide, text)` component. pptxgenjs supports `slide.addNotes()`.
+- [x] **Slide numbering / footers / citations** — `deck.footer()`, `deck.bib()`, `deck.cite()` with author-year and compact citation styles.
 - [ ] **Themed image component** — currently only `deck.image()` layout exists. Add an `image(slide, { path, x, y, w, h, caption?, border? })` component for use on `blank()` slides.
 - [ ] **Font presets for other themes** — `basic-white` and `elegant-bw` have no presets system. Add `presets.ts` for each (e.g., serif/sans variants).
 - [ ] **Animation / build reveals** — pptxgenjs supports basic animations. Add `appear: "fadeIn"` or `build: true` to bullet lists for step-by-step reveals.

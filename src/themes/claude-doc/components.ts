@@ -37,6 +37,7 @@ import { highlightCode } from "../../highlight.js";
 import { lucideIcon } from "../../icons.js";
 import { renderEquation } from "../../equation.js";
 import { renderEmoji, extractLeadingEmoji } from "../../emoji.js";
+import { expandTextWithMath } from "../../inline-math.js";
 
 export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork): ThemeComponents => {
   const { colors: c, fonts: f, sizes: s } = cfg;
@@ -104,15 +105,28 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         valign: "top",
       });
     } else {
-      slide.addText(props.text, {
-        x: props.x, y: props.y, w: props.w, h,
-        fontSize: props.fontSize ?? s.body,
+      const fontSize = props.fontSize ?? s.body;
+      const mathRuns = expandTextWithMath(props.text, {
+        fontSize,
         fontFace: props.fontFace ?? f.sans,
         color: props.color ?? c.textSecondary,
-        bold: props.bold ?? false,
-        italic: props.italic ?? false,
-        valign: "top",
       });
+      if (mathRuns) {
+        slide.addText(mathRuns, {
+          x: props.x, y: props.y, w: props.w, h,
+          valign: "top",
+        });
+      } else {
+        slide.addText(props.text, {
+          x: props.x, y: props.y, w: props.w, h,
+          fontSize,
+          fontFace: props.fontFace ?? f.sans,
+          color: props.color ?? c.textSecondary,
+          bold: props.bold ?? false,
+          italic: props.italic ?? false,
+          valign: "top",
+        });
+      }
     }
     return { x: props.x, y: props.y, w: props.w, h };
   }
@@ -143,17 +157,33 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const hasEmojiBullets = emojiIndices.length > 0;
     const objName = hasEmojiBullets ? `bl-${bulletListCounter++}` : undefined;
 
-    const textRows: PptxGenJS.TextProps[] = processedItems.map((item) => ({
-      text: item,
-      options: {
-        fontSize,
-        fontFace: f.sans,
-        color: c.textSecondary,
-        bullet: { type: "bullet", color: c.accent },
-        paraSpaceAfter: 8,
-        indentLevel: 0,
-      },
-    }));
+    const baseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
+    const textRows: PptxGenJS.TextProps[] = processedItems.flatMap((item): PptxGenJS.TextProps[] => {
+      const mathRuns = expandTextWithMath(item, baseOpts);
+      if (mathRuns) {
+        return mathRuns.map((run, j) => ({
+          ...run,
+          options: {
+            ...run.options,
+            bullet: j === 0 ? { type: "bullet", color: c.accent } as any : undefined,
+            paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
+            indentLevel: j === 0 ? 0 : undefined,
+            breakLine: j === mathRuns.length - 1 ? true : undefined,
+          },
+        }));
+      }
+      return [{
+        text: item,
+        options: {
+          fontSize,
+          fontFace: f.sans,
+          color: c.textSecondary,
+          bullet: { type: "bullet", color: c.accent } as any,
+          paraSpaceAfter: 8,
+          indentLevel: 0,
+        },
+      }];
+    });
     slide.addText(textRows, {
       x: props.x, y: props.y, w: props.w, h,
       valign: "top",
@@ -180,16 +210,31 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   function numberedList(slide: PptxGenJS.Slide, props: NumberedListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
     const h = props.h ?? 4.5;
-    const textRows: PptxGenJS.TextProps[] = props.items.map((item) => ({
-      text: item,
-      options: {
-        fontSize,
-        fontFace: f.sans,
-        color: c.textSecondary,
-        bullet: { type: "number", color: c.accent },
-        paraSpaceAfter: 8,
-      },
-    }));
+    const numBaseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
+    const textRows: PptxGenJS.TextProps[] = props.items.flatMap((item): PptxGenJS.TextProps[] => {
+      const mathRuns = expandTextWithMath(item, numBaseOpts);
+      if (mathRuns) {
+        return mathRuns.map((run, j) => ({
+          ...run,
+          options: {
+            ...run.options,
+            bullet: j === 0 ? { type: "number", color: c.accent } as any : undefined,
+            paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
+            breakLine: j === mathRuns.length - 1 ? true : undefined,
+          },
+        }));
+      }
+      return [{
+        text: item,
+        options: {
+          fontSize,
+          fontFace: f.sans,
+          color: c.textSecondary,
+          bullet: { type: "number", color: c.accent } as any,
+          paraSpaceAfter: 8,
+        },
+      }];
+    });
     slide.addText(textRows, {
       x: props.x, y: props.y, w: props.w, h,
       valign: "top",
@@ -450,29 +495,45 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
     // Shape: rounded rect with text built-in
     if (props.body) {
-      slide.addText(props.body, {
+      const coBodyBase = { fontSize: s.small, fontFace: f.sans, color: style.textColor };
+      const coBodyRuns = expandTextWithMath(props.body, coBodyBase);
+      slide.addText(coBodyRuns ?? props.body, {
         x: props.x, y: props.y, w: props.w, h,
         shape: "roundRect" as any,
         fill: { color: style.bg },
         rectRadius: 0.08,
         line: { color: style.border, width: 1 },
-        fontSize: s.small, fontFace: f.sans,
-        color: style.textColor,
+        ...(coBodyRuns ? {} : { fontSize: s.small, fontFace: f.sans, color: style.textColor }),
         valign: "top",
         lineSpacingMultiple: 1.4,
         margin,
         objectName: `co-${gid}-bg`,
       });
     } else if (props.bullets) {
-      const rows: PptxGenJS.TextProps[] = props.bullets.map((item) => ({
-        text: item,
-        options: {
-          fontSize: s.small, fontFace: f.sans,
-          color: style.textColor,
-          bullet: { type: "bullet", color: style.border },
-          paraSpaceAfter: 4,
-        },
-      }));
+      const coBulletBase = { fontSize: s.small, fontFace: f.sans, color: style.textColor };
+      const rows: PptxGenJS.TextProps[] = props.bullets.flatMap((item): PptxGenJS.TextProps[] => {
+        const mathRuns = expandTextWithMath(item, coBulletBase);
+        if (mathRuns) {
+          return mathRuns.map((run, j) => ({
+            ...run,
+            options: {
+              ...run.options,
+              bullet: j === 0 ? { type: "bullet", color: style.border } as any : undefined,
+              paraSpaceAfter: j === mathRuns.length - 1 ? 4 : undefined,
+              breakLine: j === mathRuns.length - 1 ? true : undefined,
+            },
+          }));
+        }
+        return [{
+          text: item,
+          options: {
+            fontSize: s.small, fontFace: f.sans,
+            color: style.textColor,
+            bullet: { type: "bullet", color: style.border } as any,
+            paraSpaceAfter: 4,
+          },
+        }];
+      });
       slide.addText(rows, {
         x: props.x, y: props.y, w: props.w, h,
         shape: "roundRect" as any,
@@ -533,25 +594,52 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     }
 
     if (props.body) {
-      rows.push({
-        text: props.body,
-        options: {
-          fontSize: s.small, fontFace: f.sans, color: bodyColor,
-          lineSpacingMultiple: 1.4,
-        },
-      });
+      const tbBodyBase = { fontSize: s.small, fontFace: f.sans, color: bodyColor };
+      const tbBodyRuns = expandTextWithMath(props.body, tbBodyBase);
+      if (tbBodyRuns) {
+        rows.push(...tbBodyRuns.map((run, j) => ({
+          ...run,
+          options: {
+            ...run.options,
+            lineSpacingMultiple: 1.4,
+            breakLine: j === tbBodyRuns.length - 1 ? true : undefined,
+          },
+        })));
+      } else {
+        rows.push({
+          text: props.body,
+          options: {
+            fontSize: s.small, fontFace: f.sans, color: bodyColor,
+            lineSpacingMultiple: 1.4,
+          },
+        });
+      }
     }
 
     if (props.bullets) {
+      const tbBulletBase = { fontSize: s.small, fontFace: f.sans, color: bodyColor };
       for (const item of props.bullets) {
-        rows.push({
-          text: item,
-          options: {
-            fontSize: s.small, fontFace: f.sans, color: bodyColor,
-            bullet: { type: "bullet", color: borderColor } as any,
-            paraSpaceAfter: 4,
-          },
-        });
+        const mathRuns = expandTextWithMath(item, tbBulletBase);
+        if (mathRuns) {
+          rows.push(...mathRuns.map((run, j) => ({
+            ...run,
+            options: {
+              ...run.options,
+              bullet: j === 0 ? { type: "bullet" as const, color: borderColor } : undefined,
+              paraSpaceAfter: j === mathRuns.length - 1 ? 4 : undefined,
+              breakLine: j === mathRuns.length - 1 ? true : undefined,
+            },
+          })));
+        } else {
+          rows.push({
+            text: item,
+            options: {
+              fontSize: s.small, fontFace: f.sans, color: bodyColor,
+              bullet: { type: "bullet", color: borderColor } as any,
+              paraSpaceAfter: 4,
+            },
+          });
+        }
       }
     }
 

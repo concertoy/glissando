@@ -2,7 +2,6 @@
 name: slides-detail-planner
 description: "Plan detailed content for a single slide given an outline entry and access to source material (LaTeX project, repo, or description). Called once per slide (or small batch) by /slides and /slides-from-latex skills after the outline planner produces the deck structure."
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash
-model: opus
 color: pink
 memory: project
 ---

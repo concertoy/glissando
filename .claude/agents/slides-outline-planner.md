@@ -1,7 +1,6 @@
 ---
 name: slides-outline-planner
 description: "Plan a slide deck outline from LaTeX source, repos, or natural language descriptions. Outputs a numbered outline with type tags — one line per slide. Detail planning for each slide is handled by the slides-detail-planner agent."
-model: opus
 color: orange
 memory: project
 ---

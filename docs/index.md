@@ -6,8 +6,8 @@ summary: "Component-based slide decks for coding agents. Write TypeScript, get n
 # glissando
 
 <p align="center">
-  <img src="/docs/assets/light.png" alt="glissando" width="500" class="dark:hidden" />
-  <img src="/docs/assets/badge.png" alt="glissando" width="500" class="hidden dark:block" />
+  <img src="/assets/light.png" alt="glissando" width="500" class="dark:hidden" />
+  <img src="/assets/badge.png" alt="glissando" width="500" class="hidden dark:block" />
 </p>
 
 <p align="center">

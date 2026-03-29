@@ -7,8 +7,8 @@
     "library": "lucide"
   },
   "logo": {
-    "light": "/docs/assets/light.png",
-    "dark": "/docs/assets/badge.png"
+    "light": "/assets/light.png",
+    "dark": "/assets/badge.png"
   },
   "fonts": {
     "heading": {
@@ -18,7 +18,7 @@
       "family": "Inter"
     }
   },
-  "favicon": "/docs/assets/favicon.png",
+  "favicon": "/assets/favicon.png",
   "rounded": "group",
   "colors": {
     "primary": "#2A9D8F",
@@ -54,15 +54,15 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": ["docs/index", "docs/getting-started"]
+            "pages": ["index", "getting-started"]
           },
           {
             "group": "Guide",
-            "pages": ["docs/guide/creating-decks", "docs/guide/themes", "docs/guide/custom-slides"]
+            "pages": ["guide/creating-decks", "guide/themes", "guide/custom-slides"]
           },
           {
             "group": "API Reference",
-            "pages": ["docs/api/layouts", "docs/api/components", "docs/api/emojis"]
+            "pages": ["api/layouts", "api/components", "api/emojis"]
           }
         ]
       }

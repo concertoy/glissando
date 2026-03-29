@@ -15,11 +15,11 @@ Every deck uses a theme that controls all visual styling. The agent provides con
 
 ## Available themes
 
-| Theme | Style | Headings | Body | Code | Install |
+| Theme | Style | Default Headings | Default Body | Default Code | Install |
 |---|---|---|---|---|---|
-| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
-| `elegantBw` | Monochromatic black/white | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw` |
+| `elegantBw` | Monochromatic black/white | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
 
 ## Usage
 
@@ -52,15 +52,7 @@ Every deck uses a theme that controls all visual styling. The agent provides con
 
 ## Font presets
 
-The `claudeDoc` theme supports font presets for different environments:
-
-| Preset | Headings | Body | Code | Install |
-|---|---|---|---|---|
-| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
-| `macosNative` | Iowan Old Style | Avenir Next | Menlo | No install needed |
-| `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
-
-Apply a preset with `applyPreset`:
+Every theme supports font presets via `applyPreset(theme, preset)`:
 
 ```ts
 import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";
@@ -69,19 +61,43 @@ import { macosNative } from "../../src/themes/claude-doc/presets.js";
 const deck = new Deck(applyPreset(claudeDoc, macosNative));
 ```
 
+### claudeDoc presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
+| `macosNative` | Iowan Old Style | Avenir Next | Menlo | No install needed |
+| `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
+
+### basicWhite presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
+| `serifClean` | Georgia | Helvetica Neue | Menlo | No install needed |
+| `googleFonts` | Lato | Lato | Source Code Pro | `./scripts/install-fonts.sh basic-white google-fonts` |
+
+### elegantBw presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+| `macosNative` | Didot | Avenir Next | Menlo | No install needed |
+| `allSans` | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw all-sans` |
+
 ## Font installation
 
 <Tabs>
   <Tab title="macOS / Linux">
     ```bash
     # claudeDoc default fonts
-    ./scripts/install-fonts.sh
+    ./scripts/install-fonts.sh claude-doc default
 
-    # elegantBw fonts
-    ./scripts/install-fonts.sh elegant-bw
+    # elegantBw default fonts
+    ./scripts/install-fonts.sh elegant-bw default
 
-    # Google Fonts preset
-    ./scripts/install-fonts.sh claude-doc google-fonts
+    # basicWhite Google Fonts preset
+    ./scripts/install-fonts.sh basic-white google-fonts
     ```
   </Tab>
   <Tab title="Windows">
@@ -97,7 +113,7 @@ const deck = new Deck(applyPreset(claudeDoc, macosNative));
   - **`config.ts`** — colors, fonts, sizes, spacing, code style, emoji set
   - **`components.ts`** — component factory (can re-export from `claude-doc` or customize)
   - **`layouts.ts`** — slide layout functions
-  - **`index.ts`** — export the assembled `Theme` object
+  - **`index.ts`** — export the assembled `Theme` object and `applyPreset` helper
 
   See `src/themes/claude-doc/` for the full reference implementation. The `basicWhite` and `elegantBw` themes are minimal variants that override config and layouts while re-exporting the claude-doc component factory.
 </Accordion>

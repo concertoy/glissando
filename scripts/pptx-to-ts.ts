@@ -3,7 +3,7 @@
  * Reverse-engineer a glissando-generated PPTX back into slides.ts.
  *
  * Usage:
- *   npx tsx scripts/pptx-to-ts.ts examples/on-device-ai/output.pptx
+ *   npx tsx scripts/pptx-to-ts.ts examples/mimic-claude-macos/output.pptx
  *   npx tsx scripts/pptx-to-ts.ts output.pptx > slides.ts
  */
 

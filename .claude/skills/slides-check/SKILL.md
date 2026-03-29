@@ -1,6 +1,6 @@
 ---
-name: visual-feedback
-description: "Render PPTX slides to PNG and diagnose visual errors. Use after building a deck, when the user says '/visual-feedback', 'check the slides', 'how do the slides look', 'verify visually', or after /slides completes."
+name: slides-check
+description: "Render PPTX slides to PNG and diagnose visual errors. Use after building a deck, when the user says '/slides-check', 'check the slides', 'how do the slides look', 'verify visually', or after /slides completes."
 allowed-tools: Bash, Read
 argument-hint: "<path-to-deck-folder-or-pptx> [--page N]"
 ---

@@ -60,14 +60,14 @@ Convert a LaTeX paper into a glissando slide deck: $ARGUMENTS
 
 ### Phase 2: Plan Content
 
-8. **Outline pass.** Delegate to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
+8. **Outline pass.** Delegate to the `slides-outline-planner` agent (subagent_type: `slides-outline-planner`). Pass it:
    - The path to the LaTeX project directory so it can read `.tex` files directly
    - Target slide count: 15–25
    - Paper classification from step 7 (figure-intensive / equation-intensive / mixed)
    - The figure inventory from step 4 (which images exist and their formats)
    The agent returns a numbered outline — one line per slide with type tags, title, and purpose.
 
-8b. **Detail pass.** For each slide, call the `slide-detail-planner` agent (subagent_type: `slide-detail-planner`). Pass it:
+8b. **Detail pass.** For each slide, call the `slides-detail-planner` agent (subagent_type: `slides-detail-planner`). Pass it:
     - The full outline from step 8
     - The specific slide number(s) to detail
     - The LaTeX project path (so the agent can read `.tex` files directly)
@@ -342,4 +342,4 @@ Before choosing a theme, check if its fonts are installed (`fc-list` or `ls ~/Li
 - See `CLAUDE.md` for the full component and layout API
 - See `/slides` skill for general slide-building patterns
 - See `/figure` skill for generating raster figures when TikZ cannot be compiled
-- See `/visual-feedback` skill for the verification workflow
+- See `/slides-check` skill for the verification workflow

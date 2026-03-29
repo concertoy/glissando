@@ -1,6 +1,6 @@
 ---
-name: slides-inv
-description: "Reverse-engineer a PPTX back into glissando slides.ts. Use when the user says '/slides-inv', 'reverse a pptx', 'extract slides from pptx', or 'pptx to ts'."
+name: slides-from-pptx
+description: "Reverse-engineer a PPTX back into glissando slides.ts. Use when the user says '/slides-from-pptx', 'reverse a pptx', 'extract slides from pptx', or 'pptx to ts'."
 allowed-tools: Read, Write, Bash, Glob
 argument-hint: "<path to .pptx file>"
 ---

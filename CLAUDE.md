@@ -7,7 +7,7 @@ Component-based slide decks for coding agents. Write TypeScript, get native edit
 ```bash
 npm install
 ./build.sh examples/mimic-claude-macos           # → output.pptx
-./build.sh examples/ai-tooling-tutorial           # → output.pptx
+./build.sh examples/elegant-bw-demo              # → output.pptx
 ```
 
 ## Build, Test, and Development Commands
@@ -25,17 +25,17 @@ npm install
 |---|---|---|
 | `/slides` | "create a deck", "make slides about" | Create a deck from natural language. Delegates content planning to an Opus sub-agent. |
 | `/slides-from-latex` | "convert this paper", "arXiv to slides" | Convert LaTeX paper to deck. Handles macros, TikZ, theorems, display math. |
-| `/slides-dev` | "create a theme", "design a theme" | Create a new visual theme from a description. |
-| `/slides-inv` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
-| `/visual-feedback` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
+| `/slides-theme` | "create a theme", "design a theme" | Create a new visual theme from a description. |
+| `/slides-from-pptx` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
+| `/slides-check` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
 | `/figure` | "generate a figure", "architecture diagram" | AI-generated raster figure (fallback when diagram components can't express it). |
 
 ### Planning Agents
 
 Both `/slides` and `/slides-from-latex` use a two-pass planning protocol with two Opus sub-agents:
 
-1. **Outline pass** — `slides-content-planner` reads source material and produces a numbered outline — one line per slide with type tags (e.g., `[content,equation]`), title, and purpose. This preserves narrative coherence.
-2. **Detail pass** — `slide-detail-planner` is called once per slide (or small batch) with the full outline for context. It reads source material directly and produces rich markdown content for each assigned slide. Complex slides (`[equation]`, `[code]`, `[diagram]`, mixed tags) are detailed alone; simple slides (`[title]`, `[section]`) are batched.
+1. **Outline pass** — `slides-outline-planner` reads source material and produces a numbered outline — one line per slide with type tags (e.g., `[content,equation]`), title, and purpose. This preserves narrative coherence.
+2. **Detail pass** — `slides-detail-planner` is called once per slide (or small batch) with the full outline for context. It reads source material directly and produces rich markdown content for each assigned slide. Complex slides (`[equation]`, `[code]`, `[diagram]`, mixed tags) are detailed alone; simple slides (`[title]`, `[section]`) are batched.
 
 Both agents operate in isolated context (no access to `examples/` or `src/`). The skill assembles all detail outputs into a single markdown plan. The implementer faithfully translates it into themed TypeScript without thinning or rewriting content.
 
@@ -84,15 +84,8 @@ src/
       components.ts         Re-exports claude-doc component factory
       layouts.ts            Generous whitespace, centered layouts
 examples/
-  ai-tooling-tutorial/      Real-world deck (default preset)
-  basic-white-demo/         Basic White theme demo (Keynote-inspired)
-  elegant-bw-demo/          Elegant BW theme demo (monochromatic minimalism)
-  emoji-showcase/           Emoji styles and inline syntax demo
-  mimic-claude-macos/       macOS native fonts (Iowan Old Style + Avenir Next)
-  mimic-claude-google-fonts/  Google Fonts (Libre Baskerville + Space Grotesk)
-  on-device-ai/             Full deck with diagrams and equations
-  memorization-diffusion/   LaTeX paper conversion example
-  slides-from-tex/          arXiv paper source for /slides-from-latex testing
+  elegant-bw-demo/          Elegant BW theme — rich real-world deck
+  mimic-claude-macos/       Claude Doc + macOS native fonts — component catalog
 build.sh                    Universal build: ./build.sh <path>
 runner.ts                   Build runner (called by build.sh)
 scripts/
@@ -100,22 +93,22 @@ scripts/
   install-fonts.ps1         Font installer (Windows)
   render-slide.ts           Render PPTX slides to PNG for visual verification
   generate-figure.ts        AI figure generation (used by /figure skill)
-  pptx-to-ts.ts             Reverse-engineer PPTX to slides.ts (used by /slides-inv)
+  pptx-to-ts.ts             Reverse-engineer PPTX to slides.ts (used by /slides-from-pptx)
   init.ts                   CLI init wizard
   test-examples.ts          Smoke-test all example decks
 .claude/
   skills/
     slides/                 /slides — create deck from description
     slides-from-latex/      /slides-from-latex — LaTeX paper to deck
-    slides-dev/             /slides-dev — create new themes
-    slides-inv/             /slides-inv — reverse-engineer PPTX
-    visual-feedback/        /visual-feedback — render and diagnose slides
+    slides-theme/           /slides-theme — create new themes
+    slides-from-pptx/       /slides-from-pptx — reverse-engineer PPTX
+    slides-check/           /slides-check — render and diagnose slides
     figure/                 /figure — AI figure generation
   agents/
-    slides-content-planner.md  Opus sub-agent for deck outline planning
-    slide-detail-planner.md    Opus sub-agent for per-slide content detail
-    pptx-visual-debugger.md    Visual verification agent
-    pptx-component-designer.md Component design agent
+    slides-outline-planner.md  Opus sub-agent for deck outline planning
+    slides-detail-planner.md   Opus sub-agent for per-slide content detail
+    slides-visual-debugger.md  Visual verification agent
+    slides-component-designer.md Component design agent
 ```
 
 ## Creating a New Deck

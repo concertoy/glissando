@@ -1,6 +1,6 @@
 ---
-name: slides-dev
-description: "Create a new glissando slide theme from a visual description. Use when the user says '/slides-dev', 'create a theme', 'design a new theme', 'make a theme with these colors', or wants to customize the visual style of their decks."
+name: slides-theme
+description: "Create a new glissando slide theme from a visual description. Use when the user says '/slides-theme', 'create a theme', 'design a new theme', 'make a theme with these colors', or wants to customize the visual style of their decks."
 allowed-tools: Read, Write, Bash, Glob, WebFetch
 argument-hint: "<description of desired theme style>"
 ---

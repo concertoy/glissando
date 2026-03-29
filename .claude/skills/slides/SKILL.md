@@ -17,13 +17,13 @@ Create a glissando slide deck based on the user's request: $ARGUMENTS
    - `basicWhite` (clean white) — Helvetica Neue + Menlo, **no install needed**
    - `claudeDoc` + `macosNative` preset — Iowan Old Style + Avenir Next + Menlo, **no install needed**
    If the needed fonts are missing, either run the installer or fall back to a no-install theme.
-2. **Outline pass.** Delegate to the `slides-content-planner` agent (subagent_type: `slides-content-planner`). Pass it:
+2. **Outline pass.** Delegate to the `slides-outline-planner` agent (subagent_type: `slides-outline-planner`). Pass it:
    - The user's deck description / topic
    - Target slide count (8–12 for general decks)
    - If the user provided a GitHub repo or codebase path, pass that path so the agent can read the source directly
    The agent returns a numbered outline — one line per slide with type tags, title, and purpose.
 3. **Review the outline.** Check narrative arc, pacing, and slide count. Adjust if needed (re-call the planner with feedback).
-4. **Detail pass.** For each slide, call the `slide-detail-planner` agent (subagent_type: `slide-detail-planner`). Pass it:
+4. **Detail pass.** For each slide, call the `slides-detail-planner` agent (subagent_type: `slides-detail-planner`). Pass it:
    - The full outline from step 2
    - The specific slide number(s) to detail
    - Source material path/description so the agent can read it directly

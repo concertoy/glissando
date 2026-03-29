@@ -7,7 +7,7 @@
  * Build:  ./build.sh examples/mimic-claude-macos
  */
 
-import { Deck, columns, rows, below } from "../../src/index.js";
+import { Deck, columns, rows, below, inset } from "../../src/index.js";
 import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";
 import { macosNative } from "../../src/themes/claude-doc/presets.js";
 
@@ -358,6 +358,72 @@ export default async function build() {
     await co(slide, { variant: "info", ...tr, body: "Top-right: combine rows + columns for any grid arrangement." });
     await co(slide, { variant: "warning", ...bl, body: "Bottom-left: each cell is a Rect with { x, y, w, h } — spread into any component." });
     await co(slide, { variant: "accent", ...br, bullets: ["below() for vertical stacking", "columns() for side-by-side", "rows() for row-based grids", "inset() to add padding"] });
+  }
+
+  // ── Table layout ──
+  deck.table({
+    title: "Font Preset Comparison",
+    headers: ["Preset", "Headings", "Body", "Code"],
+    rows: [
+      ["default", "DM Serif Display", "Inter", "JetBrains Mono"],
+      ["macosNative", "Iowan Old Style", "Avenir Next", "Menlo"],
+      ["googleFonts", "Libre Baskerville", "Space Grotesk", "JetBrains Mono"],
+    ],
+  });
+
+  // ── twoColumn layout ──
+  deck.twoColumn({
+    title: "Layouts vs Components",
+    leftTitle: "Layouts",
+    rightTitle: "Components",
+    left: [
+      "One function call per slide",
+      "Pre-designed arrangements",
+      "title, content, code, quote, table",
+    ],
+    right: [
+      "Place on blank() slides",
+      "Full position control",
+      "bulletList, calloutBlock, diagramBox...",
+    ],
+  });
+
+  // ── numberedList ──
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, numberedList: nl } = deck.components;
+    const area = deck.contentArea();
+    hd(slide, { text: "Numbered List", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+    nl(slide, {
+      items: [
+        "Pick a theme — claudeDoc, basicWhite, or elegantBw",
+        "Write slides.ts using layouts and components",
+        "Build with ./build.sh to generate native PPTX",
+        "Verify with render-slide.ts for pixel-perfect output",
+      ],
+      ...area,
+    });
+  }
+
+  // ── inset() helper demo ──
+  {
+    const slide = deck.blank({ bg: "primary" });
+    const { heading: hd, accentBar: bar, textBlock: tb } = deck.components;
+    const area = deck.contentArea();
+    hd(slide, { text: "Inset Helper", x: area.x, y: area.y - 1.15, w: area.w });
+    bar(slide, { x: area.x, y: area.y - 0.35, w: 1.5 });
+    const padded = inset(area, 0.3);
+    tb(slide, {
+      ...padded,
+      title: "Padded Region",
+      body: "inset(rect, 0.3) shrinks all four sides by 0.3 inches. Use CSS-style args: inset(rect, top, right, bottom, left) for asymmetric padding.",
+      bullets: [
+        "Shrink any Rect uniformly or per-side",
+        "Chain with columns(), rows(), below()",
+        "Keeps layout math clean and readable",
+      ],
+    });
   }
 
   deck.title({

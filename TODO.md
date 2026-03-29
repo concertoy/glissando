@@ -1,64 +1,22 @@
 # TODO
 
-## CLI Setup Wizard (`npx glissando init`)
+## Near-term (cleanup)
 
-Interactive CLI that configures AI provider credentials on first use.
+- [ ] Add `npm run check` — wire up `tsc --noEmit` in package.json scripts for CI readiness.
+- [ ] Move `runner.ts` to `scripts/` — currently at project root, inconsistent with other scripts.
 
-### User experience
+## Medium-term (features)
 
-```
-npx glissando init
+- [ ] **Speaker notes** — add optional `notes?: string` to every layout method and a `speakerNote(slide, text)` component. pptxgenjs supports `slide.addNotes()`.
+- [ ] **Slide numbering / footers** — a `Deck`-level option that auto-adds page numbers and optional footer text to every slide.
+- [ ] **Themed image component** — currently only `deck.image()` layout exists. Add an `image(slide, { path, x, y, w, h, caption?, border? })` component for use on `blank()` slides.
+- [ ] **Font presets for other themes** — `basic-white` and `elegant-bw` have no presets system. Add `presets.ts` for each (e.g., serif/sans variants).
+- [ ] **Animation / build reveals** — pptxgenjs supports basic animations. Add `appear: "fadeIn"` or `build: true` to bullet lists for step-by-step reveals.
 
-Welcome to glissando!
+## Longer-term (quality & ecosystem)
 
-Select AI provider:
-  1. Google (Gemini)
-  2. OpenRouter
-  3. Poe
-> 1
-
-Google API key: sk-...
-Model [gemini-2.5-flash]:
-
-Config saved to ~/.glissando/config.json
-API key saved to ~/.glissando/.env
-```
-
-### File layout
-
-Both files in `~/.glissando/` (user home, never in repo):
-
-**`~/.glissando/config.json`** — no secrets, safe to read:
-```json
-{
-  "provider": "google",
-  "model": "gemini-2.5-flash",
-  "url": "https://generativelanguage.googleapis.com/v1beta"
-}
-```
-
-**`~/.glissando/.env`** — secrets only:
-```
-NANO_BANANA_API_KEY=sk-...
-```
-
-### Implementation
-
-- `scripts/init.ts` — interactive prompts using Node built-in `readline` (no deps)
-- Add to `package.json`:
-  ```json
-  {
-    "bin": { "glissando": "./bin/cli.ts" },
-    "scripts": { "init": "npx tsx scripts/init.ts" }
-  }
-  ```
-- Library loads config from `~/.glissando/` at runtime
-- Skill reads provider/model/url from config, resolves API key from `.env`
-
-### Provider presets
-
-| Provider | Default URL | Default Model |
-|---|---|---|
-| Google | `https://generativelanguage.googleapis.com/v1beta` | `gemini-2.5-flash` |
-| OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-4` |
-| Poe | `https://api.poe.com/v1` | `Claude-3.5-Sonnet` |
+- [ ] **Unit test suite** — currently only smoke tests. Add vitest with tests for component Rect returns, layout helpers, equation rendering, connector geometry.
+- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples. Each component and layout should have a copy-pasteable example.
+- [ ] **Theme development guide** — document how to create a custom theme from scratch (config -> components -> layouts -> index.ts).
+- [ ] **Complete `pptx-to-ts.ts`** — the reverse-engineering script (`/slides-from-pptx`) has 21KB of XML parsing utilities but no clean exported main. Finish and document it.
+- [ ] **Accessibility** — add alt text helpers for images and equations, semantic slide structure metadata.

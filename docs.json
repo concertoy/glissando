@@ -1,14 +1,14 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "glissando",
-  "description": "Component-based slide decks with coding agents. Write TypeScript, get native editable PPTX.",
+  "description": "Component-based slide decks for coding agents. Write TypeScript, get native editable PPTX.",
   "theme": "mint",
   "icons": {
     "library": "lucide"
   },
   "logo": {
-    "light": "/assets/light.png",
-    "dark": "/assets/badge.png"
+    "light": "/docs/assets/light.png",
+    "dark": "/docs/assets/badge.png"
   },
   "fonts": {
     "heading": {
@@ -18,7 +18,7 @@
       "family": "Inter"
     }
   },
-  "favicon": "/assets/favicon.png",
+  "favicon": "/docs/assets/favicon.png",
   "rounded": "group",
   "colors": {
     "primary": "#2A9D8F",
@@ -54,15 +54,15 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": ["index", "getting-started"]
+            "pages": ["docs/index", "docs/getting-started"]
           },
           {
             "group": "Guide",
-            "pages": ["guide/creating-decks", "guide/themes", "guide/custom-slides"]
+            "pages": ["docs/guide/creating-decks", "docs/guide/themes", "docs/guide/custom-slides"]
           },
           {
             "group": "API Reference",
-            "pages": ["api/layouts", "api/components", "api/emojis"]
+            "pages": ["docs/api/layouts", "docs/api/components", "docs/api/emojis"]
           }
         ]
       }

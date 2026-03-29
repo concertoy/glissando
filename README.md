@@ -15,35 +15,35 @@
 
 ---
 
+## Getting Started
+
 ```bash
+git clone https://github.com/concertoy/glissando.git
+cd glissando
+npm install
 claude
+```
+
+Then just describe what you want:
+
+```
 /slides a 10-slide pitch deck about on-device AI, with diagrams and code examples
 /slides-from-latex path/to/arxiv-paper/
 /slides-theme a dark theme inspired by Dracula, with purple accents and monospace headings
-/slides-from-pptx reverse-engineer this pptx back into slides.ts
-/slides-check check the slides for layout issues
-/figure generate an architecture diagram for slide 4
 ```
+
+glissando ships with Claude Code skills and planning agents that handle everything — from outlining your narrative to laying out each slide. You provide the topic, it builds the deck.
 
 ## Skills
 
 | Skill | Description |
 |---|---|
-| `/slides` | Create a slide deck from a natural language description. Delegates content planning to an Opus-powered sub-agent, then builds themed PPTX. |
-| `/slides-from-latex` | Convert a LaTeX paper (Overleaf project, arXiv source) into a slide deck. Handles macros, TikZ figures, theorems, and display math. |
-| `/slides-theme` | Design a new visual theme from a description (colors, fonts, spacing). |
-| `/slides-from-pptx` | Reverse-engineer an existing PPTX back into `slides.ts` source code. |
-| `/slides-check` | Render slides to PNG and diagnose layout, styling, or content issues. |
-| `/figure` | Generate a raster figure via AI image generation — fallback for visuals that built-in diagram components can't express. |
-
-### Planning Agents
-
-Both `/slides` and `/slides-from-latex` use a two-pass merge-and-conquer protocol with two Opus sub-agents:
-
-1. **Outline pass** (`slides-outline-planner`) — reads source material and produces a numbered outline with type tags (e.g., `[content,equation]`), preserving narrative arc
-2. **Detail pass** (`slides-detail-planner`) — called per-slide with the full outline for context, reads source material directly, produces rich mixed-content plans for each slide
-
-Both agents read source material directly (repos, `.tex` files, READMEs) in isolated context — they never see existing example decks. The skill assembles all detail outputs and the implementer faithfully translates the assembled plan into themed TypeScript.
+| `/slides` | Create a slide deck from a natural language description |
+| `/slides-from-latex` | Convert a LaTeX paper (Overleaf project, arXiv source) into a slide deck |
+| `/slides-theme` | Design a new visual theme from a description (colors, fonts, spacing) |
+| `/slides-from-pptx` | Reverse-engineer an existing PPTX back into `slides.ts` source code |
+| `/slides-check` | Render slides to PNG and diagnose layout, styling, or content issues |
+| `/figure` | Generate a raster figure via AI image generation |
 
 ## Themes
 

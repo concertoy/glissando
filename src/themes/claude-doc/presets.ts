@@ -12,16 +12,7 @@
  *   claudeDoc.config.sizes = macosNative.sizes;
  */
 
-import type { ThemeFonts, ThemeSizes, CodeStyle } from "../../types.js";
-
-export interface FontPreset {
-  name: string;
-  description: string;
-  installNote: string;
-  fonts: ThemeFonts;
-  sizes: ThemeSizes;
-  codeStyle?: CodeStyle;
-}
+import type { FontPreset } from "../../types.js";
 
 // ---------------------------------------------------------------------------
 // Preset 1: macOS Native

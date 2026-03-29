@@ -158,19 +158,39 @@ export default function build() {
 
 ## Font Presets
 
+Every theme supports font presets via `applyPreset(theme, preset)`. Import `applyPreset` from any theme's `index.js` or from `src/index.js`.
+
+### claude-doc presets
+
 | Preset | Headings | Body | Code | Install |
 |---|---|---|---|---|
-| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `macosNative` | Iowan Old Style | Avenir Next | Menlo | No install needed |
 | `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
 
+### basic-white presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
+| `serifClean` | Georgia | Helvetica Neue | Menlo | No install needed |
+| `googleFonts` | Lato | Lato | Source Code Pro | `./scripts/install-fonts.sh basic-white google-fonts` |
+
+### elegant-bw presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+| `macosNative` | Didot | Avenir Next | Menlo | No install needed |
+| `allSans` | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw all-sans` |
+
 ## Available Themes
 
-| Theme | Style | Headings | Body | Code | Install |
+| Theme | Style | Default Headings | Default Body | Default Code | Install |
 |---|---|---|---|---|---|
-| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
-| `elegantBw` | Monochromatic black/white | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw` |
+| `elegantBw` | Monochromatic black/white | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
 
 ## Slide Numbering, Footers, and Citations
 
@@ -194,6 +214,19 @@ deck.cite("buchanan2025", "carlini2023");
 ```
 
 Citation styles: `"author-year"` (1 → `[Smith, 2023]`, 2 → `[Smith & Jones, 2023]`, 3+ → `[Smith et al., 2023]`) or `"compact"` (first letter of each surname + year → `[BPMDB25]`).
+
+## Build Animations
+
+Add `build: true` to reveal bullets one-by-one on click (works in PowerPoint and Keynote):
+
+```ts
+// Layout-level
+deck.content({ title: "Key Points", bullets: ["A", "B", "C"], build: true });
+
+// Component-level (on blank slides)
+bulletList(slide, { items: ["A", "B", "C"], build: true, ...area });
+numberedList(slide, { items: ["1st", "2nd", "3rd"], build: true, ...area });
+```
 
 ## Available Layouts
 
@@ -222,6 +255,7 @@ Components can be used directly for custom slides via `deck.components`:
 - `codeBlock(slide, { code, x, y, w, h?, language? })` — code panel with syntax highlighting, auto-height
 - `quoteBox(slide, { quote, x, y, w, h, attribution? })` — serif quote with accent bar
 - `table(slide, { headers, rows, x, y, w })` — themed table
+- `image(slide, { path|data, x, y, w, h, caption?, border?, rounding?, sizing? })` — themed image with optional caption and border frame
 - `caption(slide, { text, x, y, w })` — small muted text
 - `calloutBlock(slide, { variant, x, y, w, h?, body?, bullets? })` — round-cornered callout panel (async)
 - `textBlock(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` — icon-free rounded panel with optional title/subtitle

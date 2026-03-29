@@ -2,17 +2,16 @@
 #
 # Install fonts for glissando themes.
 #
-# Font presets:
-#   default       DM Serif Display + Inter + JetBrains Mono (free, Google Fonts)
-#   google-fonts  Libre Baskerville + Space Grotesk + JetBrains Mono (free, Google Fonts)
-#   macos-native  Iowan Old Style + Avenir Next + Menlo (pre-installed on macOS)
-#
 # Usage:
-#   ./scripts/install-fonts.sh                        # install default preset
-#   ./scripts/install-fonts.sh claude-doc default     # same as above
-#   ./scripts/install-fonts.sh claude-doc google-fonts
-#   ./scripts/install-fonts.sh claude-doc macos-native
-#   ./scripts/install-fonts.sh elegant-bw             # Space Grotesk + Inter + JetBrains Mono
+#   ./scripts/install-fonts.sh claude-doc default        # DM Serif Display + Inter + JetBrains Mono
+#   ./scripts/install-fonts.sh claude-doc google-fonts   # Libre Baskerville + Space Grotesk + JetBrains Mono
+#   ./scripts/install-fonts.sh claude-doc macos-native   # Iowan Old Style + Avenir Next + Menlo (no download)
+#   ./scripts/install-fonts.sh basic-white default       # Helvetica Neue + Menlo (no download)
+#   ./scripts/install-fonts.sh basic-white serif-clean   # Georgia + Helvetica Neue + Menlo (no download)
+#   ./scripts/install-fonts.sh basic-white google-fonts  # Lato + Source Code Pro
+#   ./scripts/install-fonts.sh elegant-bw default        # Playfair Display + Inter + JetBrains Mono
+#   ./scripts/install-fonts.sh elegant-bw macos-native   # Didot + Avenir Next + Menlo (no download)
+#   ./scripts/install-fonts.sh elegant-bw all-sans       # Space Grotesk + Inter + JetBrains Mono
 #
 # Supports: macOS, Linux
 
@@ -119,29 +118,22 @@ install_jetbrains_mono() {
 # ===================================================================
 
 case "$THEME-$PRESET" in
-  elegant-bw-*|elegant-bw)
-    # Playfair Display + Space Grotesk + Inter + JetBrains Mono
-    install_google_font "Playfair Display" "Playfair+Display:ital,wght@0,400;0,700;1,400" "PlayfairDisplay"
-    install_google_font "Space Grotesk" "Space+Grotesk:wght@300;400;500;700" "SpaceGrotesk"
-    install_google_font "Inter" "Inter:wght@400;500;600;700" "Inter"
-    install_jetbrains_mono
-    ;;
-
-  *-default|claude-doc-default)
+  # --- claude-doc presets ---
+  claude-doc-default)
     # DM Serif Display + Inter + JetBrains Mono
     install_google_font "DM Serif Display" "DM+Serif+Display:wght@400" "DMSerifDisplay"
     install_google_font "Inter" "Inter:wght@400;500;600;700" "Inter"
     install_jetbrains_mono
     ;;
 
-  google-fonts)
+  claude-doc-google-fonts)
     # Libre Baskerville + Space Grotesk + JetBrains Mono
     install_google_font "Libre Baskerville" "Libre+Baskerville:ital,wght@0,400;0,700;1,400" "LibreBaskerville"
     install_google_font "Space Grotesk" "Space+Grotesk:wght@300;400;500;700" "SpaceGrotesk"
     install_jetbrains_mono
     ;;
 
-  macos-native)
+  claude-doc-macos-native)
     # Iowan Old Style + Avenir Next + Menlo — pre-installed on macOS
     if [ "$OS" != "Darwin" ]; then
       echo "[!] Warning: macos-native preset uses fonts that ship with macOS."
@@ -153,14 +145,59 @@ case "$THEME-$PRESET" in
     echo "[✓] Menlo — ships with macOS"
     ;;
 
+  # --- basic-white presets ---
+  basic-white-default|basic-white-serif-clean)
+    # Helvetica Neue + Georgia + Menlo — pre-installed on macOS
+    if [ "$OS" != "Darwin" ]; then
+      echo "[!] Warning: basic-white default/serif-clean presets use fonts that ship with macOS."
+      echo "    On Linux/Windows, these fonts may not be available."
+      echo ""
+    fi
+    echo "[✓] Helvetica Neue — ships with macOS"
+    echo "[✓] Georgia — ships with macOS/Windows/Linux"
+    echo "[✓] Menlo — ships with macOS"
+    ;;
+
+  basic-white-google-fonts)
+    # Lato + Source Code Pro
+    install_google_font "Lato" "Lato:wght@300;400;700;900" "Lato"
+    install_google_font "Source Code Pro" "Source+Code+Pro:wght@400;500;600" "SourceCodePro"
+    ;;
+
+  # --- elegant-bw presets ---
+  elegant-bw-default|elegant-bw-all-sans)
+    # Playfair Display + Space Grotesk + Inter + JetBrains Mono
+    install_google_font "Playfair Display" "Playfair+Display:ital,wght@0,400;0,700;1,400" "PlayfairDisplay"
+    install_google_font "Space Grotesk" "Space+Grotesk:wght@300;400;500;700" "SpaceGrotesk"
+    install_google_font "Inter" "Inter:wght@400;500;600;700" "Inter"
+    install_jetbrains_mono
+    ;;
+
+  elegant-bw-macos-native)
+    # Didot + Avenir Next + Menlo — pre-installed on macOS
+    if [ "$OS" != "Darwin" ]; then
+      echo "[!] Warning: macos-native preset uses fonts that ship with macOS."
+      echo "    On Linux/Windows, these fonts may not be available."
+      echo ""
+    fi
+    echo "[✓] Didot — ships with macOS"
+    echo "[✓] Avenir Next — ships with macOS"
+    echo "[✓] Menlo — ships with macOS"
+    ;;
+
   *)
-    echo "Error: Unknown preset '$PRESET'"
+    echo "Error: Unknown theme/preset '$THEME $PRESET'"
     echo ""
     echo "Available themes/presets:"
     echo "  claude-doc default       DM Serif Display + Inter + JetBrains Mono"
     echo "  claude-doc google-fonts  Libre Baskerville + Space Grotesk + JetBrains Mono"
     echo "  claude-doc macos-native  Iowan Old Style + Avenir Next + Menlo"
-    echo "  elegant-bw               Space Grotesk + Inter + JetBrains Mono"
+    echo "  basic-white default      Helvetica Neue + Menlo (macOS, no install)"
+    echo "  basic-white serif-clean  Georgia + Helvetica Neue + Menlo (no install)"
+    echo "  basic-white google-fonts Lato + Source Code Pro"
+    echo "  elegant-bw default       Playfair Display + Inter + JetBrains Mono"
+    echo "  elegant-bw macos-native  Didot + Avenir Next + Menlo (macOS, no install)"
+    echo "  elegant-bw all-sans      Space Grotesk + Inter + JetBrains Mono"
     exit 1
     ;;
 esac
@@ -177,25 +214,47 @@ echo "=== Done ==="
 echo ""
 echo "To use this preset in your slides, add to slides.ts:"
 echo ""
-case "$THEME" in
-  elegant-bw)
+case "$THEME-$PRESET" in
+  claude-doc-default)
+    echo '  import { claudeDoc } from "../../src/themes/claude-doc/index.js";'
+    echo '  const deck = new Deck(claudeDoc);'
+    ;;
+  claude-doc-google-fonts)
+    echo '  import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";'
+    echo '  import { googleFonts } from "../../src/themes/claude-doc/presets.js";'
+    echo '  const deck = new Deck(applyPreset(claudeDoc, googleFonts));'
+    ;;
+  claude-doc-macos-native)
+    echo '  import { claudeDoc, applyPreset } from "../../src/themes/claude-doc/index.js";'
+    echo '  import { macosNative } from "../../src/themes/claude-doc/presets.js";'
+    echo '  const deck = new Deck(applyPreset(claudeDoc, macosNative));'
+    ;;
+  basic-white-default)
+    echo '  import { basicWhite } from "../../src/themes/basic-white/index.js";'
+    echo '  const deck = new Deck(basicWhite);'
+    ;;
+  basic-white-serif-clean)
+    echo '  import { basicWhite, applyPreset } from "../../src/themes/basic-white/index.js";'
+    echo '  import { serifClean } from "../../src/themes/basic-white/presets.js";'
+    echo '  const deck = new Deck(applyPreset(basicWhite, serifClean));'
+    ;;
+  basic-white-google-fonts)
+    echo '  import { basicWhite, applyPreset } from "../../src/themes/basic-white/index.js";'
+    echo '  import { googleFonts } from "../../src/themes/basic-white/presets.js";'
+    echo '  const deck = new Deck(applyPreset(basicWhite, googleFonts));'
+    ;;
+  elegant-bw-default)
     echo '  import { elegantBw } from "../../src/themes/elegant-bw/index.js";'
     echo '  const deck = new Deck(elegantBw);'
     ;;
-  *)
-    case "$PRESET" in
-      default)
-        echo '  import { claudeDoc } from "../../src/themes/claude-doc/index.js";'
-        echo '  const deck = new Deck(claudeDoc);'
-        ;;
-      google-fonts)
-        echo '  import { claudeDoc, applyPreset, googleFonts } from "../../src/themes/claude-doc/index.js";'
-        echo '  const deck = new Deck(applyPreset(claudeDoc, googleFonts));'
-        ;;
-      macos-native)
-        echo '  import { claudeDoc, applyPreset, macosNative } from "../../src/themes/claude-doc/index.js";'
-        echo '  const deck = new Deck(applyPreset(claudeDoc, macosNative));'
-        ;;
-    esac
+  elegant-bw-macos-native)
+    echo '  import { elegantBw, applyPreset } from "../../src/themes/elegant-bw/index.js";'
+    echo '  import { macosNative } from "../../src/themes/elegant-bw/presets.js";'
+    echo '  const deck = new Deck(applyPreset(elegantBw, macosNative));'
+    ;;
+  elegant-bw-all-sans)
+    echo '  import { elegantBw, applyPreset } from "../../src/themes/elegant-bw/index.js";'
+    echo '  import { allSans } from "../../src/themes/elegant-bw/presets.js";'
+    echo '  const deck = new Deck(applyPreset(elegantBw, allSans));'
     ;;
 esac

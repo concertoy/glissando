@@ -8,7 +8,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import JSZip from "jszip";
-import type { ConnectorDef, EmojiDef, FooterDef, ThemeSpacing } from "./types.js";
+import type { ConnectorDef, EmojiDef, FooterDef, AnimationDef, ThemeSpacing } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -22,6 +22,7 @@ export interface PatchOptions {
   footerColor?: string;    // hex WITHOUT #
   connectorDefs: ConnectorDef[];
   emojiDefs?: EmojiDef[];
+  animationDefs?: AnimationDef[];
   footerDefs?: FooterDef[];
 }
 
@@ -75,6 +76,11 @@ export async function patchPptx(pptxPath: string, opts: PatchOptions): Promise<v
   // --- Patch emoji bullets (<a:buChar> → <a:buBlip>) ---
   if (opts.emojiDefs && opts.emojiDefs.length > 0) {
     await patchEmojiBullets(zip, opts.emojiDefs);
+  }
+
+  // --- Inject build animations (bullet-by-bullet reveal) ---
+  if (opts.animationDefs && opts.animationDefs.length > 0) {
+    await injectAnimations(zip, opts.animationDefs);
   }
 
   // --- Inject footer text / slide numbers / citations ---
@@ -814,4 +820,123 @@ function footerTextBox(
 
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ---------------------------------------------------------------------------
+// Build animation injection (bullet-by-bullet reveal on click)
+// ---------------------------------------------------------------------------
+
+async function injectAnimations(
+  zip: JSZip,
+  animationDefs: AnimationDef[],
+): Promise<void> {
+  // Search all slides to resolve objectName → (slideIndex, shapeId)
+  const slideFiles: string[] = [];
+  zip.forEach((path) => {
+    if (/^ppt\/slides\/slide\d+\.xml$/.test(path)) slideFiles.push(path);
+  });
+  slideFiles.sort();
+
+  for (const def of animationDefs) {
+    // Find the slide containing this objectName
+    for (let si = 0; si < slideFiles.length; si++) {
+      const slidePath = slideFiles[si];
+      const entry = zip.file(slidePath);
+      if (!entry) continue;
+      let xml = await entry.async("string");
+
+      // Look for the shape with this objectName
+      const namePattern = new RegExp(`<p:cNvPr id="(\\d+)" name="${def.objectName}"`);
+      const match = namePattern.exec(xml);
+      if (!match) continue;
+
+      const spid = match[1];
+
+      // Build <p:timing> XML for bullet-by-bullet appear on click
+      const timingXml = buildBulletAnimationTiming(spid, def.paragraphCount);
+
+      // Inject before </p:sld> — the timing section goes after </p:cSld>
+      if (xml.includes("<p:timing>")) {
+        // Timing already exists — inject our seq into the existing childTnLst
+        // For simplicity, replace existing timing entirely
+        xml = xml.replace(/<p:timing>[\s\S]*<\/p:timing>/, timingXml);
+      } else {
+        // No existing timing — inject before </p:sld>
+        xml = xml.replace("</p:sld>", timingXml + "</p:sld>");
+      }
+
+      zip.file(slidePath, xml);
+      break; // found the slide, move to next def
+    }
+  }
+}
+
+function buildBulletAnimationTiming(spid: string, paragraphCount: number): string {
+  let nextId = 1;
+  const id = () => nextId++;
+
+  // Build one <p:par> per paragraph (each triggered by next click)
+  const bulletPars: string[] = [];
+  for (let p = 0; p < paragraphCount; p++) {
+    const parId = id();
+    const innerParId = id();
+    const setId = id();
+    const bhvrId = id();
+
+    bulletPars.push(
+      `<p:par>` +
+      `<p:cTn id="${parId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst>` +
+      `<p:par>` +
+      `<p:cTn id="${innerParId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst>` +
+      `<p:set>` +
+      `<p:cBhvr>` +
+      `<p:cTn id="${bhvrId}" dur="1" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `</p:cTn>` +
+      `<p:tgtEl>` +
+      `<p:spTgt spid="${spid}">` +
+      `<p:txEl><p:pRg st="${p}" end="${p}"/></p:txEl>` +
+      `</p:spTgt>` +
+      `</p:tgtEl>` +
+      `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+      `</p:cBhvr>` +
+      `<p:to><p:strVal val="visible"/></p:to>` +
+      `</p:set>` +
+      `</p:childTnLst>` +
+      `</p:cTn>` +
+      `</p:par>` +
+      `</p:childTnLst>` +
+      `</p:cTn>` +
+      `</p:par>`,
+    );
+  }
+
+  const rootId = id();
+  const seqId = id();
+
+  return (
+    `<p:timing>` +
+    `<p:tnLst>` +
+    `<p:par>` +
+    `<p:cTn id="${rootId}" dur="indefinite" restart="never" nodeType="tmRoot">` +
+    `<p:childTnLst>` +
+    `<p:seq concurrent="1" nextAc="seek">` +
+    `<p:cTn id="${seqId}" dur="indefinite" nodeType="mainSeq">` +
+    `<p:childTnLst>` +
+    bulletPars.join("") +
+    `</p:childTnLst>` +
+    `</p:cTn>` +
+    `<p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>` +
+    `<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst>` +
+    `</p:seq>` +
+    `</p:childTnLst>` +
+    `</p:cTn>` +
+    `</p:par>` +
+    `</p:tnLst>` +
+    `</p:timing>`
+  );
 }

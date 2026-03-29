@@ -151,6 +151,7 @@ function content(
     y: bulletTop,
     w: contentW - 0.15,
     h: sp.slideHeight - bulletTop - sp.marginBottom,
+    build: props.build,
   });
   return slide;
 }

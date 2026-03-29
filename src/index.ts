@@ -15,6 +15,7 @@ import PptxGenJS from "pptxgenjs";
 import { patchPptx } from "./pptx-patch.js";
 import type {
   Theme,
+  FontPreset,
   TitleLayoutProps,
   SectionLayoutProps,
   ContentLayoutProps,
@@ -32,6 +33,7 @@ import type {
   FooterConfig,
   FooterDef,
   BibEntry,
+  AnimationDef,
 } from "./types.js";
 import { renderEmoji } from "./emoji.js";
 import { formatCitations } from "./citation.js";
@@ -40,9 +42,22 @@ import {
   contentAreaBelow as _contentAreaBelow,
 } from "./layout.js";
 
-export type { Theme, ShapeRef, ConnectionPoint, Rect } from "./types.js";
+export type { Theme, ShapeRef, ConnectionPoint, Rect, FontPreset } from "./types.js";
 export { contentArea, contentAreaBelow, columns, rows, below, inset } from "./layout.js";
 export { expandTextWithMath } from "./inline-math.js";
+
+/** Create a new theme with a font preset applied (immutable — does not modify original). */
+export function applyPreset(theme: Theme, preset: FontPreset): Theme {
+  return {
+    ...theme,
+    config: {
+      ...theme.config,
+      fonts: { ...preset.fonts },
+      sizes: { ...preset.sizes },
+      ...(preset.codeStyle ? { codeStyle: { ...preset.codeStyle } } : {}),
+    },
+  };
+}
 
 /** Add speaker notes to a slide. Convenience wrapper for blank() slides. */
 export function speakerNote(slide: PptxGenJS.Slide, text: string): void {
@@ -55,6 +70,7 @@ export class Deck {
   private boundComponents: ReturnType<Theme["createComponents"]>;
   private _connectorDefs: ConnectorDef[] = [];
   private _emojiDefs: EmojiDef[] = [];
+  private _animationDefs: AnimationDef[] = [];
   private _pending: PendingWork = { promises: [] };
   private _slideCount = 0;
   private _footerConfig: FooterConfig | null = null;
@@ -67,7 +83,7 @@ export class Deck {
 
     // Create components bound to this theme's config (respects presets)
     // Pass emoji defs accumulator and pending work tracker so components can queue async work
-    this.boundComponents = theme.createComponents(theme.config, this._emojiDefs, this._pending);
+    this.boundComponents = theme.createComponents(theme.config, this._emojiDefs, this._pending, this._animationDefs);
 
     const { slideWidth, slideHeight } = theme.config.spacing;
     this.pres.defineLayout({ name: "CUSTOM", width: slideWidth, height: slideHeight });
@@ -273,6 +289,7 @@ export class Deck {
       footerColor: this.theme.config.colors.textMuted,
       connectorDefs: this._connectorDefs,
       emojiDefs: this._emojiDefs,
+      animationDefs: this._animationDefs,
       footerDefs,
     });
   }

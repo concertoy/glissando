@@ -9,9 +9,9 @@
 
 - [x] **Speaker notes** — add optional `notes?: string` to every layout method and a `speakerNote(slide, text)` component. pptxgenjs supports `slide.addNotes()`.
 - [x] **Slide numbering / footers / citations** — `deck.footer()`, `deck.bib()`, `deck.cite()` with author-year and compact citation styles.
-- [ ] **Themed image component** — currently only `deck.image()` layout exists. Add an `image(slide, { path, x, y, w, h, caption?, border? })` component for use on `blank()` slides.
-- [ ] **Font presets for other themes** — `basic-white` and `elegant-bw` have no presets system. Add `presets.ts` for each (e.g., serif/sans variants).
-- [ ] **Animation / build reveals** — pptxgenjs supports basic animations. Add `appear: "fadeIn"` or `build: true` to bullet lists for step-by-step reveals.
+- [x] **Themed image component** — `image(slide, { path|data, x, y, w, h, caption?, border?, rounding?, sizing? })` component for `blank()` slides.
+- [x] **Font presets for other themes** — `basic-white` and `elegant-bw` have no presets system. Add `presets.ts` for each (e.g., serif/sans variants).
+- [x] **Animation / build reveals** — `build: true` on `bulletList`, `numberedList`, and `deck.content()` for bullet-by-bullet reveal on click.
 
 ## Longer-term (quality & ecosystem)
 

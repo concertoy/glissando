@@ -28,9 +28,11 @@ import type {
   ArrowProps,
   HookArrowProps,
   ContainerProps,
+  ImageComponentProps,
   EquationProps,
   EmojiProps,
   EmojiDef,
+  AnimationDef,
   PendingWork,
 } from "../../types.js";
 import { highlightCode } from "../../highlight.js";
@@ -39,7 +41,7 @@ import { renderEquation } from "../../equation.js";
 import { renderEmoji, extractLeadingEmoji } from "../../emoji.js";
 import { expandTextWithMath } from "../../inline-math.js";
 
-export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork): ThemeComponents => {
+export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork, animationDefs?: AnimationDef[]): ThemeComponents => {
   const { colors: c, fonts: f, sizes: s } = cfg;
 
   // --- Accent bar ---
@@ -155,7 +157,8 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     });
 
     const hasEmojiBullets = emojiIndices.length > 0;
-    const objName = hasEmojiBullets ? `bl-${bulletListCounter++}` : undefined;
+    const needsName = hasEmojiBullets || props.build;
+    const objName = needsName ? `bl-${bulletListCounter++}` : undefined;
 
     const baseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
     const textRows: PptxGenJS.TextProps[] = processedItems.flatMap((item): PptxGenJS.TextProps[] => {
@@ -203,6 +206,16 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       });
       if (pending) pending.promises.push(emojiPromise);
     }
+
+    // Queue build animation def
+    if (props.build && animationDefs && objName) {
+      animationDefs.push({
+        slideIndex: -1,
+        objectName: objName,
+        paragraphCount: props.items.length,
+      });
+    }
+
     return { x: props.x, y: props.y, w: props.w, h };
   }
 
@@ -210,6 +223,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   function numberedList(slide: PptxGenJS.Slide, props: NumberedListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
     const h = props.h ?? 4.5;
+    const nlObjName = props.build ? `nl-${bulletListCounter++}` : undefined;
     const numBaseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
     const textRows: PptxGenJS.TextProps[] = props.items.flatMap((item): PptxGenJS.TextProps[] => {
       const mathRuns = expandTextWithMath(item, numBaseOpts);
@@ -239,7 +253,17 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       x: props.x, y: props.y, w: props.w, h,
       valign: "top",
       lineSpacingMultiple: 1.2,
+      objectName: nlObjName,
     });
+
+    if (props.build && animationDefs && nlObjName) {
+      animationDefs.push({
+        slideIndex: -1,
+        objectName: nlObjName,
+        paragraphCount: props.items.length,
+      });
+    }
+
     return { x: props.x, y: props.y, w: props.w, h };
   }
 
@@ -443,6 +467,50 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Caption ---
+  // --- Image — themed image with optional caption and border ---
+
+  function image(slide: PptxGenJS.Slide, props: ImageComponentProps): Rect {
+    const borderPad = props.border ? 0.06 : 0;
+    const imgX = props.x + borderPad;
+    const imgY = props.y + borderPad;
+    const imgW = props.w - borderPad * 2;
+    const imgH = props.h - borderPad * 2;
+
+    // Border: rect frame behind the image
+    if (props.border) {
+      const borderColor = typeof props.border === "string" ? props.border : c.accent;
+      slide.addShape("rect", {
+        x: props.x, y: props.y, w: props.w, h: props.h,
+        fill: { color: "FFFFFF" },
+        line: { color: borderColor, width: 1.5 },
+        rectRadius: props.rounding ? 0.08 : 0,
+      } as any);
+    }
+
+    const imgOpts: Record<string, any> = {
+      x: imgX, y: imgY, w: imgW, h: imgH,
+      sizing: { type: props.sizing ?? "contain", w: imgW, h: imgH },
+    };
+    if (props.path) imgOpts.path = props.path;
+    if (props.data) imgOpts.data = props.data;
+    if (props.rounding && !props.border) imgOpts.rounding = true;
+    slide.addImage(imgOpts);
+
+    let totalH = props.h;
+    if (props.caption) {
+      caption(slide, {
+        text: props.caption,
+        x: props.x,
+        y: props.y + props.h + 0.05,
+        w: props.w,
+      });
+      totalH += 0.05 + 0.35;
+    }
+    return { x: props.x, y: props.y, w: props.w, h: totalH };
+  }
+
+  // --- Caption ---
+
   function caption(slide: PptxGenJS.Slide, props: CaptionProps): Rect {
     const h = 0.35;
     slide.addText(props.text, {
@@ -887,5 +955,5 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     return { x: props.x, y: props.y, w, h };
   }
 
-  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
+  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, image, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
 };

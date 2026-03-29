@@ -145,6 +145,13 @@ export interface FooterDef {
   citations?: string;
 }
 
+/** Internal: per-shape animation data passed to pptx-patch. */
+export interface AnimationDef {
+  slideIndex: number;      // -1 = resolve by objectName search (like emoji defs)
+  objectName: string;      // shape objectName for spid lookup
+  paragraphCount: number;  // number of paragraphs to animate one-by-one
+}
+
 // ---------------------------------------------------------------------------
 // Component props — what you pass to each pre-designed component
 // ---------------------------------------------------------------------------
@@ -186,6 +193,7 @@ export interface BulletListProps {
   w: number;
   h?: number;
   fontSize?: number;
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
 export interface NumberedListProps {
@@ -195,6 +203,7 @@ export interface NumberedListProps {
   w: number;
   h?: number;
   fontSize?: number;
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
 export interface CodeBlockProps {
@@ -357,6 +366,19 @@ export interface ContainerProps {
 // Equation props
 // ---------------------------------------------------------------------------
 
+export interface ImageComponentProps {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  path?: string;                        // file path or URL
+  data?: string;                        // base64 data URI (alternative to path)
+  caption?: string;                     // optional text below image
+  border?: boolean | string;            // true = theme accent, string = hex color
+  rounding?: boolean;                   // rounded corners
+  sizing?: "contain" | "cover" | "crop"; // default: "contain"
+}
+
 export interface EquationProps {
   latex: string;
   x: number;
@@ -387,6 +409,7 @@ export interface ThemeComponents {
   arrow: (slide: PptxGenJS.Slide, props: ArrowProps) => void;
   hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;
   container: (slide: PptxGenJS.Slide, props: ContainerProps) => ShapeRef;
+  image: (slide: PptxGenJS.Slide, props: ImageComponentProps) => Rect;
   equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<Rect>;
   emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<Rect>;
 }
@@ -415,6 +438,7 @@ export interface ContentLayoutProps extends BaseLayoutProps {
   title: string;
   subtitle?: string;
   bullets: string[];
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
 export interface TwoColumnLayoutProps extends BaseLayoutProps {
@@ -475,6 +499,19 @@ export interface ThemeLayouts {
 }
 
 // ---------------------------------------------------------------------------
+// Font presets — swappable typography for a theme
+// ---------------------------------------------------------------------------
+
+export interface FontPreset {
+  name: string;
+  description: string;
+  installNote: string;
+  fonts: ThemeFonts;
+  sizes: ThemeSizes;
+  codeStyle?: CodeStyle;
+}
+
+// ---------------------------------------------------------------------------
 // Theme — the full package
 // ---------------------------------------------------------------------------
 
@@ -484,7 +521,7 @@ export interface PendingWork {
 }
 
 /** Factory that creates components bound to a specific config. */
-export type ComponentFactory = (config: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork) => ThemeComponents;
+export type ComponentFactory = (config: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork, animationDefs?: AnimationDef[]) => ThemeComponents;
 
 export interface Theme {
   config: ThemeConfig;

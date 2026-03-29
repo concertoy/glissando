@@ -39,7 +39,7 @@ export default async function build() {
   // ── 2. Section ──
   deck.section({ title: "The Problem", subtitle: "AI sees pixels, not space" });
 
-  // ── 3. Content with emoji bullets ──
+  // ── 3. Content with emoji bullets + build animation ──
   deck.content({
     title: "Why 3D Matters",
     bullets: [
@@ -48,6 +48,7 @@ export default async function build() {
       ":gear: Robots and AR need spatial reasoning",
       ":globe: 3D is the native language of the physical world",
     ],
+    build: true,
   });
 
   // ── 4. Two-column comparison ──

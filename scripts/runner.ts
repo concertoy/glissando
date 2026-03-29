@@ -3,14 +3,14 @@
  * Universal build runner — imports slides.ts from the given path,
  * calls build(), and saves to output.pptx.
  *
- * Usage: npx tsx runner.ts <path-to-deck-folder> [--output <file>]
+ * Usage: npx tsx scripts/runner.ts <path-to-deck-folder> [--output <file>]
  */
 
 import { resolve, join } from "path";
 
 const deckPath = process.argv[2];
 if (!deckPath) {
-  console.error("Usage: npx tsx runner.ts <path-to-deck-folder> [--output <file>]");
+  console.error("Usage: npx tsx scripts/runner.ts <path-to-deck-folder> [--output <file>]");
   process.exit(1);
 }
 

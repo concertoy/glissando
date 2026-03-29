@@ -5,22 +5,22 @@ summary: "All available deck layout methods and their props."
 
 # Layouts
 
-Layouts are methods on the `Deck` class. Each call creates one slide.
+Layouts are methods on the `Deck` class. Each call creates one slide. All methods accept an optional `notes` parameter for speaker notes.
 
 ## Reference
 
 | Method | Description |
 |---|---|
-| `deck.title({ title, subtitle? })` | Dark bg opening/closing slide |
-| `deck.section({ title, subtitle? })` | Warm bg section divider |
-| `deck.content({ title, subtitle?, bullets })` | Heading + bullet list |
-| `deck.twoColumn({ title, leftTitle?, rightTitle?, left, right })` | Two-column comparison |
-| `deck.code({ title, code, language? })` | Heading + syntax-highlighted code panel |
-| `deck.quote({ quote, attribution? })` | Large quote on accent bg |
-| `deck.image({ title, imagePath, caption? })` | Heading + image |
-| `deck.table({ title, headers, rows })` | Heading + themed table |
-| `await deck.equation({ title, equations })` | Heading + rendered LaTeX equations |
-| `deck.blank({ bg? })` | Empty slide for custom content |
+| `deck.title({ title, subtitle?, notes? })` | Dark bg opening/closing slide |
+| `deck.section({ title, subtitle?, notes? })` | Warm bg section divider |
+| `deck.content({ title, subtitle?, bullets, build?, notes? })` | Heading + bullet list |
+| `deck.twoColumn({ title, leftTitle?, rightTitle?, left, right, notes? })` | Two-column comparison |
+| `deck.code({ title, code, language?, notes? })` | Heading + syntax-highlighted code panel |
+| `deck.quote({ quote, attribution?, notes? })` | Large quote on accent bg |
+| `deck.image({ title, imagePath, caption?, notes? })` | Heading + image |
+| `deck.table({ title, headers, rows, notes? })` | Heading + themed table |
+| `await deck.equation({ title, equations, notes? })` | Heading + rendered LaTeX equations |
+| `deck.blank({ bg?, notes? })` | Empty slide for custom content |
 
 ## Props
 
@@ -34,6 +34,7 @@ deck.title({ title: "My Presentation", subtitle: "By Author" });
 |---|---|---|---|
 | `title` | `string` | Yes | Slide heading |
 | `subtitle` | `string` | No | Subtitle text |
+| `notes` | `string` | No | Speaker notes |
 
 ### section
 
@@ -45,6 +46,7 @@ deck.section({ title: "Part One", subtitle: "Introduction" });
 |---|---|---|---|
 | `title` | `string` | Yes | Section heading |
 | `subtitle` | `string` | No | Subtitle text |
+| `notes` | `string` | No | Speaker notes |
 
 ### content
 
@@ -53,6 +55,7 @@ deck.content({
   title: "Key Points",
   subtitle: "Overview",
   bullets: [":rocket: Fast", ":shield: Secure", "Simple"],
+  build: true,
 });
 ```
 
@@ -60,7 +63,9 @@ deck.content({
 |---|---|---|---|
 | `title` | `string` | Yes | Slide heading |
 | `subtitle` | `string` | No | Subtitle text |
-| `bullets` | `string[]` | Yes | Bullet items (supports `:emoji:` syntax) |
+| `bullets` | `string[]` | Yes | Bullet items (supports `:emoji:` and `$math$` syntax) |
+| `build` | `boolean` | No | Reveal bullets one-by-one on click |
+| `notes` | `string` | No | Speaker notes |
 
 ### twoColumn
 
@@ -81,6 +86,7 @@ deck.twoColumn({
 | `rightTitle` | `string` | No | Right column heading |
 | `left` | `string[]` | Yes | Left column bullets |
 | `right` | `string[]` | Yes | Right column bullets |
+| `notes` | `string` | No | Speaker notes |
 
 ### code
 
@@ -97,6 +103,7 @@ deck.code({
 | `title` | `string` | Yes | Slide heading |
 | `code` | `string` | Yes | Code content |
 | `language` | `string` | No | Language for syntax highlighting |
+| `notes` | `string` | No | Speaker notes |
 
 ### quote
 
@@ -108,6 +115,7 @@ deck.quote({ quote: "Design is how it works.", attribution: "Steve Jobs" });
 |---|---|---|---|
 | `quote` | `string` | Yes | Quote text |
 | `attribution` | `string` | No | Attribution / source |
+| `notes` | `string` | No | Speaker notes |
 
 ### image
 
@@ -120,6 +128,7 @@ deck.image({ title: "Architecture", imagePath: "./diagram.png", caption: "System
 | `title` | `string` | Yes | Slide heading |
 | `imagePath` | `string` | Yes | Path to image file |
 | `caption` | `string` | No | Caption below image |
+| `notes` | `string` | No | Speaker notes |
 
 ### table
 
@@ -136,6 +145,7 @@ deck.table({
 | `title` | `string` | Yes | Slide heading |
 | `headers` | `string[]` | Yes | Column headers |
 | `rows` | `string[][]` | Yes | Table rows |
+| `notes` | `string` | No | Speaker notes |
 
 ### equation
 
@@ -156,6 +166,7 @@ await deck.equation({
 |---|---|---|---|
 | `title` | `string` | Yes | Slide heading |
 | `equations` | `Array<{ latex, label? }>` | Yes | LaTeX expressions with optional labels |
+| `notes` | `string` | No | Speaker notes |
 
 ### blank
 
@@ -166,5 +177,6 @@ const slide = deck.blank({ bg: "dark" });
 | Prop | Type | Required | Description |
 |---|---|---|---|
 | `bg` | `"primary" \| "dark" \| "accent"` | No | Background color (default: `"primary"`) |
+| `notes` | `string` | No | Speaker notes |
 
 Returns a raw pptxgenjs `Slide` for use with `deck.components`. See [Custom Slides](/guide/custom-slides).

@@ -44,4 +44,9 @@ Visually inspect a glissando deck: $ARGUMENTS
    1. Fix X in slides.ts line Y
    ```
 
-7. **Suggest fixes** — reference specific layout methods, component props, or `(x, y, w, h)` values in `slides.ts`.
+7. **Check for unrendered inline math.** Look for literal LaTeX-like text appearing as plaintext:
+   - Raw backslash commands (`\alpha`, `\beta`, `\sigma`) rendered as literal characters
+   - Subscript/superscript notation (`c_i`, `x^2`, `X_{t-1}`) shown as flat text
+   - If found, report as `[WARNING] Unrendered inline math` and suggest wrapping in `$...$` delimiters (e.g., `"$c_i$ — per-Gaussian color"`)
+
+8. **Suggest fixes** — reference specific layout methods, component props, or `(x, y, w, h)` values in `slides.ts`.

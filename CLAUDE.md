@@ -14,7 +14,7 @@ npm install
 
 - `npm install` — install runtime (pptxgenjs, sharp, mathjax-full) and tooling dependencies.
 - `./build.sh examples/<deck>` — compile `slides.ts` into `output.pptx` inside that example folder.
-- `npx tsx runner.ts <path-to-deck>` — run the builder directly when debugging runner changes.
+- `npx tsx scripts/runner.ts <path-to-deck>` — run the builder directly when debugging runner changes.
 - `npx tsx scripts/render-slide.ts <path>.pptx --all --output /tmp/render` — render PPTX slides to PNG for visual verification.
 - `npx tsc --noEmit` — type-check the library; keep the tree free of TypeScript errors before opening a PR.
 - `npm test` — smoke-test all example decks (builds each, asserts output.pptx is produced).
@@ -87,8 +87,8 @@ examples/
   elegant-bw-demo/          Elegant BW theme — rich real-world deck
   mimic-claude-macos/       Claude Doc + macOS native fonts — component catalog
 build.sh                    Universal build: ./build.sh <path>
-runner.ts                   Build runner (called by build.sh)
 scripts/
+  runner.ts                 Build runner (called by build.sh)
   install-fonts.sh          Font installer (macOS/Linux)
   install-fonts.ps1         Font installer (Windows)
   render-slide.ts           Render PPTX slides to PNG for visual verification
@@ -158,34 +158,90 @@ export default function build() {
 
 ## Font Presets
 
+Every theme supports font presets via `applyPreset(theme, preset)`. Import `applyPreset` from any theme's `index.js` or from `src/index.js`.
+
+### claude-doc presets
+
 | Preset | Headings | Body | Code | Install |
 |---|---|---|---|---|
-| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `default` | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `macosNative` | Iowan Old Style | Avenir Next | Menlo | No install needed |
 | `googleFonts` | Libre Baskerville | Space Grotesk | JetBrains Mono | `./scripts/install-fonts.sh claude-doc google-fonts` |
 
+### basic-white presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
+| `serifClean` | Georgia | Helvetica Neue | Menlo | No install needed |
+| `googleFonts` | Lato | Lato | Source Code Pro | `./scripts/install-fonts.sh basic-white google-fonts` |
+
+### elegant-bw presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+| `macosNative` | Didot | Avenir Next | Menlo | No install needed |
+| `allSans` | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw all-sans` |
+
 ## Available Themes
 
-| Theme | Style | Headings | Body | Code | Install |
+| Theme | Style | Default Headings | Default Body | Default Code | Install |
 |---|---|---|---|---|---|
-| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh` |
+| `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
-| `elegantBw` | Monochromatic black/white | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw` |
+| `elegantBw` | Monochromatic black/white | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+
+## Slide Numbering, Footers, and Citations
+
+```ts
+// Enable slide numbering + static footer text
+deck.footer({
+  slideNumber: true,                              // "3 / 22" bottom-right
+  slideNumberFormat: "n / N",                     // or "n" for just "3"
+  text: "Buchanan et al. — NeurIPS 2025",         // static text, bottom-left
+  citationStyle: "author-year",                    // or "compact" for [BPMDB25]
+  skip: [1, 22],                                   // 1-based slide indices to skip
+});
+
+// Register bibliography entries
+deck.bib("buchanan2025", { authors: ["Buchanan", "Pai", "Ma", "De Bortoli"], year: 2025 });
+
+// After creating a slide, cite references on it
+deck.content({ title: "Prior Work", bullets: [...] });
+deck.cite("buchanan2025", "carlini2023");
+// → footer: [Buchanan et al., 2025; Carlini et al., 2023]
+```
+
+Citation styles: `"author-year"` (1 → `[Smith, 2023]`, 2 → `[Smith & Jones, 2023]`, 3+ → `[Smith et al., 2023]`) or `"compact"` (first letter of each surname + year → `[BPMDB25]`).
+
+## Build Animations
+
+Add `build: true` to reveal bullets one-by-one on click (works in PowerPoint and Keynote):
+
+```ts
+// Layout-level
+deck.content({ title: "Key Points", bullets: ["A", "B", "C"], build: true });
+
+// Component-level (on blank slides)
+bulletList(slide, { items: ["A", "B", "C"], build: true, ...area });
+numberedList(slide, { items: ["1st", "2nd", "3rd"], build: true, ...area });
+```
 
 ## Available Layouts
 
 | Method | Description |
 |---|---|
-| `deck.title({ title, subtitle? })` | Dark bg opening/closing slide |
-| `deck.section({ title, subtitle? })` | Warm bg section divider |
-| `deck.content({ title, subtitle?, bullets })` | Heading + bullet list |
-| `deck.twoColumn({ title, leftTitle?, rightTitle?, left, right })` | Two-column comparison |
-| `deck.code({ title, code, language? })` | Heading + code panel (syntax highlighted) |
-| `deck.quote({ quote, attribution? })` | Large quote on accent bg |
-| `deck.image({ title, imagePath, caption? })` | Heading + image |
-| `deck.table({ title, headers, rows })` | Heading + themed table |
-| `await deck.equation({ title, equations })` | Heading + rendered LaTeX equations |
-| `deck.blank({ bg? })` | Empty slide (returns raw pptxgenjs slide) |
+| `deck.title({ title, subtitle?, notes? })` | Dark bg opening/closing slide |
+| `deck.section({ title, subtitle?, notes? })` | Warm bg section divider |
+| `deck.content({ title, subtitle?, bullets, notes? })` | Heading + bullet list |
+| `deck.twoColumn({ title, leftTitle?, rightTitle?, left, right, notes? })` | Two-column comparison |
+| `deck.code({ title, code, language?, notes? })` | Heading + code panel (syntax highlighted) |
+| `deck.quote({ quote, attribution?, notes? })` | Large quote on accent bg |
+| `deck.image({ title, imagePath, caption?, notes? })` | Heading + image |
+| `deck.table({ title, headers, rows, notes? })` | Heading + themed table |
+| `await deck.equation({ title, equations, notes? })` | Heading + rendered LaTeX equations |
+| `deck.blank({ bg?, notes? })` | Empty slide (returns raw pptxgenjs slide) |
 
 ## Available Components
 
@@ -199,6 +255,7 @@ Components can be used directly for custom slides via `deck.components`:
 - `codeBlock(slide, { code, x, y, w, h?, language? })` — code panel with syntax highlighting, auto-height
 - `quoteBox(slide, { quote, x, y, w, h, attribution? })` — serif quote with accent bar
 - `table(slide, { headers, rows, x, y, w })` — themed table
+- `image(slide, { path|data, x, y, w, h, caption?, border?, rounding?, sizing? })` — themed image with optional caption and border frame
 - `caption(slide, { text, x, y, w })` — small muted text
 - `calloutBlock(slide, { variant, x, y, w, h?, body?, bullets? })` — round-cornered callout panel (async)
 - `textBlock(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` — icon-free rounded panel with optional title/subtitle
@@ -210,6 +267,33 @@ Components can be used directly for custom slides via `deck.components`:
 - `emoji(slide, { name, x, y, w?, h? })` — themed SVG emoji image (async)
 
 All components return a `Rect` (`{ x, y, w, h }`) representing their actual bounding box, enabling vertical stacking and layout chaining.
+
+### Inline Math (`$...$` syntax)
+
+Text components (`bulletList`, `bodyText`, `numberedList`, `calloutBlock`, `textBlock`) support `$...$` delimited inline math:
+
+```ts
+bulletList(slide, {
+  items: [
+    "$c_i$ — per-Gaussian color",           // subscript
+    "$\\alpha_t$ — noise schedule",          // Greek + subscript
+    "$X_{t-1}^2$ — squared previous state",  // compound sub+superscript
+    "Regular bullet without math",
+  ],
+  ...
+});
+```
+
+| Expression | Renders as |
+|---|---|
+| `$c_i$` | c with subscript i |
+| `$x^2$` | x with superscript 2 |
+| `$\\alpha$` | Greek alpha (α) |
+| `$\\beta_k$` | Greek beta with subscript k |
+| `$X_{t-1}^2$` | X with subscript t-1 and superscript 2 |
+| `$\\hat{x}$` | x with combining hat accent |
+
+Complex expressions (`\frac`, `\sqrt`, `\mathbb`) are not supported inline — use the `equation()` component instead.
 
 ## Layout Helpers
 
@@ -240,6 +324,27 @@ await calloutBlock(slide, { variant: "info", ...right, body: "Note" });
 const eqRect = await equation(slide, { latex: "E = mc^2", ...area });
 const rest = below(area, eqRect.h, 0.3);
 bulletList(slide, { items: ["E — energy", "m — mass"], ...rest });
+```
+
+## Speaker Notes
+
+All layout methods accept an optional `notes` string for presenter-view speaker notes:
+
+```ts
+deck.content({
+  title: "Key Points",
+  bullets: ["First point", "Second point"],
+  notes: "Remind audience about the demo here",
+});
+```
+
+For `blank()` slides, pass `notes` in props or use the `speakerNote` helper:
+
+```ts
+import { Deck, speakerNote } from "../../src/index.js";
+
+const slide = deck.blank();
+speakerNote(slide, "Transition: move to Q&A");
 ```
 
 ## Themed Emojis

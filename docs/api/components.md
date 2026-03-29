@@ -15,6 +15,8 @@ heading(slide, { text: "Title", x: 0.8, y: 0.5, w: 11 });
 bulletList(slide, { items: ["Point A", "Point B"], x: 0.8, y: 1.5, w: 10 });
 ```
 
+All components return a `Rect` (`{ x, y, w, h }`) representing their bounding box, enabling vertical stacking and layout chaining.
+
 ## Reference
 
 ### Text
@@ -22,15 +24,15 @@ bulletList(slide, { items: ["Point A", "Point B"], x: 0.8, y: 1.5, w: 10 });
 | Component | Signature | Description |
 |---|---|---|
 | `heading` | `(slide, { text, x, y, w, color?, fontSize?, bold? })` | Bold heading text |
-| `bodyText` | `(slide, { text, x, y, w, h?, color?, fontSize?, bold?, italic?, fontFace? })` | Paragraph text |
+| `bodyText` | `(slide, { text, x, y, w, h?, color?, fontSize?, bold?, italic?, fontFace? })` | Paragraph text (supports `$math$` syntax) |
 | `caption` | `(slide, { text, x, y, w })` | Small muted text |
 
 ### Lists
 
 | Component | Signature | Description |
 |---|---|---|
-| `bulletList` | `(slide, { items, x, y, w, h?, fontSize? })` | Accent-colored bullets (supports `:emoji:` syntax) |
-| `numberedList` | `(slide, { items, x, y, w, h?, fontSize? })` | Accent-colored numbered list |
+| `bulletList` | `(slide, { items, x, y, w, h?, fontSize?, build? })` | Accent-colored bullets (supports `:emoji:` and `$math$` syntax) |
+| `numberedList` | `(slide, { items, x, y, w, h?, fontSize?, build? })` | Accent-colored numbered list (supports `$math$` syntax) |
 
 ### Content blocks
 
@@ -39,15 +41,21 @@ bulletList(slide, { items: ["Point A", "Point B"], x: 0.8, y: 1.5, w: 10 });
 | `codeBlock` | `(slide, { code, x, y, w, h?, language? })` | Syntax-highlighted code panel, auto-height |
 | `quoteBox` | `(slide, { quote, x, y, w, h, attribution? })` | Serif quote with accent bar |
 | `table` | `(slide, { headers, rows, x, y, w })` | Themed table |
-| `calloutBlock` | `(slide, { variant, x, y, w, h?, title?, body?, bullets?, icon? })` | Round-cornered callout panel (async) |
-| `textBlock` | `(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` | Icon-free rounded panel with title/subtitle |
+| `calloutBlock` | `(slide, { variant, x, y, w, h?, title?, body?, bullets?, icon? })` | Round-cornered callout panel (async, supports `$math$`) |
+| `textBlock` | `(slide, { x, y, w, h?, title?, subtitle?, body?, bullets?, fill?, border?, textColor? })` | Icon-free rounded panel (supports `$math$`) |
+
+### Media
+
+| Component | Signature | Description |
+|---|---|---|
+| `image` | `(slide, { path\|data, x, y, w, h, caption?, border?, rounding?, sizing? })` | Themed image with optional caption and border frame |
+| `emoji` | `(slide, { name, x, y, w?, h? })` | Themed SVG emoji image (async) |
 
 ### Decoration
 
 | Component | Signature | Description |
 |---|---|---|
 | `accentBar` | `(slide, { x, y, w?, h? })` | Thin brand-colored bar |
-| `emoji` | `(slide, { name, x, y, w?, h? })` | Themed SVG emoji image (async) |
 
 ### Diagrams
 

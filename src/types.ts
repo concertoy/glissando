@@ -121,6 +121,38 @@ export interface ThemeConfig {
 }
 
 // ---------------------------------------------------------------------------
+// Footer / citation types
+// ---------------------------------------------------------------------------
+
+export interface FooterConfig {
+  slideNumber?: boolean;
+  slideNumberFormat?: "n" | "n / N";  // "3" or "3 / 22" (default "n / N")
+  text?: string;                       // static footer text (bottom-left)
+  citationStyle?: "author-year" | "compact";
+  skip?: number[];                     // 1-based slide indices to skip
+}
+
+export interface BibEntry {
+  authors: string[];
+  year: number;
+}
+
+/** Internal: per-slide footer data passed to pptx-patch. */
+export interface FooterDef {
+  slideIndex: number;   // 0-based (matches pptx slide numbering)
+  slideNumber?: string;
+  text?: string;
+  citations?: string;
+}
+
+/** Internal: per-shape animation data passed to pptx-patch. */
+export interface AnimationDef {
+  slideIndex: number;      // -1 = resolve by objectName search (like emoji defs)
+  objectName: string;      // shape objectName for spid lookup
+  paragraphCount: number;  // number of paragraphs to animate one-by-one
+}
+
+// ---------------------------------------------------------------------------
 // Component props — what you pass to each pre-designed component
 // ---------------------------------------------------------------------------
 
@@ -161,6 +193,7 @@ export interface BulletListProps {
   w: number;
   h?: number;
   fontSize?: number;
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
 export interface NumberedListProps {
@@ -170,6 +203,7 @@ export interface NumberedListProps {
   w: number;
   h?: number;
   fontSize?: number;
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
 export interface CodeBlockProps {
@@ -332,6 +366,19 @@ export interface ContainerProps {
 // Equation props
 // ---------------------------------------------------------------------------
 
+export interface ImageComponentProps {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  path?: string;                        // file path or URL
+  data?: string;                        // base64 data URI (alternative to path)
+  caption?: string;                     // optional text below image
+  border?: boolean | string;            // true = theme accent, string = hex color
+  rounding?: boolean;                   // rounded corners
+  sizing?: "contain" | "cover" | "crop"; // default: "contain"
+}
+
 export interface EquationProps {
   latex: string;
   x: number;
@@ -362,6 +409,7 @@ export interface ThemeComponents {
   arrow: (slide: PptxGenJS.Slide, props: ArrowProps) => void;
   hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;
   container: (slide: PptxGenJS.Slide, props: ContainerProps) => ShapeRef;
+  image: (slide: PptxGenJS.Slide, props: ImageComponentProps) => Rect;
   equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<Rect>;
   emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<Rect>;
 }
@@ -370,23 +418,30 @@ export interface ThemeComponents {
 // Layout props — what the user passes to each slide type
 // ---------------------------------------------------------------------------
 
-export interface TitleLayoutProps {
+/** Shared optional fields available on every layout method. */
+export interface BaseLayoutProps {
+  /** Speaker notes shown in presenter view (not visible on the slide). */
+  notes?: string;
+}
+
+export interface TitleLayoutProps extends BaseLayoutProps {
   title: string;
   subtitle?: string;
 }
 
-export interface SectionLayoutProps {
+export interface SectionLayoutProps extends BaseLayoutProps {
   title: string;
   subtitle?: string;
 }
 
-export interface ContentLayoutProps {
+export interface ContentLayoutProps extends BaseLayoutProps {
   title: string;
   subtitle?: string;
   bullets: string[];
+  build?: boolean;  // reveal bullets one-by-one on click
 }
 
-export interface TwoColumnLayoutProps {
+export interface TwoColumnLayoutProps extends BaseLayoutProps {
   title: string;
   leftTitle?: string;
   rightTitle?: string;
@@ -394,35 +449,35 @@ export interface TwoColumnLayoutProps {
   right: string[];
 }
 
-export interface CodeLayoutProps {
+export interface CodeLayoutProps extends BaseLayoutProps {
   title: string;
   code: string;
   language?: string;
 }
 
-export interface QuoteLayoutProps {
+export interface QuoteLayoutProps extends BaseLayoutProps {
   quote: string;
   attribution?: string;
 }
 
-export interface ImageLayoutProps {
+export interface ImageLayoutProps extends BaseLayoutProps {
   title: string;
   imagePath: string;
   caption?: string;
 }
 
-export interface TableLayoutProps {
+export interface TableLayoutProps extends BaseLayoutProps {
   title: string;
   headers: string[];
   rows: string[][];
 }
 
-export interface EquationLayoutProps {
+export interface EquationLayoutProps extends BaseLayoutProps {
   title: string;
   equations: Array<{ latex: string; label?: string }>;
 }
 
-export interface BlankLayoutProps {
+export interface BlankLayoutProps extends BaseLayoutProps {
   bg?: "primary" | "dark" | "accent";
 }
 
@@ -431,16 +486,29 @@ export interface BlankLayoutProps {
 // ---------------------------------------------------------------------------
 
 export interface ThemeLayouts {
-  title: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TitleLayoutProps) => void;
-  section: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: SectionLayoutProps) => void;
-  content: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ContentLayoutProps) => void;
-  twoColumn: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TwoColumnLayoutProps) => void;
-  code: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: CodeLayoutProps) => void;
-  quote: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: QuoteLayoutProps) => void;
-  image: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ImageLayoutProps) => void;
-  table: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TableLayoutProps) => void;
-  equation: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: EquationLayoutProps) => Promise<void>;
-  blank: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: BlankLayoutProps) => void;
+  title: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TitleLayoutProps) => PptxGenJS.Slide;
+  section: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: SectionLayoutProps) => PptxGenJS.Slide;
+  content: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ContentLayoutProps) => PptxGenJS.Slide;
+  twoColumn: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TwoColumnLayoutProps) => PptxGenJS.Slide;
+  code: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: CodeLayoutProps) => PptxGenJS.Slide;
+  quote: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: QuoteLayoutProps) => PptxGenJS.Slide;
+  image: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ImageLayoutProps) => PptxGenJS.Slide;
+  table: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TableLayoutProps) => PptxGenJS.Slide;
+  equation: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: EquationLayoutProps) => Promise<PptxGenJS.Slide>;
+  blank: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: BlankLayoutProps) => PptxGenJS.Slide;
+}
+
+// ---------------------------------------------------------------------------
+// Font presets — swappable typography for a theme
+// ---------------------------------------------------------------------------
+
+export interface FontPreset {
+  name: string;
+  description: string;
+  installNote: string;
+  fonts: ThemeFonts;
+  sizes: ThemeSizes;
+  codeStyle?: CodeStyle;
 }
 
 // ---------------------------------------------------------------------------
@@ -453,7 +521,7 @@ export interface PendingWork {
 }
 
 /** Factory that creates components bound to a specific config. */
-export type ComponentFactory = (config: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork) => ThemeComponents;
+export type ComponentFactory = (config: ThemeConfig, emojiDefs?: EmojiDef[], pending?: PendingWork, animationDefs?: AnimationDef[]) => ThemeComponents;
 
 export interface Theme {
   config: ThemeConfig;

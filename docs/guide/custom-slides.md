@@ -1,6 +1,6 @@
 ---
 title: "Custom Slides"
-summary: "Use blank slides and components for freeform layouts, diagrams, and connectors."
+summary: "Use blank slides, components, and layout helpers for freeform layouts."
 ---
 
 # Custom Slides
@@ -31,6 +31,58 @@ await calloutBlock(slide, { variant: "info", x: 6.5, y: 1.5, w: 5, body: "A help
 ```
 
 See the [Components reference](/api/components) for all available components and their props.
+
+## Layout helpers
+
+Pure functions for computing component positions. Import from `src/index.js`:
+
+```ts
+import { Deck, columns, rows, below, inset } from "../../src/index.js";
+```
+
+| Function | Description |
+|---|---|
+| `deck.area()` | Full usable area inside slide margins |
+| `deck.contentArea()` | Area below heading + accent bar |
+| `columns(area, n, gap?)` | Split rect into N equal columns |
+| `rows(area, n, gap?)` | Split rect into N equal rows |
+| `below(area, usedH, gap?)` | Sub-rect below a placed component |
+| `inset(area, top, right?, bottom?, left?)` | Inset a rect (CSS-style) |
+
+All helpers work with `Rect` objects (`{ x, y, w, h }`) — the same shape as component props. Use spread syntax:
+
+```ts
+const area = deck.contentArea();
+const [left, right] = columns(area, 2, 0.4);
+codeBlock(slide, { code: "...", language: "python", ...left });
+await calloutBlock(slide, { variant: "info", ...right, body: "Note" });
+
+// Vertical stacking with auto-height
+const eqRect = await equation(slide, { latex: "E = mc^2", ...area });
+const rest = below(area, eqRect.h, 0.3);
+bulletList(slide, { items: ["E — energy", "m — mass"], ...rest });
+```
+
+## Image component
+
+Place themed images on custom slides with optional caption and border:
+
+```ts
+const { image } = deck.components;
+
+// Basic image
+image(slide, { path: "./diagram.png", x: 1, y: 1.5, w: 5, h: 3.5 });
+
+// With caption and accent border
+image(slide, {
+  path: "./results.png",
+  x: 1, y: 1.5, w: 5, h: 3.5,
+  caption: "Figure 1: Experimental results",
+  border: true,        // accent-colored border (or pass a hex string)
+  rounding: true,      // rounded corners
+  sizing: "contain",   // "contain" (default), "cover", or "crop"
+});
+```
 
 ## Callout blocks
 
@@ -92,6 +144,17 @@ deck.connector({ from: boxA.right, to: boxB.left, type: "straight", label: "flow
 ```
 
 Connector types: `straight`, `elbow`, `curved`. Head/tail options: `arrow`, `stealth`, `triangle`, `none`.
+
+## Speaker notes on blank slides
+
+Use `deck.speakerNote()` to add notes to blank slides:
+
+```ts
+const slide = deck.blank();
+deck.speakerNote(slide, "Explain the architecture before moving on.");
+```
+
+For layout methods, use the `notes` parameter directly: `deck.content({ ..., notes: "..." })`.
 
 ## Raw pptxgenjs access
 

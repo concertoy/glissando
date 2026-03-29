@@ -21,4 +21,4 @@ if [ -z "${1:-}" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec npx tsx "$SCRIPT_DIR/runner.ts" "$@"
+exec npx tsx "$SCRIPT_DIR/scripts/runner.ts" "$@"

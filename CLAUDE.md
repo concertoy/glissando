@@ -236,7 +236,7 @@ numberedList(slide, { items: ["1st", "2nd", "3rd"], build: true, ...area });
 
 | Method | Description |
 |---|---|
-| `deck.title({ title, subtitle?, notes? })` | Dark bg opening/closing slide |
+| `deck.title({ title, subtitle?, logos?, logoHeight?, notes? })` | Dark bg opening/closing slide |
 | `deck.section({ title, subtitle?, notes? })` | Warm bg section divider |
 | `deck.content({ title, subtitle?, bullets, notes? })` | Heading + bullet list |
 | `deck.twoColumn({ title, leftTitle?, rightTitle?, left, right, notes? })` | Two-column comparison |

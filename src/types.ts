@@ -429,6 +429,8 @@ export interface BaseLayoutProps {
 export interface TitleLayoutProps extends BaseLayoutProps {
   title: string;
   subtitle?: string;
+  logos?: string[];       // paths to affiliation logos (arranged horizontally at bottom)
+  logoHeight?: number;    // logo height in inches (default 0.5)
 }
 
 export interface SectionLayoutProps extends BaseLayoutProps {

@@ -62,6 +62,26 @@ function title(
       color: c.textOnDarkMuted,
     });
   }
+
+  // Affiliation logos — arranged horizontally at bottom
+  if (props.logos && props.logos.length > 0) {
+    const logoH = props.logoHeight ?? 0.5;
+    const logoY = sp.slideHeight - sp.marginBottom - logoH;
+    const gap = 0.4;
+    const totalW = props.logos.length * logoH + (props.logos.length - 1) * gap;
+    const startX = (sp.slideWidth - totalW) / 2;
+    for (let i = 0; i < props.logos.length; i++) {
+      slide.addImage({
+        path: props.logos[i],
+        x: startX + i * (logoH + gap),
+        y: logoY,
+        w: logoH,
+        h: logoH,
+        sizing: { type: "contain" as any, w: logoH, h: logoH },
+      });
+    }
+  }
+
   return slide;
 }
 

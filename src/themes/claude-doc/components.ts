@@ -65,6 +65,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       color: props.color ?? c.text,
       bold: props.bold ?? true,
       valign: "bottom",
+      fit: props.autoFit ? "shrink" : undefined,
     });
     return { x: props.x, y: props.y, w: props.w, h };
   }
@@ -105,6 +106,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         bold: props.bold ?? false,
         italic: props.italic ?? false,
         valign: "top",
+        fit: props.autoFit ? "shrink" : undefined,
       });
     } else {
       const fontSize = props.fontSize ?? s.body;
@@ -117,6 +119,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         slide.addText(mathRuns, {
           x: props.x, y: props.y, w: props.w, h,
           valign: "top",
+          fit: props.autoFit ? "shrink" : undefined,
         });
       } else {
         slide.addText(props.text, {
@@ -127,6 +130,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           bold: props.bold ?? false,
           italic: props.italic ?? false,
           valign: "top",
+          fit: props.autoFit ? "shrink" : undefined,
         });
       }
     }

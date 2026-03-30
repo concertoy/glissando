@@ -7,5 +7,8 @@
       "Bash(npx tsx scripts/*)",
       "Bash(npx tsc --noEmit)"
     ]
+  },
+  "enabledPlugins": {
+    "figma@claude-plugins-official": true
   }
 }

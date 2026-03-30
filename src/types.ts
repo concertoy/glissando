@@ -171,6 +171,7 @@ export interface HeadingProps {
   color?: string;
   fontSize?: number;
   bold?: boolean;
+  autoFit?: boolean;   // shrink text to fit container
 }
 
 export interface BodyTextProps {
@@ -184,6 +185,7 @@ export interface BodyTextProps {
   bold?: boolean;
   italic?: boolean;
   fontFace?: string;
+  autoFit?: boolean;   // shrink text to fit container
 }
 
 export interface BulletListProps {

@@ -28,7 +28,7 @@ npm install
 | `/slides-theme` | "create a theme", "design a theme" | Create a new visual theme from a description. |
 | `/slides-from-pptx` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
 | `/slides-check` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
-| `/figure` | "generate a figure", "architecture diagram" | AI-generated raster figure (fallback when diagram components can't express it). |
+| `/figure` | "generate a figure", "architecture diagram" | **Experimental.** AI-generated raster figure (fallback when diagram components can't express it). |
 
 ### Planning Agents
 
@@ -248,8 +248,8 @@ numberedList(slide, { items: ["1st", "2nd", "3rd"], build: true, ...area });
 Components can be used directly for custom slides via `deck.components`:
 
 - `accentBar(slide, { x, y, w?, h? })` — thin brand-colored bar
-- `heading(slide, { text, x, y, w })` — bold heading text
-- `bodyText(slide, { text, x, y, w, h? })` — paragraph text
+- `heading(slide, { text, x, y, w, autoFit? })` — bold heading text
+- `bodyText(slide, { text, x, y, w, h?, autoFit? })` — paragraph text
 - `bulletList(slide, { items, x, y, w, h? })` — accent-colored bullets
 - `numberedList(slide, { items, x, y, w, h? })` — accent-colored numbers
 - `codeBlock(slide, { code, x, y, w, h?, language? })` — code panel with syntax highlighting, auto-height

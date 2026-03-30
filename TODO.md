@@ -18,6 +18,9 @@
 
 ## Open
 
-- [ ] **Unit test suite** — currently only smoke tests (`npm test` builds example decks). Add vitest with tests for layout helpers, component Rect returns, inline math parsing, equation rendering, emoji resolution.
-- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples. Each component and layout should have a copy-pasteable example.
-- [ ] **Accessibility** — alt text helpers for images and equations, semantic slide structure metadata.
+- [ ] **Table of contents layout** — `deck.toc()` that auto-generates a slide from slide titles. Inspired by Slidev's `<Toc>` component.
+- [x] **Auto-fit text** — `autoFit?: boolean` on `heading` and `bodyText` exposes pptxgenjs `fit: "shrink"` to scale text down to fit.
+- [ ] **Slide transitions** — expose PPTX native transitions (fade, push, wipe) via `transition?` on layout methods. pptxgenjs supports `slide.addSlideTransition()`.
+- [x] **Figma diagram integration** — `/figure` skill prefers Figma MCP when available: Mermaid → `generate_diagram`, custom → `use_figma`, capture via `get_screenshot`. Falls back to LLM→SVG→PNG.
+- [ ] **Code diff component** — `codeDiff(slide, { before, after })` showing side-by-side code changes. Inspired by Slidev's Shiki Magic Move.
+- [ ] **Slide composition** — `deck.import("./module.ts")` for reusable slide modules across decks.

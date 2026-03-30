@@ -123,4 +123,4 @@ export default function build() {
 - Default to `content` — keep to 3-5 bullets per slide
 - Use `twoColumn` for comparisons, `code` for code, `quote` sparingly
 - One idea per slide. 8-12 slides total.
-- For diagrams: prefer built-in `diagramBox` + `arrow` components on `blank()` slides. See `CLAUDE.md` for the full component API.
+- For diagrams: prefer built-in `diagramBox` + `arrow` components on `blank()` slides. If too complex for boxes+arrows and Figma MCP is available, use `/figure` (Figma path). Otherwise fall back to `/figure` (LLM SVG path). See `CLAUDE.md` for the full component API.

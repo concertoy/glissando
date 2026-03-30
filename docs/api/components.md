@@ -23,8 +23,8 @@ All components return a `Rect` (`{ x, y, w, h }`) representing their bounding bo
 
 | Component | Signature | Description |
 |---|---|---|
-| `heading` | `(slide, { text, x, y, w, color?, fontSize?, bold? })` | Bold heading text |
-| `bodyText` | `(slide, { text, x, y, w, h?, color?, fontSize?, bold?, italic?, fontFace? })` | Paragraph text (supports `$math$` syntax) |
+| `heading` | `(slide, { text, x, y, w, color?, fontSize?, bold?, autoFit? })` | Bold heading text |
+| `bodyText` | `(slide, { text, x, y, w, h?, color?, fontSize?, bold?, italic?, fontFace?, autoFit? })` | Paragraph text (supports `$math$` syntax) |
 | `caption` | `(slide, { text, x, y, w })` | Small muted text |
 
 ### Lists

@@ -28,7 +28,9 @@ npm install
 | `/slides-theme` | "create a theme", "design a theme" | Create a new visual theme from a description. |
 | `/slides-from-pptx` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
 | `/slides-check` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
-| `/figure` | "generate a figure", "architecture diagram" | **Experimental.** AI-generated raster figure (fallback when diagram components can't express it). |
+| `/figure-diagram` | "draw a diagram", "architecture diagram" | Build a diagram with built-in diagramBox + arrow + connector components. Native PPTX shapes. |
+| `/figure-figma` | "create in Figma", "Figma diagram" | **Experimental.** Generate a diagram in Figma via MCP plugin. Requires Figma MCP server. |
+| `/figure` | "generate an image", "create illustration" | **Experimental.** AI-generated raster figure (LLM → SVG → PNG). Last resort. |
 
 ### Planning Agents
 
@@ -103,7 +105,9 @@ scripts/
     slides-theme/           /slides-theme — create new themes
     slides-from-pptx/       /slides-from-pptx — reverse-engineer PPTX
     slides-check/           /slides-check — render and diagnose slides
-    figure/                 /figure — AI figure generation
+    figure/                 /figure — AI raster figure generation (experimental)
+    figure-diagram/         /figure-diagram — built-in diagram components
+    figure-figma/           /figure-figma — Figma MCP diagram generation (experimental)
   agents/
     slides-outline-planner.md  Opus sub-agent for deck outline planning
     slides-detail-planner.md   Opus sub-agent for per-slide content detail

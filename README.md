@@ -43,7 +43,9 @@ glissando ships with Claude Code skills and planning agents that handle everythi
 | `/slides-theme` | Design a new visual theme from a description (colors, fonts, spacing) |
 | `/slides-from-pptx` | Reverse-engineer an existing PPTX back into `slides.ts` source code |
 | `/slides-check` | Render slides to PNG and diagnose layout, styling, or content issues |
-| `/figure` | **Experimental.** Generate a raster figure via AI image generation |
+| `/figure-diagram` | Build a diagram with built-in diagramBox + arrow + connector components |
+| `/figure-figma` | **Experimental.** Generate a diagram in Figma via MCP plugin |
+| `/figure` | **Experimental.** AI-generated raster figure (LLM → SVG → PNG) |
 
 ## Themes
 

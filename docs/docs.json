@@ -54,7 +54,7 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": ["index", "getting-started"]
+            "pages": ["introduction", "getting-started"]
           },
           {
             "group": "Guide",

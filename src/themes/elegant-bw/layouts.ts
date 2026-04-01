@@ -381,12 +381,8 @@ async function equationLayout(
   const eqX = sp.marginLeft + (contentW - eqW) / 2;
 
   for (const eq of props.equations) {
-    await comp.equation(slide, { latex: eq.latex, x: eqX, y: curY, w: eqW, label: eq.label });
-
-    const { renderEquation } = await import("../../equation.js");
-    const result = await renderEquation(eq.latex, c.text);
-    const eqH = Math.min(eqW / result.aspectRatio, 0.6);
-    curY += eqH + (eq.label ? 0.55 : 0.35);
+    const rect = await comp.equation(slide, { latex: eq.latex, x: eqX, y: curY, w: eqW, label: eq.label });
+    curY += rect.h + 0.2;
   }
   return slide;
 }

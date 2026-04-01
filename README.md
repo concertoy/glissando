@@ -45,6 +45,7 @@ glissando ships with Claude Code skills and planning agents that handle everythi
 | `/slides-check` | Render slides to PNG and diagnose layout, styling, or content issues |
 | `/figure-diagram` | Build a diagram with built-in diagramBox + arrow + connector components |
 | `/figure-figma` | **Experimental.** Generate a diagram in Figma via MCP plugin |
+| `/slides-footer` | Add slide numbering, footer text, and academic citations |
 | `/figure` | **Experimental.** AI-generated raster figure (LLM → SVG → PNG) |
 
 ## Themes
@@ -54,6 +55,9 @@ glissando ships with Claude Code skills and planning agents that handle everythi
 | `claudeDoc` | Warm cream, terracotta accent, serif headings | `./scripts/install-fonts.sh` |
 | `basicWhite` | Pure white, Apple blue accent, Helvetica Neue | No install needed |
 | `elegantBw` | Monochromatic black/white, Space Grotesk + Inter | `./scripts/install-fonts.sh elegant-bw` |
+| `academia` | Navy + gold, scholarly serif | `./scripts/install-fonts.sh academia` |
+
+<sup>**Preview:** `academia` is a new theme — API is stable but visual polish is ongoing.</sup>
 
 See `CLAUDE.md` for the full API reference — layouts, components, callout variants, connectors, emojis, and font presets.
 

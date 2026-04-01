@@ -172,7 +172,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           ...run,
           options: {
             ...run.options,
-            bullet: j === 0 ? { type: "bullet", color: c.accent } as any : undefined,
+            bullet: j === 0 ? { code: "2022" } : undefined,
             paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
             indentLevel: j === 0 ? 0 : undefined,
             breakLine: j === mathRuns.length - 1 ? true : undefined,
@@ -185,7 +185,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           fontSize,
           fontFace: f.sans,
           color: c.textSecondary,
-          bullet: { type: "bullet", color: c.accent } as any,
+          bullet: { code: "2022" },
           paraSpaceAfter: 8,
           indentLevel: 0,
         },
@@ -590,7 +590,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
             ...run,
             options: {
               ...run.options,
-              bullet: j === 0 ? { type: "bullet", color: style.border } as any : undefined,
+              bullet: j === 0 ? { code: "2022" } : undefined,
               paraSpaceAfter: j === mathRuns.length - 1 ? 4 : undefined,
               breakLine: j === mathRuns.length - 1 ? true : undefined,
             },
@@ -601,7 +601,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           options: {
             fontSize: s.small, fontFace: f.sans,
             color: style.textColor,
-            bullet: { type: "bullet", color: style.border } as any,
+            bullet: { code: "2022" },
             paraSpaceAfter: 4,
           },
         }];
@@ -697,7 +697,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
             ...run,
             options: {
               ...run.options,
-              bullet: j === 0 ? { type: "bullet" as const, color: borderColor } : undefined,
+              bullet: j === 0 ? { code: "2022" } : undefined,
               paraSpaceAfter: j === mathRuns.length - 1 ? 4 : undefined,
               breakLine: j === mathRuns.length - 1 ? true : undefined,
             },
@@ -707,7 +707,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
             text: item,
             options: {
               fontSize: s.small, fontFace: f.sans, color: bodyColor,
-              bullet: { type: "bullet", color: borderColor } as any,
+              bullet: { code: "2022" },
               paraSpaceAfter: 4,
             },
           });

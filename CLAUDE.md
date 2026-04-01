@@ -8,6 +8,7 @@ Component-based slide decks for coding agents. Write TypeScript, get native edit
 npm install
 ./build.sh examples/mimic-claude-macos           # → output.pptx
 ./build.sh examples/elegant-bw-demo              # → output.pptx
+./build.sh examples/academia-demo                # → output.pptx
 ```
 
 ## Build, Test, and Development Commands
@@ -28,6 +29,7 @@ npm install
 | `/slides-theme` | "create a theme", "design a theme" | Create a new visual theme from a description. |
 | `/slides-from-pptx` | "reverse a pptx", "pptx to ts" | Reverse-engineer PPTX back into `slides.ts`. |
 | `/slides-check` | "check the slides", "verify visually" | Render slides to PNG and diagnose layout/styling issues. |
+| `/slides-footer` | "add slide numbers", "add references" | Add slide numbering, footer text, and academic citations to a deck. |
 | `/figure-diagram` | "draw a diagram", "architecture diagram" | Build a diagram with built-in diagramBox + arrow + connector components. Native PPTX shapes. |
 | `/figure-figma` | "create in Figma", "Figma diagram" | **Experimental.** Generate a diagram in Figma via MCP plugin. Requires Figma MCP server. |
 | `/figure` | "generate an image", "create illustration" | **Experimental.** AI-generated raster figure (LLM → SVG → PNG). Last resort. |
@@ -56,11 +58,14 @@ The agent only provides **content**. All positioning, colors, and fonts are hand
 ```
 src/
   index.ts                  Deck class (public API)
-  pptx-patch.ts             PPTX post-processing (font patching, connectors, grouping)
+  pptx-patch.ts             PPTX post-processing (font patching, connectors, grouping, animations)
   types.ts                  TypeScript types for Theme, Components, Layouts
   config.ts                 CLI config loader (~/.glissando/config.json)
+  citation.ts               Citation formatter (author-year + compact styles)
   equation.ts               LaTeX renderer (MathJax → SVG → PNG via sharp)
   highlight.ts              Syntax highlighter (per-language keyword coloring)
+  inline-math.ts            Inline $...$ math parser for text components
+  layout.ts                 Layout helpers (columns, rows, below, inset)
   icons.ts                  Lucide icon renderer (SVG → PNG via sharp)
   emoji.ts                  Themed emoji renderer (SVG → PNG via sharp)
   emoji-data/
@@ -80,12 +85,22 @@ src/
       config.ts             White/black/blue colors, Helvetica Neue + Menlo
       components.ts         Re-exports claude-doc component factory
       layouts.ts            Clean layouts — no accent bars, centered titles
+      presets.ts            Font presets (default, serifClean, googleFonts)
     elegant-bw/
       index.ts              Theme object (exports elegantBw)
       config.ts             Monochromatic black/white, Space Grotesk + Inter
       components.ts         Re-exports claude-doc component factory
       layouts.ts            Generous whitespace, centered layouts
+      presets.ts            Font presets (default, macosNative, allSans)
+    academia/
+      index.ts              Theme object (exports academia)
+      config.ts             Navy + gold, EB Garamond + Source Sans 3
+      components.ts         Re-exports claude-doc component factory
+      layouts.ts            Structured academic layouts, navy section slides
+      presets.ts            Font presets (default, macosNative, googleFonts)
 examples/
+  academia-demo/            Academia theme — conference talk demo
+  diffusion-memorization/   Real research deck with images + equations
   elegant-bw-demo/          Elegant BW theme — rich real-world deck
   mimic-claude-macos/       Claude Doc + macOS native fonts — component catalog
 build.sh                    Universal build: ./build.sh <path>
@@ -105,6 +120,7 @@ scripts/
     slides-theme/           /slides-theme — create new themes
     slides-from-pptx/       /slides-from-pptx — reverse-engineer PPTX
     slides-check/           /slides-check — render and diagnose slides
+    slides-footer/          /slides-footer — slide numbering + citations
     figure/                 /figure — AI raster figure generation (experimental)
     figure-diagram/         /figure-diagram — built-in diagram components
     figure-figma/           /figure-figma — Figma MCP diagram generation (experimental)
@@ -143,6 +159,19 @@ import { basicWhite } from "../../src/themes/basic-white/index.js";
 export default function build() {
   const deck = new Deck(basicWhite);
   // ... same layout API, Keynote-inspired clean white look
+  return deck;
+}
+```
+
+### Using Academia Theme
+
+```ts
+import { Deck } from "../../src/index.js";
+import { academia } from "../../src/themes/academia/index.js";
+
+export default function build() {
+  const deck = new Deck(academia);
+  // Navy + gold academic style, great for conference talks
   return deck;
 }
 ```
@@ -188,6 +217,14 @@ Every theme supports font presets via `applyPreset(theme, preset)`. Import `appl
 | `macosNative` | Didot | Avenir Next | Menlo | No install needed |
 | `allSans` | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw all-sans` |
 
+### academia presets
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | EB Garamond | Source Sans 3 | JetBrains Mono | `./scripts/install-fonts.sh academia default` |
+| `macosNative` | Palatino | Avenir Next | Menlo | No install needed |
+| `googleFonts` | Crimson Pro | Lato | Source Code Pro | `./scripts/install-fonts.sh academia google-fonts` |
+
 ## Available Themes
 
 | Theme | Style | Default Headings | Default Body | Default Code | Install |
@@ -195,6 +232,7 @@ Every theme supports font presets via `applyPreset(theme, preset)`. Import `appl
 | `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
 | `elegantBw` | Monochromatic black/white | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+| `academia` | Navy + gold, scholarly | EB Garamond | Source Sans 3 | JetBrains Mono | `./scripts/install-fonts.sh academia default` |
 
 ## Slide Numbering, Footers, and Citations
 

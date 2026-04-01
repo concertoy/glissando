@@ -1,6 +1,6 @@
 ---
 title: "Themes"
-summary: "Choose and customize themes: claudeDoc, basicWhite, elegantBw."
+summary: "Choose and customize themes: claudeDoc, basicWhite, elegantBw, academia."
 ---
 
 # Themes
@@ -20,6 +20,7 @@ Every deck uses a theme that controls all visual styling. The agent provides con
 | `claudeDoc` | Warm cream, terracotta accent | DM Serif Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent | Helvetica Neue | Helvetica Neue | Menlo | No install needed |
 | `elegantBw` | Monochromatic black/white | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
+| `academia` | Navy + gold **(preview)** | EB Garamond | Source Sans 3 | JetBrains Mono | `./scripts/install-fonts.sh academia default` |
 
 ## Usage
 
@@ -46,6 +47,14 @@ Every deck uses a theme that controls all visual styling. The agent provides con
     import { elegantBw } from "../../src/themes/elegant-bw/index.js";
 
     const deck = new Deck(elegantBw);
+    ```
+  </Tab>
+  <Tab title="academia (preview)">
+    ```ts
+    import { Deck } from "../../src/index.js";
+    import { academia } from "../../src/themes/academia/index.js";
+
+    const deck = new Deck(academia);
     ```
   </Tab>
 </Tabs>
@@ -84,6 +93,14 @@ const deck = new Deck(applyPreset(claudeDoc, macosNative));
 | `default` | Playfair Display | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw default` |
 | `macosNative` | Didot | Avenir Next | Menlo | No install needed |
 | `allSans` | Space Grotesk | Inter | JetBrains Mono | `./scripts/install-fonts.sh elegant-bw all-sans` |
+
+### academia presets (preview)
+
+| Preset | Headings | Body | Code | Install |
+|---|---|---|---|---|
+| `default` | EB Garamond | Source Sans 3 | JetBrains Mono | `./scripts/install-fonts.sh academia default` |
+| `macosNative` | Palatino | Avenir Next | Menlo | No install needed |
+| `googleFonts` | Crimson Pro | Lato | Source Code Pro | `./scripts/install-fonts.sh academia google-fonts` |
 
 ## Font installation
 

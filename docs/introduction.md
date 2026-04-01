@@ -17,7 +17,7 @@ summary: "Component-based slide decks for coding agents. Write TypeScript, get n
   </Card>
 
   <Card title="Themes" icon="palette" href="/guide/themes">
-    Three themes with font presets for every platform.
+    Four themes with font presets for every platform.
   </Card>
 
   <Card title="API Reference" icon="book-open" href="/api/layouts">
@@ -37,7 +37,7 @@ glissando is a TypeScript library that turns code into native, editable PowerPoi
 | --- | --- |
 | **10 layout methods** | title, section, content, twoColumn, code, quote, image, table, equation, blank |
 | **18\+ components** | heading, bulletList, codeBlock, calloutBlock, diagramBox, equation, image, and more |
-| **3 themes** | claudeDoc (warm cream), basicWhite (clean white), elegantBw (monochromatic) |
+| **4 themes** | claudeDoc (warm cream), basicWhite (clean white), elegantBw (monochromatic), academia (navy + gold, preview) |
 | **Font presets** | Multiple presets per theme — macOS native, Google Fonts, system fonts |
 | **Inline math** | `$\alpha_t$`, `$c_i$`, `$X_{t-1}^2$` — subscripts, superscripts, Greek letters in text |
 | **LaTeX equations** | Full MathJax rendering to crisp PNG images |
@@ -55,5 +55,6 @@ glissando is a TypeScript library that turns code into native, editable PowerPoi
 | `claudeDoc` | Warm cream, terracotta accent, serif headings | `./scripts/install-fonts.sh claude-doc default` |
 | `basicWhite` | Pure white, Apple blue accent, Helvetica Neue | No install needed |
 | `elegantBw` | Monochromatic black/white, Playfair Display \+ Inter | `./scripts/install-fonts.sh elegant-bw default` |
+| `academia` | Navy \+ gold, EB Garamond \+ Source Sans 3 **(preview)** | `./scripts/install-fonts.sh academia default` |
 
 Each theme has multiple [font presets](/guide/themes#font-presets) for different environments (macOS native, Google Fonts, etc.).

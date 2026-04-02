@@ -96,6 +96,8 @@
 - [x] **Shape glow effect** — `glow` on AddTextOpts/AddShapeOpts → `<a:glow>` in `<a:effectLst>`. Combines with shadow.
 - [x] **Soft edge effect** — `softEdge` on AddTextOpts/AddShapeOpts → `<a:softEdge>` for feathered edges.
 - [x] **Reflection effect** — `reflection` on AddTextOpts/AddShapeOpts → `<a:reflection>` for mirror effects.
+- [x] **Text caps** — `caps` on TextRunOpts → `cap` attribute on `<a:rPr>` for all-caps or small-caps.
+- [x] **Shape 3D bevel** — `bevel` on AddTextOpts/AddShapeOpts → `<a:sp3d>` with `<a:bevelT>` for depth effects.
 
 ## Open
 
@@ -116,5 +118,5 @@
 - [ ] **Shape 3D effects** — `bevel`, `extrusion` on AddShapeOpts → `<a:sp3d>` for depth/perspective effects.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
 - [ ] **Custom geometry shapes** — `addFreeform()` for arbitrary path-based shapes via `<a:custGeom>`.
-- [ ] **Shape 3D bevel** — `bevel` on AddShapeOpts → `<a:sp3d>` with `<a:bevelT>` for depth effects.
-- [ ] **Text caps** — `caps` on TextRunOpts → `cap` attribute for all-caps or small-caps text.
+- [ ] **Inner shadow** — `innerShadow` on AddTextOpts/AddShapeOpts → `<a:innerShdw>` for inset shadows.
+- [ ] **Shape preset effects** — common presets like "glossy", "matte", "chrome" via combined 3D + fill + shadow settings.

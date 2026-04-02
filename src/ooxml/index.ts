@@ -77,6 +77,8 @@ export interface TextRunOpts {
   marginLeft?: number;
   /** Text outline/stroke. */
   outline?: { color: string; width?: number };
+  /** Text capitalization: "all" for ALL CAPS, "small" for Small Caps. */
+  caps?: "all" | "small";
 }
 
 export interface BulletOpts {
@@ -193,6 +195,8 @@ export interface AddTextOpts {
   softEdge?: number;
   /** Reflection effect. */
   reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+  /** 3D bevel on the text shape. */
+  bevel?: { type?: string; width?: number; height?: number };
 }
 
 export interface AddShapeOpts {
@@ -221,6 +225,8 @@ export interface AddShapeOpts {
   softEdge?: number;
   /** Reflection effect. */
   reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+  /** 3D bevel on the shape. */
+  bevel?: { type?: string; width?: number; height?: number };
   /** Text inside the shape. */
   text?: string | TextRun[];
   /** Font size for shape text (points). */
@@ -923,8 +929,17 @@ function buildTextShapeXml(
     `<p:nvPr/>` +
     `</p:nvSpPr>`;
 
+  // 3D bevel
+  let bevelXml = "";
+  if (opts.bevel) {
+    const bType = opts.bevel.type ?? "relaxedInset";
+    const bW = ptEmu(opts.bevel.width ?? 6);
+    const bH = ptEmu(opts.bevel.height ?? 6);
+    bevelXml = `<a:sp3d><a:bevelT w="${bW}" h="${bH}" prst="${bType}"/></a:sp3d>`;
+  }
+
   // Shape properties
-  const spPr = `<p:spPr>${xfrmXml}${geomXml}${fillXml}${lineXml}${shadowXml}</p:spPr>`;
+  const spPr = `<p:spPr>${xfrmXml}${geomXml}${fillXml}${lineXml}${shadowXml}${bevelXml}</p:spPr>`;
 
   // Text body
   const txBody = buildTextBodyXml(content, opts, slide);
@@ -1109,6 +1124,8 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   if (opts.subscript) attrs.push(`baseline="-40000"`);
   if (opts.superscript) attrs.push(`baseline="30000"`);
   if (opts.charSpacing != null) attrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
+  if (opts.caps === "all") attrs.push(`cap="all"`);
+  else if (opts.caps === "small") attrs.push(`cap="small"`);
   attrs.push(`dirty="0"`);
 
   const children: string[] = [];
@@ -1374,7 +1391,7 @@ function buildShapeXml(
     `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
-    `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}</p:spPr>` +
+    `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}${opts.bevel ? `<a:sp3d><a:bevelT w="${ptEmu(opts.bevel.width ?? 6)}" h="${ptEmu(opts.bevel.height ?? 6)}" prst="${opts.bevel.type ?? "relaxedInset"}"/></a:sp3d>` : ""}</p:spPr>` +
     txBody +
     `</p:sp>`
   );

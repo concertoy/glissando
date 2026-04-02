@@ -1085,6 +1085,60 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text caps", () => {
+    it("adds cap=all for all caps", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "uppercase",
+        options: { caps: "all" },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('cap="all"');
+    });
+
+    it("adds cap=small for small caps", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Small Caps",
+        options: { caps: "small" },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('cap="small"');
+    });
+  });
+
+  describe("shape 3D bevel", () => {
+    it("adds sp3d with bevelT to text shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Beveled", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        bevel: { type: "circle", width: 10, height: 8 },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:sp3d>");
+      expect(xml).toContain('<a:bevelT');
+      expect(xml).toContain('prst="circle"');
+    });
+
+    it("adds sp3d to shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "AAAAAA" },
+        bevel: { type: "relaxedInset" },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:sp3d>");
+      expect(xml).toContain("relaxedInset");
+    });
+  });
+
   describe("soft edge effect", () => {
     it("adds softEdge to effectLst", () => {
       const pres = new Presentation();

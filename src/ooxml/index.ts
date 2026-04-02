@@ -287,6 +287,7 @@ export class Presentation {
   /** @internal */ _headFont = "Calibri";
   /** @internal */ _bodyFont = "Calibri";
   /** @internal */ _extras: WriteExtras = {};
+  /** @internal */ _metadata: { title?: string; author?: string; subject?: string; keywords?: string } = {};
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -303,6 +304,11 @@ export class Presentation {
 
   get theme(): { headFontFace?: string; bodyFontFace?: string } {
     return { headFontFace: this._headFont, bodyFontFace: this._bodyFont };
+  }
+
+  /** Set presentation metadata (title, author, subject, keywords). */
+  setMetadata(meta: { title?: string; author?: string; subject?: string; keywords?: string }): void {
+    Object.assign(this._metadata, meta);
   }
 
   addSlide(): Slide {

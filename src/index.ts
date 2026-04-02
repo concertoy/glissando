@@ -220,6 +220,17 @@ export class Deck {
     return this;
   }
 
+  /** Set presentation metadata (title, author, subject, keywords). */
+  metadata(meta: { title?: string; author?: string; subject?: string; keywords?: string }): this {
+    this.pres.setMetadata(meta);
+    return this;
+  }
+
+  /** Get the current number of slides. */
+  get slideCount(): number {
+    return this._slideCount;
+  }
+
   /** Access the underlying Presentation instance for advanced use. */
   get raw(): Presentation {
     return this.pres;

@@ -35,7 +35,7 @@ export async function assemblePptx(pres: Presentation): Promise<Buffer> {
   zip.file("_rels/.rels", rootRelsXml());
 
   // ── docProps ─────────────────────────────────────────────────────
-  zip.file("docProps/core.xml", coreXml());
+  zip.file("docProps/core.xml", coreXml(pres._metadata));
   zip.file("docProps/app.xml", appXml(slides.length));
 
   // ── ppt/presentation.xml ─────────────────────────────────────────
@@ -161,7 +161,7 @@ function rootRelsXml(): string {
 
 // ─── docProps ──────────────────────────────────────────────────────
 
-function coreXml(): string {
+function coreXml(meta: { title?: string; author?: string; subject?: string; keywords?: string }): string {
   const now = new Date().toISOString();
   return (
     xmlDecl() +
@@ -169,8 +169,10 @@ function coreXml(): string {
     ` xmlns:dc="http://purl.org/dc/elements/1.1/"` +
     ` xmlns:dcterms="http://purl.org/dc/terms/"` +
     ` xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">` +
-    `<dc:title>Presentation</dc:title>` +
-    `<dc:creator>VibeSlides</dc:creator>` +
+    `<dc:title>${escXml(meta.title ?? "Presentation")}</dc:title>` +
+    `<dc:creator>${escXml(meta.author ?? "VibeSlides")}</dc:creator>` +
+    (meta.subject ? `<dc:subject>${escXml(meta.subject)}</dc:subject>` : "") +
+    (meta.keywords ? `<cp:keywords>${escXml(meta.keywords)}</cp:keywords>` : "") +
     `<dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created>` +
     `<dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified>` +
     `</cp:coreProperties>`

@@ -872,6 +872,16 @@ describe("OOXML", () => {
     });
   });
 
+  describe("presentation metadata", () => {
+    it("stores metadata", () => {
+      const pres = new Presentation();
+      pres.setMetadata({ title: "My Talk", author: "John", subject: "AI", keywords: "slides,ai" });
+      expect(pres._metadata.title).toBe("My Talk");
+      expect(pres._metadata.author).toBe("John");
+      expect(pres._metadata.subject).toBe("AI");
+    });
+  });
+
   describe("slide reordering", () => {
     it("moves a slide to a new position", () => {
       const pres = new Presentation();

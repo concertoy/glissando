@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 85 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 86 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -63,6 +63,9 @@
 - [x] **Slide reordering** — `deck.moveSlide(from, to)` / `pres.moveSlide()` for rearranging slide order.
 - [x] **Slide deletion** — `deck.removeSlide(index)` / `pres.removeSlide()` for removing slides.
 
+- [x] **Slide count accessor** — `deck.slideCount` getter for querying total slides.
+- [x] **Presentation metadata** — `deck.metadata({ title, author, subject, keywords })` → OOXML `docProps/core.xml`.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -72,5 +75,5 @@
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Slide count accessor** — `deck.slideCount` getter for querying total slides.
-- [ ] **Presentation metadata** — title, author, subject, keywords via OOXML core properties.
+- [ ] **Custom slide dimensions** — allow per-slide dimensions (non-uniform slide sizes).
+- [ ] **Table cell gradient fills** — gradient fills on individual table cells.

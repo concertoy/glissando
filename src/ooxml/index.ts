@@ -194,6 +194,20 @@ export interface AddShapeOpts {
   opacity?: number;
   /** Custom adjust values for shape geometry (e.g. { adj: 25000 } for arrow head size). */
   adjustments?: Record<string, number>;
+  /** Text inside the shape. */
+  text?: string | TextRun[];
+  /** Font size for shape text (points). */
+  fontSize?: number;
+  /** Font face for shape text. */
+  fontFace?: string;
+  /** Text color for shape text (hex). */
+  color?: string;
+  /** Text alignment inside shape. */
+  align?: "left" | "center" | "right" | "l" | "ctr" | "r";
+  /** Vertical alignment inside shape. */
+  valign?: "top" | "middle" | "bottom" | "t" | "ctr" | "b";
+  /** Bold text. */
+  bold?: boolean;
 }
 
 export interface AddImageOpts {
@@ -1076,6 +1090,35 @@ function buildShapeXml(
   // Shadow
   const shadow = opts.shadow ? buildShadowXml(opts.shadow) : "";
 
+  // Text body (optional text inside shape)
+  let txBody = "";
+  if (opts.text) {
+    const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
+    const vAlignMap: Record<string, string> = { top: "t", middle: "ctr", bottom: "b", t: "t", b: "b", ctr: "ctr" };
+    const anchor = vAlignMap[opts.valign ?? "middle"] ?? "ctr";
+    const algn = alignMap[opts.align ?? "center"] ?? "ctr";
+
+    if (typeof opts.text === "string") {
+      const rprAttrs = ['lang="en-US"', 'dirty="0"'];
+      if (opts.fontSize) rprAttrs.push(`sz="${Math.round(opts.fontSize * 100)}"`);
+      if (opts.bold) rprAttrs.push('b="1"');
+      const children: string[] = [];
+      if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
+      if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+      const rpr = children.length > 0
+        ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
+        : `<a:rPr ${rprAttrs.join(" ")}/>`;
+      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"/><a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+    } else {
+      const runsXml = opts.text.map((run: TextRun) => {
+        const ro = run.options ?? {};
+        const rProps = buildRunProps({ fontSize: opts.fontSize, fontFace: opts.fontFace, color: opts.color, ...ro });
+        return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
+      }).join("");
+      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"/><a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
+    }
+  }
+
   return (
     `<p:sp>` +
     `<p:nvSpPr>` +
@@ -1083,6 +1126,7 @@ function buildShapeXml(
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
     `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}</p:spPr>` +
+    txBody +
     `</p:sp>`
   );
 }

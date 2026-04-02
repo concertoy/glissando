@@ -872,6 +872,42 @@ describe("OOXML", () => {
     });
   });
 
+  describe("shape text", () => {
+    it("adds text inside a shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("roundRect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "FF0000" },
+        text: "Inside",
+        fontSize: 14,
+        color: "FFFFFF",
+        align: "center",
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<p:txBody>");
+      expect(xml).toContain("Inside");
+      expect(xml).toContain("FFFFFF");
+    });
+
+    it("supports TextRun[] in shape text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "0000FF" },
+        text: [
+          { text: "Bold", options: { bold: true } },
+          { text: " Normal" },
+        ],
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('b="1"');
+      expect(xml).toContain("Bold");
+      expect(xml).toContain("Normal");
+    });
+  });
+
   describe("line end types", () => {
     it("adds head and tail ends on text shape lines", () => {
       const pres = new Presentation();

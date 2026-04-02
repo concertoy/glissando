@@ -75,6 +75,8 @@ export interface TextRunOpts {
   indent?: number;
   /** Left margin for the paragraph in inches. */
   marginLeft?: number;
+  /** Text outline/stroke. */
+  outline?: { color: string; width?: number };
 }
 
 export interface BulletOpts {
@@ -185,6 +187,8 @@ export interface AddTextOpts {
   flipV?: boolean;
   /** WordArt text transform preset (e.g. "textArchUp", "textWave1", "textDeflate"). */
   textTransform?: string;
+  /** Glow effect around the text shape. */
+  glow?: { color: string; radius?: number; opacity?: number };
 }
 
 export interface AddShapeOpts {
@@ -207,6 +211,8 @@ export interface AddShapeOpts {
   opacity?: number;
   /** Custom adjust values for shape geometry (e.g. { adj: 25000 } for arrow head size). */
   adjustments?: Record<string, number>;
+  /** Glow effect around the shape. */
+  glow?: { color: string; radius?: number; opacity?: number };
   /** Text inside the shape. */
   text?: string | TextRun[];
   /** Font size for shape text (points). */
@@ -893,10 +899,10 @@ function buildTextShapeXml(
     lineXml = buildLineXml(opts.line);
   }
 
-  // Shadow
+  // Effects (shadow + glow)
   let shadowXml = "";
-  if (opts.shadow) {
-    shadowXml = buildShadowXml(opts.shadow);
+  if (opts.shadow || opts.glow) {
+    shadowXml = buildEffectLstXml(opts.shadow, opts.glow);
   }
 
   // Non-visual properties
@@ -1122,6 +1128,10 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
       `</a:outerShdw></a:effectLst>`
     );
   }
+  if (opts.outline) {
+    const lw = ptEmu(opts.outline.width ?? 1);
+    children.push(`<a:ln w="${lw}"><a:solidFill><a:srgbClr val="${opts.outline.color}"/></a:solidFill></a:ln>`);
+  }
   if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);
     children.push(`<a:hlinkClick r:id="${rId}"/>`);
@@ -1180,6 +1190,41 @@ function buildShadowXml(sh: ShadowOpts): string {
     `<a:srgbClr val="${sh.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
     `</a:outerShdw></a:effectLst>`
   );
+}
+
+function buildGlowXml(glow: { color: string; radius?: number; opacity?: number }): string {
+  const rad = ptEmu(glow.radius ?? 5);
+  const opacPct = Math.round((glow.opacity ?? 0.4) * 100000);
+  return (
+    `<a:effectLst><a:glow rad="${rad}">` +
+    `<a:srgbClr val="${glow.color}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+    `</a:glow></a:effectLst>`
+  );
+}
+
+/** Build effectLst combining shadow and glow. */
+function buildEffectLstXml(shadow?: ShadowOpts, glow?: { color: string; radius?: number; opacity?: number }): string {
+  if (!shadow && !glow) return "";
+  const effects: string[] = [];
+  if (glow) {
+    const rad = ptEmu(glow.radius ?? 5);
+    const opacPct = Math.round((glow.opacity ?? 0.4) * 100000);
+    effects.push(
+      `<a:glow rad="${rad}"><a:srgbClr val="${glow.color}"><a:alpha val="${opacPct}"/></a:srgbClr></a:glow>`
+    );
+  }
+  if (shadow) {
+    const blur = ptEmu(shadow.blur ?? 3);
+    const dist = ptEmu(shadow.offset ?? 1);
+    const dir = Math.round((shadow.angle ?? 45) * 60000);
+    const opacPct = Math.round((shadow.opacity ?? 0.1) * 100000);
+    effects.push(
+      `<a:outerShdw blurRad="${blur}" dist="${dist}" dir="${dir}" algn="bl" rotWithShape="0">` +
+      `<a:srgbClr val="${shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+      `</a:outerShdw>`
+    );
+  }
+  return `<a:effectLst>${effects.join("")}</a:effectLst>`;
 }
 
 // ─── Gradient fill helper ───────────────────────────────────────────
@@ -1262,8 +1307,8 @@ function buildShapeXml(
     line = buildLineXml(mergedLine);
   }
 
-  // Shadow
-  const shadow = opts.shadow ? buildShadowXml(opts.shadow) : "";
+  // Effects (shadow + glow)
+  const shadow = (opts.shadow || opts.glow) ? buildEffectLstXml(opts.shadow, opts.glow) : "";
 
   // Text body (optional text inside shape)
   let txBody = "";

@@ -92,6 +92,8 @@
 - [x] **Slide hide** — `slide.hidden = true` → `show="0"` on `<p:sld>` to skip during playback.
 - [x] **Table cell padding per-side** — `margin: [top, right, bottom, left]` on TableCell options for per-side cell padding.
 - [x] **Paragraph indent/hanging** — `indent` and `marginLeft` on TextRunOpts → `indent` and `marL` attributes on `<a:pPr>`.
+- [x] **Text outline** — `outline` on TextRunOpts → `<a:ln>` in `<a:rPr>` for outlined/stroked text characters.
+- [x] **Shape glow effect** — `glow` on AddTextOpts/AddShapeOpts → `<a:glow>` in `<a:effectLst>`. Combines with shadow.
 
 ## Open
 
@@ -111,5 +113,5 @@
 - [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
 - [ ] **Shape 3D effects** — `bevel`, `extrusion` on AddShapeOpts → `<a:sp3d>` for depth/perspective effects.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
-- [ ] **Text outline** — `outline` on TextRunOpts for outlined/stroked text characters via `<a:ln>` in `<a:rPr>`.
-- [ ] **Shape glow effect** — `glow` on AddShapeOpts/AddTextOpts → `<a:glow>` in `<a:effectLst>`.
+- [ ] **Soft edge effect** — `softEdge` on AddTextOpts/AddShapeOpts → `<a:softEdge>` for feathered edges.
+- [ ] **Reflection effect** — `reflection` on AddTextOpts/AddShapeOpts → `<a:reflection>` for mirror effects.

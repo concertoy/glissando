@@ -1085,6 +1085,67 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text outline", () => {
+    it("adds line element to text run properties", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Outlined text",
+        options: { color: "FF0000", outline: { color: "000000", width: 2 } },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:ln");
+      expect(xml).toContain("000000");
+    });
+  });
+
+  describe("shape glow effect", () => {
+    it("adds glow to text shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Glowing text", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        glow: { color: "00FF00", radius: 10, opacity: 0.5 },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:glow");
+      expect(xml).toContain("00FF00");
+    });
+
+    it("adds glow to shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "AAAAAA" },
+        glow: { color: "FF0000", radius: 8 },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:glow");
+      expect(xml).toContain("FF0000");
+    });
+
+    it("combines shadow and glow", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Both effects", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        shadow: { color: "000000" },
+        glow: { color: "0000FF" },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:glow");
+      expect(xml).toContain("<a:outerShdw");
+      // Both should be in the same effectLst
+      const effectLstCount = (xml.match(/<a:effectLst>/g) || []).length;
+      expect(effectLstCount).toBe(1);
+    });
+  });
+
   describe("paragraph indent and margin", () => {
     it("sets first-line indent on paragraph", () => {
       const pres = new Presentation();

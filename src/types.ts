@@ -206,6 +206,8 @@ export interface NumberedListProps {
   h?: number;
   fontSize?: number;
   build?: boolean;  // reveal bullets one-by-one on click
+  /** Start number for the list (default 1). */
+  startAt?: number;
 }
 
 export interface CodeBlockProps {

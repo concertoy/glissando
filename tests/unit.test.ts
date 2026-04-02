@@ -1085,6 +1085,67 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text fit with minFontScale", () => {
+    it("adds fontScale attribute to normAutofit", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Long text that might need shrinking", {
+        x: 0, y: 0, w: 3, h: 0.5,
+        fit: { minFontScale: 50 },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('<a:normAutofit fontScale="50000"/>');
+    });
+
+    it("uses plain normAutofit for fit: shrink", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Shrink text", {
+        x: 0, y: 0, w: 3, h: 0.5,
+        fit: "shrink",
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:normAutofit/>");
+    });
+  });
+
+  describe("numbered list startAt", () => {
+    it("sets startAt attribute on buAutoNum", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Item five",
+        options: { bullet: { type: "number", startAt: 5 } },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('startAt="5"');
+      expect(xml).toContain("arabicPeriod");
+    });
+
+    it("omits startAt when value is 1", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Item one",
+        options: { bullet: { type: "number", startAt: 1 } },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).not.toContain("startAt");
+    });
+  });
+
+  describe("table cell vertical text", () => {
+    it("adds vert attribute to tcPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Vertical", options: { vertical: "vert" } }, { text: "Normal" }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('vert="vert"');
+    });
+  });
+
   describe("internal slide hyperlinks", () => {
     it("adds slide link relationship and action", () => {
       const pres = new Presentation();

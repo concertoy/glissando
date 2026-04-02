@@ -80,6 +80,8 @@ export interface BulletOpts {
   /** Direct bullet character (e.g. "–", "›", "★"). Takes precedence over code. */
   char?: string;
   color?: string;
+  /** Start number for numbered lists (default 1). Only applies when type is "number". */
+  startAt?: number;
 }
 
 // ─── Slide method option types ──────────────────────────────────────
@@ -155,7 +157,8 @@ export interface AddTextOpts {
   rectRadius?: number;
   objectName?: string;
   autoFit?: boolean;
-  fit?: "shrink";
+  /** Shrink text to fit the bounding box. Set to "shrink" or { minFontScale: 50 } for minimum font scale (%). */
+  fit?: "shrink" | { minFontScale: number };
   paraSpaceAfter?: number;
   paraSpaceBefore?: number;
   bullet?: BulletOpts | boolean;
@@ -289,6 +292,8 @@ export interface TableCell {
     colspan?: number;
     /** Number of rows this cell spans (default 1). */
     rowspan?: number;
+    /** Vertical text direction. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
+    vertical?: "vert" | "vert270";
   };
 }
 
@@ -924,6 +929,9 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
   let fitXml = "";
   if (opts.fit === "shrink") {
     fitXml = `<a:normAutofit/>`;
+  } else if (opts.fit && typeof opts.fit === "object" && opts.fit.minFontScale != null) {
+    const scale = Math.round(opts.fit.minFontScale * 1000); // percentage × 1000
+    fitXml = `<a:normAutofit fontScale="${scale}"/>`;
   } else if (opts.autoFit) {
     fitXml = `<a:spAutoFit/>`;
   }
@@ -1039,7 +1047,8 @@ function buildParagraphProps(opts: Record<string, any>): string {
 
     if (bOpts.type === "number") {
       children.push(`<a:buFont typeface="Arial"/>`);
-      children.push(`<a:buAutoNum type="arabicPeriod"/>`);
+      const startAttr = bOpts.startAt != null && bOpts.startAt !== 1 ? ` startAt="${bOpts.startAt}"` : "";
+      children.push(`<a:buAutoNum type="arabicPeriod"${startAttr}/>`);
     } else {
       // Default: bullet character
       const char = bOpts.char ?? (bOpts.code ? String.fromCodePoint(parseInt(bOpts.code, 16)) : "\u2022");
@@ -1411,6 +1420,9 @@ function buildTableXml(
       if (co.valign) {
         const va: Record<string, string> = { top: "t", middle: "ctr", bottom: "b" };
         tcPrParts.push(`anchor="${va[co.valign] ?? "ctr"}"`);
+      }
+      if (co.vertical) {
+        tcPrParts.push(`vert="${co.vertical}"`);
       }
 
       const tcPrChildren: string[] = [];

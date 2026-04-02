@@ -231,14 +231,22 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const h = props.h ?? 4.5;
     const nlObjName = props.build ? `nl-${bulletListCounter++}` : undefined;
     const numBaseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
+    const numBullet = (isFirst: boolean): { type: "number"; color: string; startAt?: number } => {
+      const b: { type: "number"; color: string; startAt?: number } = { type: "number", color: c.accent };
+      if (isFirst && props.startAt != null) b.startAt = props.startAt;
+      return b;
+    };
+    let isFirstItem = true;
     const textRows: TextRun[] = props.items.flatMap((item): TextRun[] => {
+      const first = isFirstItem;
+      isFirstItem = false;
       const mathRuns = expandTextWithMath(item, numBaseOpts);
       if (mathRuns) {
         return mathRuns.map((run, j) => ({
           ...run,
           options: {
             ...run.options,
-            bullet: j === 0 ? { type: "number", color: c.accent } : undefined,
+            bullet: j === 0 ? numBullet(first && j === 0) : undefined,
             paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
             breakLine: j === mathRuns.length - 1 ? true : undefined,
           },
@@ -250,7 +258,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           fontSize,
           fontFace: f.sans,
           color: c.textSecondary,
-          bullet: { type: "number", color: c.accent },
+          bullet: numBullet(first),
           paraSpaceAfter: 8,
         },
       }];

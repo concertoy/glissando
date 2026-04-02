@@ -86,6 +86,10 @@
 - [x] **Table auto-column widths** — `autoColW` on AddTableOpts calculates proportional column widths from cell content length.
 - [x] **Text subscript/superscript in bodyText** — `^{super}` and `_{sub}` syntax in plain text (outside `$...$`) via `expandTextWithMath`.
 
+- [x] **Numbered list start index** — `startAt` on BulletOpts and NumberedListProps → `startAt` attribute on `<a:buAutoNum>`.
+- [x] **Table cell vertical text** — `vertical` on TableCell options → `vert` attribute on `<a:tcPr>`.
+- [x] **Text fit with minFontScale** — `fit: { minFontScale: 50 }` on AddTextOpts → `<a:normAutofit fontScale="50000"/>`.
+
 ## Open
 
 ### High impact
@@ -100,7 +104,8 @@
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
 - [ ] **Shape connectors by name** — `slide.connect("boxA", "boxB", { type: "elbow" })` using objectName for simpler diagram wiring.
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
-- [ ] **Table cell vertical text** — `vertical` on TableCell options for rotated header cells.
 - [ ] **Image tiling** — `tile` on AddImageOpts for repeating image patterns in backgrounds.
 - [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
-- [ ] **Numbered list start index** — `startAt` on NumberedListProps for lists that start at a number other than 1.
+- [ ] **Slide hide** — `hidden` flag on Slide to skip during presentation playback.
+- [ ] **Custom slide dimensions** — per-deck width/height override beyond the standard 10×5.625.
+- [ ] **Table cell padding per-side** — `margin: [top, right, bottom, left]` on TableCell options.

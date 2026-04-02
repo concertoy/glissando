@@ -294,6 +294,8 @@ export interface TableCell {
     rowspan?: number;
     /** Vertical text direction. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
     vertical?: "vert" | "vert270";
+    /** Per-cell margins in points: number for uniform, [top, right, bottom, left] for per-side. */
+    margin?: number | [number, number, number, number];
   };
 }
 
@@ -599,6 +601,7 @@ export class Slide {
   /** @internal */ _hyperlinks: Array<{ rId: string; url: string }> = [];
   /** @internal */ _hyperlinkCounter = 0;
   /** @internal */ _transition?: TransitionOpts;
+  /** @internal */ _hidden = false;
 
   constructor(index: number) {
     this._slideIndex = index;
@@ -622,6 +625,7 @@ export class Slide {
     s._slideLinks = this._slideLinks.map(l => ({ ...l }));
     s._hyperlinkCounter = this._hyperlinkCounter;
     s._transition = this._transition ? { ...this._transition } : undefined;
+    s._hidden = this._hidden;
     return s;
   }
 
@@ -645,6 +649,10 @@ export class Slide {
   /** Set a transition effect for this slide. */
   set transition(opts: TransitionOpts) { this._transition = opts; }
   get transition(): TransitionOpts | undefined { return this._transition; }
+
+  /** Hide this slide during presentation playback. */
+  set hidden(val: boolean) { this._hidden = val; }
+  get hidden(): boolean { return this._hidden; }
 
   /** @internal */
   _allocId(name?: string): number {
@@ -772,7 +780,9 @@ export class Slide {
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
       `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"` +
       ` xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"` +
-      ` xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+      ` xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` +
+      (this._hidden ? ` show="0"` : "") +
+      `>` +
       `<p:cSld>${bgXml}${spTree}</p:cSld>` +
       `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>` +
       transition +
@@ -1416,7 +1426,16 @@ function buildTableXml(
 
       // Cell properties
       const tcPrParts: string[] = [];
-      tcPrParts.push(`marL="${cellMargin}" marR="${cellMargin}" marT="${cellMargin}" marB="${cellMargin}"`);
+      if (co.margin != null) {
+        if (typeof co.margin === "number") {
+          const m = ptEmu(co.margin);
+          tcPrParts.push(`marL="${m}" marR="${m}" marT="${m}" marB="${m}"`);
+        } else {
+          tcPrParts.push(`marT="${ptEmu(co.margin[0])}" marR="${ptEmu(co.margin[1])}" marB="${ptEmu(co.margin[2])}" marL="${ptEmu(co.margin[3])}"`);
+        }
+      } else {
+        tcPrParts.push(`marL="${cellMargin}" marR="${cellMargin}" marT="${cellMargin}" marB="${cellMargin}"`);
+      }
       if (co.valign) {
         const va: Record<string, string> = { top: "t", middle: "ctr", bottom: "b" };
         tcPrParts.push(`anchor="${va[co.valign] ?? "ctr"}"`);

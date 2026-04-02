@@ -89,6 +89,8 @@
 - [x] **Numbered list start index** — `startAt` on BulletOpts and NumberedListProps → `startAt` attribute on `<a:buAutoNum>`.
 - [x] **Table cell vertical text** — `vertical` on TableCell options → `vert` attribute on `<a:tcPr>`.
 - [x] **Text fit with minFontScale** — `fit: { minFontScale: 50 }` on AddTextOpts → `<a:normAutofit fontScale="50000"/>`.
+- [x] **Slide hide** — `slide.hidden = true` → `show="0"` on `<p:sld>` to skip during playback.
+- [x] **Table cell padding per-side** — `margin: [top, right, bottom, left]` on TableCell options for per-side cell padding.
 
 ## Open
 
@@ -106,6 +108,6 @@
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
 - [ ] **Image tiling** — `tile` on AddImageOpts for repeating image patterns in backgrounds.
 - [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
-- [ ] **Slide hide** — `hidden` flag on Slide to skip during presentation playback.
-- [ ] **Custom slide dimensions** — per-deck width/height override beyond the standard 10×5.625.
-- [ ] **Table cell padding per-side** — `margin: [top, right, bottom, left]` on TableCell options.
+- [ ] **Shape 3D effects** — `bevel`, `extrusion` on AddShapeOpts → `<a:sp3d>` for depth/perspective effects.
+- [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
+- [ ] **Paragraph indent/hanging** — `indent` and `marL` on TextRunOpts for hanging/first-line indents.

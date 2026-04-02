@@ -1085,6 +1085,39 @@ describe("OOXML", () => {
     });
   });
 
+  describe("slide hidden", () => {
+    it("adds show=0 to hidden slides", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Hidden slide", { x: 0, y: 0, w: 5, h: 1 });
+      slide.hidden = true;
+      const xml = slide._toXml();
+      expect(xml).toContain('show="0"');
+    });
+
+    it("does not add show attribute for visible slides", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Visible", { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._toXml();
+      expect(xml).not.toContain("show=");
+    });
+  });
+
+  describe("table cell per-side margin", () => {
+    it("applies per-side margins to cell", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Padded", options: { margin: [10, 20, 10, 20] } }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0].toString();
+      // 10pt = 127000 EMU, 20pt = 254000 EMU
+      expect(xml).toContain('marT="127000"');
+      expect(xml).toContain('marR="254000"');
+    });
+  });
+
   describe("text fit with minFontScale", () => {
     it("adds fontScale attribute to normAutofit", () => {
       const pres = new Presentation();

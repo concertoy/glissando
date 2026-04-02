@@ -872,6 +872,28 @@ describe("OOXML", () => {
     });
   });
 
+  describe("table cell gradient fills", () => {
+    it("applies gradient to table cell", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Gradient cell", options: {
+          gradient: {
+            type: "linear",
+            angle: 90,
+            stops: [
+              { position: 0, color: "FF0000" },
+              { position: 100, color: "0000FF" },
+            ],
+          },
+        } }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("FF0000");
+    });
+  });
+
   describe("presentation metadata", () => {
     it("stores metadata", () => {
       const pres = new Presentation();

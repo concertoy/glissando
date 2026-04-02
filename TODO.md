@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 86 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 87 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -66,6 +66,8 @@
 - [x] **Slide count accessor** — `deck.slideCount` getter for querying total slides.
 - [x] **Presentation metadata** — `deck.metadata({ title, author, subject, keywords })` → OOXML `docProps/core.xml`.
 
+- [x] **Table cell gradient fills** — `gradient` on TableCell options → `<a:gradFill>` in `<a:tcPr>`.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -76,4 +78,5 @@
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
 - [ ] **Custom slide dimensions** — allow per-slide dimensions (non-uniform slide sizes).
-- [ ] **Table cell gradient fills** — gradient fills on individual table cells.
+- [ ] **Shape text wrapping** — `wrapText` on AddShapeOpts for text inside shapes.
+- [ ] **Line end types** — expose `headEnd`/`tailEnd` on LineOpts for arrow/stealth/diamond ends.

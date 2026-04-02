@@ -252,6 +252,7 @@ export interface TableCell {
     align?: string;
     valign?: string;
     fill?: FillOpts;
+    gradient?: GradientFill;
     /** Cell borders: [top, right, bottom, left]. */
     border?: TableBorderOpts[];
     paraSpaceBefore?: number;
@@ -1208,7 +1209,9 @@ function buildTableXml(
       }
 
       // Fill
-      if (co.fill) {
+      if (co.gradient) {
+        tcPrChildren.push(buildGradientFillXml(co.gradient));
+      } else if (co.fill) {
         tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}"/></a:solidFill>`);
       }
 

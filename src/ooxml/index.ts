@@ -197,6 +197,10 @@ export interface AddTextOpts {
   reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   /** 3D bevel on the text shape. */
   bevel?: { type?: string; width?: number; height?: number };
+  /** 3D extrusion (depth) on the text shape. */
+  extrusion?: { depth?: number; color?: string };
+  /** Inner shadow effect. */
+  innerShadow?: { color?: string; blur?: number; offset?: number; angle?: number; opacity?: number };
 }
 
 export interface AddShapeOpts {
@@ -227,6 +231,10 @@ export interface AddShapeOpts {
   reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   /** 3D bevel on the shape. */
   bevel?: { type?: string; width?: number; height?: number };
+  /** 3D extrusion (depth) on the shape. */
+  extrusion?: { depth?: number; color?: string };
+  /** Inner shadow effect. */
+  innerShadow?: { color?: string; blur?: number; offset?: number; angle?: number; opacity?: number };
   /** Text inside the shape. */
   text?: string | TextRun[];
   /** Font size for shape text (points). */
@@ -241,6 +249,41 @@ export interface AddShapeOpts {
   valign?: "top" | "middle" | "bottom" | "t" | "ctr" | "b";
   /** Bold text. */
   bold?: boolean;
+  /** Number of text columns (only applies when text is set). */
+  columns?: number;
+  /** Column spacing in inches (default 0.3). */
+  columnSpacing?: number;
+}
+
+/** A single path segment for freeform shapes. */
+export interface PathSegment {
+  /** "moveTo", "lineTo", "cubicBezTo", "arcTo", "close". */
+  type: "moveTo" | "lineTo" | "cubicBezTo" | "arcTo" | "close";
+  /** Target point (for moveTo, lineTo). In EMU or inches depending on context. */
+  x?: number;
+  y?: number;
+  /** Control points for cubicBezTo: [cp1x, cp1y, cp2x, cp2y]. */
+  cp?: [number, number, number, number];
+  /** For arcTo: width radius, height radius, start angle, swing angle (all degrees). */
+  arc?: { wR: number; hR: number; stAng: number; swAng: number };
+}
+
+export interface AddFreeformOpts {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  /** Path segments in inches (auto-converted to EMU). */
+  path: PathSegment[];
+  fill?: FillOpts;
+  gradient?: GradientFill;
+  line?: LineOpts;
+  shadow?: ShadowOpts;
+  objectName?: string;
+  rotate?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  opacity?: number;
 }
 
 export interface AddImageOpts {
@@ -263,6 +306,8 @@ export interface AddImageOpts {
   line?: LineOpts;
   /** Drop shadow on image. */
   shadow?: ShadowOpts;
+  /** Tile (repeat) the image across the fill area. */
+  tile?: { sx?: number; sy?: number; tx?: number; ty?: number; flip?: "none" | "x" | "y" | "xy"; align?: string };
 }
 
 export interface AddTableOpts {
@@ -567,6 +612,13 @@ export class GroupShape {
     this._children.push(buildShapeXml(id, name, type, o));
   }
 
+  addFreeform(opts: AddFreeformOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._slide._allocId(o.objectName);
+    const name = o.objectName ?? `Freeform_${id}`;
+    this._children.push(buildFreeformXml(id, name, o));
+  }
+
   addImage(opts: AddImageOpts): void {
     const o: Record<string, any> = opts;
     const id = this._slide._allocId(o.objectName);
@@ -727,6 +779,13 @@ export class Slide {
     const rId = `rImg${this._mediaCounter}`;
     this._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
     this._elements.push(buildPictureXml(id, name, rId, o));
+  }
+
+  addFreeform(opts: AddFreeformOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._allocId(o.objectName);
+    const name = o.objectName ?? `Freeform_${id}`;
+    this._elements.push(buildFreeformXml(id, name, o));
   }
 
   addTable(rows: TableCell[][], opts: AddTableOpts): void {
@@ -913,10 +972,10 @@ function buildTextShapeXml(
     lineXml = buildLineXml(opts.line);
   }
 
-  // Effects (shadow, glow, soft edge, reflection)
+  // Effects (shadow, glow, soft edge, reflection, inner shadow)
   let shadowXml = "";
-  if (opts.shadow || opts.glow || opts.softEdge || opts.reflection) {
-    shadowXml = buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection);
+  if (opts.shadow || opts.glow || opts.softEdge || opts.reflection || opts.innerShadow) {
+    shadowXml = buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection, opts.innerShadow);
   }
 
   // Non-visual properties
@@ -929,13 +988,10 @@ function buildTextShapeXml(
     `<p:nvPr/>` +
     `</p:nvSpPr>`;
 
-  // 3D bevel
+  // 3D bevel + extrusion
   let bevelXml = "";
-  if (opts.bevel) {
-    const bType = opts.bevel.type ?? "relaxedInset";
-    const bW = ptEmu(opts.bevel.width ?? 6);
-    const bH = ptEmu(opts.bevel.height ?? 6);
-    bevelXml = `<a:sp3d><a:bevelT w="${bW}" h="${bH}" prst="${bType}"/></a:sp3d>`;
+  if (opts.bevel || opts.extrusion) {
+    bevelXml = build3dXml(opts.bevel, opts.extrusion);
   }
 
   // Shape properties
@@ -1227,16 +1283,35 @@ function buildGlowXml(glow: { color: string; radius?: number; opacity?: number }
   );
 }
 
+interface InnerShadowOpts {
+  color?: string; blur?: number; offset?: number; angle?: number; opacity?: number;
+}
+
 interface EffectOpts {
   shadow?: ShadowOpts;
   glow?: { color: string; radius?: number; opacity?: number };
   softEdge?: number;
   reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+  innerShadow?: InnerShadowOpts;
 }
 
-/** Build effectLst combining shadow, glow, soft edge, and reflection. */
-function buildEffectLstXml(shadow?: ShadowOpts, glow?: EffectOpts["glow"], softEdge?: number, reflection?: EffectOpts["reflection"]): string {
-  if (!shadow && !glow && !softEdge && !reflection) return "";
+/** Build <a:sp3d> element for 3D bevel and extrusion effects. */
+function build3dXml(
+  bevel?: { type?: string; width?: number; height?: number },
+  extrusion?: { depth?: number; color?: string },
+): string {
+  if (!bevel && !extrusion) return "";
+  const extrusionDepth = extrusion ? ` extrusionH="${ptEmu(extrusion.depth ?? 6)}"` : "";
+  const extrusionColor = extrusion?.color ? `<a:extrusionClr><a:srgbClr val="${extrusion.color}"/></a:extrusionClr>` : "";
+  const bevelEl = bevel
+    ? `<a:bevelT w="${ptEmu(bevel.width ?? 6)}" h="${ptEmu(bevel.height ?? 6)}" prst="${bevel.type ?? "relaxedInset"}"/>`
+    : "";
+  return `<a:sp3d${extrusionDepth}>${bevelEl}${extrusionColor}</a:sp3d>`;
+}
+
+/** Build effectLst combining all visual effects. */
+function buildEffectLstXml(shadow?: ShadowOpts, glow?: EffectOpts["glow"], softEdge?: number, reflection?: EffectOpts["reflection"], innerShadow?: InnerShadowOpts): string {
+  if (!shadow && !glow && !softEdge && !reflection && !innerShadow) return "";
   const effects: string[] = [];
   if (glow) {
     const rad = ptEmu(glow.radius ?? 5);
@@ -1263,6 +1338,17 @@ function buildEffectLstXml(shadow?: ShadowOpts, glow?: EffectOpts["glow"], softE
     const dist = ptEmu(reflection.distance ?? 0);
     effects.push(
       `<a:reflection blurRad="${blur}" stA="${stAlpha}" endA="${endAlpha}" dist="${dist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`
+    );
+  }
+  if (innerShadow) {
+    const blur = ptEmu(innerShadow.blur ?? 3);
+    const dist = ptEmu(innerShadow.offset ?? 1);
+    const dir = Math.round((innerShadow.angle ?? 225) * 60000);
+    const opacPct = Math.round((innerShadow.opacity ?? 0.3) * 100000);
+    effects.push(
+      `<a:innerShdw blurRad="${blur}" dist="${dist}" dir="${dir}">` +
+      `<a:srgbClr val="${innerShadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+      `</a:innerShdw>`
     );
   }
   if (softEdge) {
@@ -1351,9 +1437,9 @@ function buildShapeXml(
     line = buildLineXml(mergedLine);
   }
 
-  // Effects (shadow, glow, soft edge, reflection)
-  const shadow = (opts.shadow || opts.glow || opts.softEdge || opts.reflection)
-    ? buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection)
+  // Effects (shadow, glow, soft edge, reflection, inner shadow)
+  const shadow = (opts.shadow || opts.glow || opts.softEdge || opts.reflection || opts.innerShadow)
+    ? buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection, opts.innerShadow)
     : "";
 
   // Text body (optional text inside shape)
@@ -1374,14 +1460,18 @@ function buildShapeXml(
       const rpr = children.length > 0
         ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
         : `<a:rPr ${rprAttrs.join(" ")}/>`;
-      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"/><a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+      const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
+        + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
+      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"${colAttrs}/><a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
     } else {
       const runsXml = opts.text.map((run: TextRun) => {
         const ro = run.options ?? {};
         const rProps = buildRunProps({ fontSize: opts.fontSize, fontFace: opts.fontFace, color: opts.color, ...ro });
         return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
       }).join("");
-      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"/><a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
+      const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
+        + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
+      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"${colAttrs}/><a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
     }
   }
 
@@ -1391,8 +1481,80 @@ function buildShapeXml(
     `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
-    `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}${opts.bevel ? `<a:sp3d><a:bevelT w="${ptEmu(opts.bevel.width ?? 6)}" h="${ptEmu(opts.bevel.height ?? 6)}" prst="${opts.bevel.type ?? "relaxedInset"}"/></a:sp3d>` : ""}</p:spPr>` +
+    `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}${(opts.bevel || opts.extrusion) ? build3dXml(opts.bevel, opts.extrusion) : ""}</p:spPr>` +
     txBody +
+    `</p:sp>`
+  );
+}
+
+// ─── Freeform XML ──────────────────────────────────────────────────
+
+function buildFreeformXml(
+  id: number,
+  name: string,
+  opts: Record<string, any>,
+): string {
+  const x = emu(opts.x ?? 0);
+  const y = emu(opts.y ?? 0);
+  const cx = emu(opts.w ?? 1);
+  const cy = emu(opts.h ?? 1);
+  const flipH = opts.flipH ? ' flipH="1"' : "";
+  const flipV = opts.flipV ? ' flipV="1"' : "";
+  const rot = opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : "";
+
+  // Build path segments
+  const segs: string[] = [];
+  for (const seg of (opts.path as PathSegment[])) {
+    switch (seg.type) {
+      case "moveTo":
+        segs.push(`<a:moveTo><a:pt x="${emu(seg.x ?? 0)}" y="${emu(seg.y ?? 0)}"/></a:moveTo>`);
+        break;
+      case "lineTo":
+        segs.push(`<a:lnTo><a:pt x="${emu(seg.x ?? 0)}" y="${emu(seg.y ?? 0)}"/></a:lnTo>`);
+        break;
+      case "cubicBezTo":
+        if (seg.cp) {
+          segs.push(`<a:cubicBezTo><a:pt x="${emu(seg.cp[0])}" y="${emu(seg.cp[1])}"/><a:pt x="${emu(seg.cp[2])}" y="${emu(seg.cp[3])}"/><a:pt x="${emu(seg.x ?? 0)}" y="${emu(seg.y ?? 0)}"/></a:cubicBezTo>`);
+        }
+        break;
+      case "arcTo":
+        if (seg.arc) {
+          segs.push(`<a:arcTo wR="${emu(seg.arc.wR)}" hR="${emu(seg.arc.hR)}" stAng="${Math.round(seg.arc.stAng * 60000)}" swAng="${Math.round(seg.arc.swAng * 60000)}"/>`);
+        }
+        break;
+      case "close":
+        segs.push(`<a:close/>`);
+        break;
+    }
+  }
+
+  // Fill
+  let fill: string;
+  if (opts.gradient) {
+    fill = buildGradientFillXml(opts.gradient);
+  } else if (opts.fill) {
+    const opacAttr = opts.opacity != null
+      ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>`
+      : "";
+    fill = `<a:solidFill><a:srgbClr val="${opts.fill.color}">${opacAttr}</a:srgbClr></a:solidFill>`;
+  } else {
+    fill = `<a:noFill/>`;
+  }
+
+  const line = opts.line ? buildLineXml(opts.line) : "";
+  const shadow = opts.shadow ? buildShadowXml(opts.shadow) : "";
+
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvSpPr/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm${rot}${flipH}${flipV}><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="${cx}" h="${cy}">${segs.join("")}</a:path></a:pathLst></a:custGeom>` +
+    fill + line + shadow +
+    `</p:spPr>` +
     `</p:sp>`
   );
 }
@@ -1432,7 +1594,9 @@ function buildPictureXml(
     (opts.crop
       ? `<a:srcRect t="${Math.round((opts.crop.top ?? 0) * 1000)}" r="${Math.round((opts.crop.right ?? 0) * 1000)}" b="${Math.round((opts.crop.bottom ?? 0) * 1000)}" l="${Math.round((opts.crop.left ?? 0) * 1000)}"/>`
       : "") +
-    `<a:stretch><a:fillRect/></a:stretch>` +
+    (opts.tile
+      ? `<a:tile tx="${emu(opts.tile.tx ?? 0)}" ty="${emu(opts.tile.ty ?? 0)}" sx="${Math.round((opts.tile.sx ?? 100) * 1000)}" sy="${Math.round((opts.tile.sy ?? 100) * 1000)}" flip="${opts.tile.flip ?? "none"}" algn="${opts.tile.align ?? "tl"}"/>`
+      : `<a:stretch><a:fillRect/></a:stretch>`) +
     `</p:blipFill>` +
     `<p:spPr>` +
     `<a:xfrm${opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : ""}>` +
@@ -2109,4 +2273,77 @@ function applyCalloutGrouping(slide: Slide): void {
   }
 
   slide._elements = allXml.split("\n<!SPLIT!>\n").filter(Boolean);
+}
+
+// ─── Shape Preset Effects ──────────────────────────────────────────
+
+/** Pre-built shape effect presets combining bevel, shadow, gradient, etc. */
+export const shapePresets = {
+  /** Glossy button — gradient fill with bevel and subtle shadow. */
+  glossy: (color: string): Partial<AddShapeOpts> => ({
+    gradient: {
+      type: "linear",
+      angle: 180,
+      stops: [
+        { position: 0, color: lightenHex(color, 40) },
+        { position: 50, color },
+        { position: 100, color: darkenHex(color, 20) },
+      ],
+    },
+    bevel: { type: "circle", width: 4, height: 4 },
+    shadow: { blur: 4, offset: 2, angle: 315, color: "000000", opacity: 0.25 },
+  }),
+
+  /** Matte flat — solid fill with soft shadow, no bevel. */
+  matte: (color: string): Partial<AddShapeOpts> => ({
+    fill: { color },
+    shadow: { blur: 6, offset: 3, angle: 315, color: "000000", opacity: 0.15 },
+  }),
+
+  /** Raised card — white fill with soft edge and shadow. */
+  card: (): Partial<AddShapeOpts> => ({
+    fill: { color: "FFFFFF" },
+    shadow: { blur: 8, offset: 2, angle: 315, color: "000000", opacity: 0.12 },
+    rectRadius: 0.1,
+  }),
+
+  /** Embossed — bevel with inner shadow for pressed-in look. */
+  embossed: (color: string): Partial<AddShapeOpts> => ({
+    fill: { color },
+    bevel: { type: "relaxedInset", width: 6, height: 6 },
+    innerShadow: { color: darkenHex(color, 40), blur: 3, offset: 1, opacity: 0.3 },
+  }),
+
+  /** Floating — elevated card effect with large soft shadow. */
+  floating: (color: string): Partial<AddShapeOpts> => ({
+    fill: { color },
+    shadow: { blur: 16, offset: 6, angle: 315, color: "000000", opacity: 0.2 },
+    rectRadius: 0.08,
+  }),
+} as const;
+
+/** Lighten a hex color by a percentage (0–100). */
+function lightenHex(hex: string, pct: number): string {
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const f = pct / 100;
+  return [
+    Math.min(255, Math.round(r + (255 - r) * f)),
+    Math.min(255, Math.round(g + (255 - g) * f)),
+    Math.min(255, Math.round(b + (255 - b) * f)),
+  ].map(c => c.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
+/** Darken a hex color by a percentage (0–100). */
+function darkenHex(hex: string, pct: number): string {
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const f = 1 - pct / 100;
+  return [
+    Math.max(0, Math.round(r * f)),
+    Math.max(0, Math.round(g * f)),
+    Math.max(0, Math.round(b * f)),
+  ].map(c => c.toString(16).padStart(2, "0")).join("").toUpperCase();
 }

@@ -7,7 +7,7 @@
 import { describe, it, expect } from "vitest";
 import { columns, rows, below, inset, contentArea, contentAreaBelow } from "../src/layout.js";
 import { parseInlineMath, isComplexMath, mathToTextRuns, expandTextWithMath } from "../src/inline-math.js";
-import { Presentation, Slide } from "../src/ooxml/index.js";
+import { Presentation, Slide, shapePresets } from "../src/ooxml/index.js";
 import type { Rect, ThemeSpacing } from "../src/types.js";
 
 // ─── Layout helpers ────────────────────────────────────────────────
@@ -1558,6 +1558,264 @@ describe("OOXML", () => {
       expect(zip.file("ppt/theme/theme1.xml")).not.toBeNull();
 
       unlinkSync(path);
+    });
+  });
+
+  describe("Inner shadow effect", () => {
+    it("emits <a:innerShdw> on text shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Inner" }], {
+        x: 1, y: 1, w: 4, h: 1,
+        innerShadow: { color: "FF0000", blur: 5, offset: 2, angle: 135, opacity: 0.5 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:innerShdw");
+      expect(xml).toContain('val="FF0000"');
+      expect(xml).toContain("<a:alpha");
+    });
+
+    it("emits <a:innerShdw> on shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 3, h: 2,
+        fill: { color: "CCCCCC" },
+        innerShadow: { color: "333333", blur: 3 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:innerShdw");
+      expect(xml).toContain('val="333333"');
+    });
+  });
+
+  describe("Text columns in shapes", () => {
+    it("emits numCol on shape text body", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 8, h: 4,
+        text: "Multi-column text",
+        columns: 3,
+        columnSpacing: 0.5,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('numCol="3"');
+      expect(xml).toContain("spcCol=");
+    });
+
+    it("does not emit numCol when columns is 1", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 8, h: 4,
+        text: "Single column",
+        columns: 1,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("numCol");
+    });
+
+    it("works with TextRun[] text in shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 8, h: 4,
+        text: [{ text: "Col A" }, { text: "Col B" }],
+        columns: 2,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('numCol="2"');
+      expect(xml).toContain("Col A");
+      expect(xml).toContain("Col B");
+    });
+  });
+
+  describe("Image tiling", () => {
+    it("emits <a:tile> instead of <a:stretch> when tile is set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 5, h: 5,
+        tile: { sx: 50, sy: 50, flip: "xy" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:tile");
+      expect(xml).toContain('flip="xy"');
+      expect(xml).not.toContain("<a:stretch>");
+    });
+
+    it("defaults to <a:stretch> when no tile is set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 2, h: 2,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:stretch>");
+      expect(xml).not.toContain("<a:tile");
+    });
+  });
+
+  describe("Freeform / custom geometry shapes", () => {
+    it("emits <a:custGeom> with moveTo and lineTo", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addFreeform({
+        x: 1, y: 1, w: 3, h: 3,
+        path: [
+          { type: "moveTo", x: 0, y: 0 },
+          { type: "lineTo", x: 3, y: 0 },
+          { type: "lineTo", x: 1.5, y: 3 },
+          { type: "close" },
+        ],
+        fill: { color: "FF0000" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:custGeom>");
+      expect(xml).toContain("<a:moveTo>");
+      expect(xml).toContain("<a:lnTo>");
+      expect(xml).toContain("<a:close/>");
+      expect(xml).toContain('val="FF0000"');
+    });
+
+    it("supports cubicBezTo curves", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addFreeform({
+        x: 0, y: 0, w: 4, h: 4,
+        path: [
+          { type: "moveTo", x: 0, y: 2 },
+          { type: "cubicBezTo", x: 4, y: 2, cp: [1, 0, 3, 4] },
+        ],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:cubicBezTo>");
+    });
+
+    it("supports arcTo segments", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addFreeform({
+        x: 0, y: 0, w: 4, h: 4,
+        path: [
+          { type: "moveTo", x: 0, y: 2 },
+          { type: "arcTo", arc: { wR: 1, hR: 1, stAng: 0, swAng: 180 } },
+        ],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:arcTo");
+      expect(xml).toContain("wR=");
+    });
+
+    it("works inside a group", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 0, y: 0, w: 5, h: 5 });
+      grp.addFreeform({
+        x: 0, y: 0, w: 2, h: 2,
+        path: [
+          { type: "moveTo", x: 0, y: 0 },
+          { type: "lineTo", x: 2, y: 2 },
+        ],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:custGeom>");
+    });
+  });
+
+  describe("3D extrusion", () => {
+    it("emits extrusionH on text shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "3D" }], {
+        x: 1, y: 1, w: 4, h: 1,
+        extrusion: { depth: 10, color: "0000FF" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("extrusionH=");
+      expect(xml).toContain("<a:extrusionClr>");
+      expect(xml).toContain('val="0000FF"');
+    });
+
+    it("emits extrusionH on shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 3, h: 2,
+        fill: { color: "CCCCCC" },
+        extrusion: { depth: 8 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("extrusionH=");
+      expect(xml).toContain("<a:sp3d");
+    });
+
+    it("combines bevel and extrusion", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "AABBCC" },
+        bevel: { type: "circle", width: 8, height: 8 },
+        extrusion: { depth: 12, color: "112233" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:sp3d");
+      expect(xml).toContain("<a:bevelT");
+      expect(xml).toContain("extrusionH=");
+      expect(xml).toContain("<a:extrusionClr>");
+    });
+  });
+
+  describe("Shape preset effects", () => {
+    it("glossy preset produces gradient + bevel + shadow", () => {
+      const preset = shapePresets.glossy("3366CC");
+      expect(preset.gradient).toBeDefined();
+      expect(preset.gradient!.stops!.length).toBe(3);
+      expect(preset.bevel).toBeDefined();
+      expect(preset.shadow).toBeDefined();
+
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("roundRect", { x: 1, y: 1, w: 3, h: 2, ...preset } as any);
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("<a:bevelT");
+      expect(xml).toContain("<a:outerShdw");
+    });
+
+    it("matte preset produces solid fill + shadow", () => {
+      const preset = shapePresets.matte("FF6600");
+      expect(preset.fill!.color).toBe("FF6600");
+      expect(preset.shadow).toBeDefined();
+    });
+
+    it("card preset has white fill and rounded corners", () => {
+      const preset = shapePresets.card();
+      expect(preset.fill!.color).toBe("FFFFFF");
+      expect(preset.rectRadius).toBeDefined();
+    });
+
+    it("embossed preset has bevel + inner shadow", () => {
+      const preset = shapePresets.embossed("999999");
+      expect(preset.bevel).toBeDefined();
+      expect(preset.innerShadow).toBeDefined();
+
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 2, ...preset } as any);
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:bevelT");
+      expect(xml).toContain("<a:innerShdw");
+    });
+
+    it("floating preset has large shadow", () => {
+      const preset = shapePresets.floating("FFFFFF");
+      expect(preset.shadow!.blur).toBe(16);
+      expect(preset.rectRadius).toBeDefined();
     });
   });
 });

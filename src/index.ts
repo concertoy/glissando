@@ -26,6 +26,7 @@ import type {
   EquationLayoutProps,
   BlankLayoutProps,
   ConnectorProps,
+  ConnectionPoint,
   ConnectorDef,
   EmojiDef,
   PendingWork,
@@ -42,8 +43,8 @@ import {
 } from "./layout.js";
 
 export type { Theme, ShapeRef, ConnectionPoint, Rect, FontPreset } from "./types.js";
-export { Presentation, Slide, GroupShape } from "./ooxml/index.js";
-export type { TextRun, TextRunOpts, BulletOpts, AddTextOpts, AddShapeOpts, AddImageOpts, AddTableOpts, TableCell, TableBorderOpts, TransitionOpts, TransitionType, GradientFill, GradientStop, PatternFill, FillOpts, LineOpts, LineEndType, ShadowOpts } from "./ooxml/index.js";
+export { Presentation, Slide, GroupShape, shapePresets } from "./ooxml/index.js";
+export type { TextRun, TextRunOpts, BulletOpts, AddTextOpts, AddShapeOpts, AddImageOpts, AddFreeformOpts, PathSegment, AddTableOpts, TableCell, TableBorderOpts, TransitionOpts, TransitionType, GradientFill, GradientStop, PatternFill, FillOpts, LineOpts, LineEndType, ShadowOpts } from "./ooxml/index.js";
 export { contentArea, contentAreaBelow, columns, rows, below, inset } from "./layout.js";
 export { expandTextWithMath } from "./inline-math.js";
 
@@ -198,6 +199,39 @@ export class Deck {
       labelItalic: props.labelItalic ?? true,
     });
     return this;
+  }
+
+  /**
+   * Connect two shapes by objectName. Auto-picks connection points
+   * (right side of source → left side of target by default).
+   */
+  connect(fromName: string, toName: string, opts?: {
+    type?: "straight" | "elbow" | "curved";
+    fromSide?: "top" | "right" | "bottom" | "left";
+    toSide?: "top" | "right" | "bottom" | "left";
+    color?: string;
+    width?: number;
+    head?: "arrow" | "stealth" | "triangle" | "none";
+    tail?: "arrow" | "stealth" | "triangle" | "none";
+    label?: string;
+    labelItalic?: boolean;
+  }): this {
+    const sideIdx: Record<string, number> = { top: 0, right: 1, bottom: 2, left: 3 };
+    const fromIdx = sideIdx[opts?.fromSide ?? "right"];
+    const toIdx = sideIdx[opts?.toSide ?? "left"];
+    // ConnectionPoints with x/y=0; the OOXML writer resolves real positions from _shapeName + idx
+    const from: ConnectionPoint = { x: 0, y: 0, idx: fromIdx, _shapeName: fromName };
+    const to: ConnectionPoint = { x: 0, y: 0, idx: toIdx, _shapeName: toName };
+    return this.connector({
+      from, to,
+      type: opts?.type,
+      color: opts?.color,
+      width: opts?.width,
+      head: opts?.head,
+      tail: opts?.tail,
+      label: opts?.label,
+      labelItalic: opts?.labelItalic,
+    });
   }
 
   /** Duplicate an existing slide (1-based index). Returns this for chaining. */

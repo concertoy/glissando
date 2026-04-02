@@ -99,6 +99,15 @@
 - [x] **Text caps** — `caps` on TextRunOpts → `cap` attribute on `<a:rPr>` for all-caps or small-caps.
 - [x] **Shape 3D bevel** — `bevel` on AddTextOpts/AddShapeOpts → `<a:sp3d>` with `<a:bevelT>` for depth effects.
 
+- [x] **Inner shadow** — `innerShadow` on AddTextOpts/AddShapeOpts → `<a:innerShdw>` for inset shadows.
+- [x] **Text columns in shapes** — `columns`/`columnSpacing` on AddShapeOpts → `numCol`/`spcCol` on shape text `<a:bodyPr>`.
+
+- [x] **Image tiling** — `tile` on AddImageOpts → `<a:tile>` for repeating image patterns.
+- [x] **Custom geometry shapes** — `addFreeform()` on Slide and GroupShape → `<a:custGeom>` with moveTo, lineTo, cubicBezTo, arcTo, close segments.
+- [x] **Shape 3D extrusion** — `extrusion` on AddTextOpts/AddShapeOpts → `extrusionH` + `<a:extrusionClr>` on `<a:sp3d>`. Combines with bevel.
+- [x] **Shape connectors by name** — `deck.connect("boxA", "boxB", { type: "elbow" })` convenience method on Deck with `fromSide`/`toSide` options.
+- [x] **Shape preset effects** — `shapePresets.glossy()`, `.matte()`, `.card()`, `.embossed()`, `.floating()` combining bevel, shadow, gradient, inner shadow.
+
 ## Open
 
 ### High impact
@@ -111,12 +120,17 @@
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Shape connectors by name** — `slide.connect("boxA", "boxB", { type: "elbow" })` using objectName for simpler diagram wiring.
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
-- [ ] **Image tiling** — `tile` on AddImageOpts for repeating image patterns in backgrounds.
-- [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
-- [ ] **Shape 3D effects** — `bevel`, `extrusion` on AddShapeOpts → `<a:sp3d>` for depth/perspective effects.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
-- [ ] **Custom geometry shapes** — `addFreeform()` for arbitrary path-based shapes via `<a:custGeom>`.
-- [ ] **Inner shadow** — `innerShadow` on AddTextOpts/AddShapeOpts → `<a:innerShdw>` for inset shadows.
-- [ ] **Shape preset effects** — common presets like "glossy", "matte", "chrome" via combined 3D + fill + shadow settings.
+
+### New proposals
+- [ ] **Shape hyperlinks** — `href` on AddShapeOpts so entire shapes (not just text runs) act as clickable links.
+- [ ] **OLE embedding** — `slide.addOleObject()` for embedding Excel/PDF objects as icons or inline frames.
+- [ ] **Slide layout templates** — `pres.addLayout(name, { placeholders })` for custom slide layouts in slideMasters.
+- [ ] **Table striping** — `stripe: true` on AddTableOpts for alternating row background colors.
+- [ ] **Image filters** — `grayscale`, `brightness`, `contrast` on AddImageOpts via `<a:duotone>` / `<a:lum>`.
+- [ ] **Text run hyperlink to slide** — combine `href` and `slideLink` in a single run for tooltip + navigation.
+- [ ] **Presentation-level defaults** — `pres.defaults({ font, fontSize, color })` to set fallback text styling across all slides.
+- [ ] **Shape animation presets** — `appear`, `fadeIn`, `flyIn` on shapes via `<p:timing>` (extend build animations beyond bullets).
+- [ ] **Treemap / heatmap component** — `treemap(slide, { data, ... })` for data visualization using nested colored rects.
+- [ ] **Icon library component** — `icon(slide, { name, ... })` expand beyond Lucide to Material Symbols / Phosphor icons.

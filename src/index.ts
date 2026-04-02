@@ -200,6 +200,7 @@ export class Deck {
       labelFill: props.labelFill,
       dashType: props.dashType,
       labelSize: props.labelSize,
+      labelColor: props.labelColor,
     });
     return this;
   }
@@ -221,6 +222,7 @@ export class Deck {
     labelFill?: string;
     dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
     labelSize?: number;
+    labelColor?: string;
   }): this {
     const sideIdx: Record<string, number> = { top: 0, right: 1, bottom: 2, left: 3 };
     const fromIdx = sideIdx[opts?.fromSide ?? "right"];
@@ -240,6 +242,7 @@ export class Deck {
       labelFill: opts?.labelFill,
       dashType: opts?.dashType,
       labelSize: opts?.labelSize,
+      labelColor: opts?.labelColor,
     });
   }
 

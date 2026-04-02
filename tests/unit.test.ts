@@ -2913,4 +2913,118 @@ describe("OOXML", () => {
       expect(xml).toContain('tooltip="Click me"');
     });
   });
+
+  describe("connector label color", () => {
+    it("uses custom label color instead of line color", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 1, h: 1, objectName: "m" });
+      slide.addShape("rect", { x: 5, y: 1, w: 1, h: 1, objectName: "n" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 2, y: 1.5, idx: 1, _shapeName: "m" },
+          to: { x: 5, y: 1.5, idx: 3, _shapeName: "n" },
+          type: "straight",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          label: "link",
+          labelColor: "FF0000",
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      expect(xml).toContain('val="FF0000"');
+      expect(xml).toContain("link");
+    });
+  });
+
+  describe("shape text subscript", () => {
+    it("applies baseline=-40000 for subscript", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "H2O", subscript: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('baseline="-40000"');
+    });
+  });
+
+  describe("shape text superscript", () => {
+    it("applies baseline=30000 for superscript", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "x²", superscript: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('baseline="30000"');
+    });
+  });
+
+  describe("shape text kerning", () => {
+    it("applies kern attribute to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Kerned", kerning: 12 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('kern="1200"');
+    });
+  });
+
+  describe("table column ratio", () => {
+    it("computes proportional column widths from ratios", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["A", "B", "C"]],
+        { x: 0, y: 0, w: 4, colRatio: [1, 2, 1] },
+      );
+      const xml = slide._toXml(1);
+      // Total width = 4 inches = 3657600 EMU
+      // Ratios 1:2:1 = 25%:50%:25% → 914400:1828800:914400
+      expect(xml).toContain('w="914400"');
+      expect(xml).toContain('w="1828800"');
+    });
+  });
+
+  describe("slide background tiled image", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+    it("uses a:tile instead of a:stretch for tiled backgrounds", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FFFFFF", image: tinyPng, tile: true };
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:tile");
+      expect(xml).not.toContain("<a:stretch>");
+    });
+
+    it("uses a:stretch by default for non-tiled backgrounds", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FFFFFF", image: tinyPng };
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:stretch>");
+      expect(xml).not.toContain("<a:tile");
+    });
+  });
+
+  describe("table header gradient", () => {
+    it("applies gradient fill to header row", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["Header"], ["Data"]],
+        {
+          x: 0, y: 0, w: 4,
+          headerStyle: {
+            gradient: { type: "linear", angle: 90, stops: [{ position: 0, color: "0000FF" }, { position: 100, color: "00FF00" }] },
+          },
+        },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("gradFill");
+      expect(xml).toContain('val="0000FF"');
+    });
+  });
 });

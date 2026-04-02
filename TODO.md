@@ -173,6 +173,12 @@
 - [x] **Table cell underline/strike** — `underline` and `strike` on TableCell options → `u="sng"` / `strike="sngStrike"` on cell text `<a:rPr>`.
 - [x] **Connector label font size** — `labelSize` on ConnectorDef/ConnectorProps → custom `sz` on label `<a:rPr>` (default 14pt).
 - [x] **Shape click to URL** — `href` + `tooltip` on AddShapeOpts already combines `<a:hlinkClick>` + `<a:hlinkHover>`.
+- [x] **Connector label color** — `labelColor` on ConnectorDef/ConnectorProps → custom color on label `<a:rPr>` (defaults to line color).
+- [x] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts → `baseline` attribute on `<a:rPr>`.
+- [x] **Shape text kerning** — `kerning` on AddShapeOpts → `kern` attribute on `<a:rPr>`.
+- [x] **Table column widths by ratio** — `colRatio` on AddTableOpts for proportional column sizing.
+- [x] **Slide background tiled image** — `tile: true` on slide.background → `<a:tile>` instead of `<a:stretch>`.
+- [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle → `<a:gradFill>` on header row cells.
 
 ## Open
 
@@ -243,14 +249,22 @@
 - [x] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
 - [x] **Shape text highlight** — `highlight` on AddShapeOpts for background highlight color on shape text runs.
 - [x] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.
-- [ ] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
+- [x] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
 - [x] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
 - [ ] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along bezier curves.
 - [ ] **Shape text gradient** — `gradient` on AddShapeOpts for gradient-filled shape text via `<a:gradFill>` in rPr.
-- [ ] **Table column widths by ratio** — `colRatio: [1, 2, 1]` on AddTableOpts for proportional column sizing.
-- [ ] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
-- [ ] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts for baseline shifts in shape text.
+- [x] **Table column widths by ratio** — `colRatio: [1, 2, 1]` on AddTableOpts for proportional column sizing.
+- [x] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
+- [x] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts for baseline shifts in shape text.
 - [ ] **Image caption component** — `imageWithCaption(slide, { ... })` combining image + styled caption as a group.
 - [ ] **Slide thumbnail** — `slide.thumbnail(path)` to set a custom thumbnail image for the slide.
-- [ ] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
-- [ ] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
+- [x] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
+- [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
+- [ ] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.
+- [ ] **Table cell gradient text** — `gradient` on TableCell options for gradient-filled text in cells.
+- [ ] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
+- [ ] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
+- [ ] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
+- [ ] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
+- [ ] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
+- [ ] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.

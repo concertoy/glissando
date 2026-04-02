@@ -312,6 +312,12 @@ export interface AddShapeOpts {
   paraSpaceBefore?: number;
   /** Paragraph space after in points. */
   paraSpaceAfter?: number;
+  /** Subscript text in shape. */
+  subscript?: boolean;
+  /** Superscript text in shape. */
+  superscript?: boolean;
+  /** Kerning threshold in points. Text at or above this size gets kerned. */
+  kerning?: number;
   /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
   textMargin?: number | [number, number, number, number];
   /** Entrance animation preset. */
@@ -404,6 +410,8 @@ export interface AddTableOpts {
   colW?: number[];
   /** Auto-calculate column widths based on content length (ignored if colW is set). */
   autoColW?: boolean;
+  /** Proportional column width ratios (e.g. [1, 2, 1]). Ignored if colW is set. */
+  colRatio?: number[];
   margin?: number | number[];
   /** Alternating row stripe colors [evenColor, oddColor]. Applied to data rows (not header). */
   stripe?: [string, string];
@@ -414,6 +422,8 @@ export interface AddTableOpts {
     color?: string;
     bold?: boolean;
     fill?: FillOpts;
+    /** Gradient fill for header row (overrides fill). */
+    gradient?: GradientFill;
   };
   /** Minimum row height in inches. Row heights below this are clamped up. */
   minRowH?: number;
@@ -850,6 +860,7 @@ export class Slide {
   /** @internal */ _bgGradient?: GradientFill;
   /** @internal */ _bgPattern?: PatternFill;
   /** @internal */ _bgImageRId?: string;
+  /** @internal */ _bgTile = false;
   /** @internal */ _elements: Array<string | { toString(): string }> = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
@@ -876,6 +887,7 @@ export class Slide {
     s._bgGradient = this._bgGradient ? { ...this._bgGradient, stops: this._bgGradient.stops.map(st => ({ ...st })) } : undefined;
     s._bgPattern = this._bgPattern ? { ...this._bgPattern } : undefined;
     s._bgImageRId = this._bgImageRId;
+    s._bgTile = this._bgTile;
     s._elements = this._elements.map(e => typeof e === "string" ? e : e.toString());
     s._nextId = this._nextId;
     s._nameToId = new Map(this._nameToId);
@@ -891,10 +903,11 @@ export class Slide {
     return s;
   }
 
-  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string }) {
+  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string; tile?: boolean }) {
     this._bg = bg.color;
     this._bgGradient = bg.gradient;
     this._bgPattern = bg.patternFill;
+    this._bgTile = bg.tile ?? false;
     if (bg.image) {
       const resolved = resolveImageData({ data: bg.image });
       this._mediaCounter++;
@@ -1046,7 +1059,10 @@ export class Slide {
   _toXml(): string {
     let bgFill: string;
     if (this._bgImageRId) {
-      bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"/><a:stretch><a:fillRect/></a:stretch></a:blipFill>`;
+      const fillMode = this._bgTile
+        ? `<a:tile tx="0" ty="0" sx="100000" sy="100000" flip="none" algn="tl"/>`
+        : `<a:stretch><a:fillRect/></a:stretch>`;
+      bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"/>${fillMode}</a:blipFill>`;
     } else if (this._bgGradient) {
       bgFill = buildGradientFillXml(this._bgGradient);
     } else if (this._bgPattern) {
@@ -1719,7 +1735,10 @@ function buildShapeXml(
       if (opts.italic) rprAttrs.push('i="1"');
       if (opts.underline) rprAttrs.push('u="sng"');
       if (opts.strike) rprAttrs.push('strike="sngStrike"');
+      if (opts.subscript) rprAttrs.push('baseline="-40000"');
+      if (opts.superscript) rprAttrs.push('baseline="30000"');
       if (opts.charSpacing != null) rprAttrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
+      if (opts.kerning != null) rprAttrs.push(`kern="${Math.round(opts.kerning * 100)}"`);
       const children: string[] = [];
       if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
       if (opts.highlight) children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
@@ -1978,6 +1997,9 @@ function buildTableXml(
   let colWidths: number[];
   if (opts.colW) {
     colWidths = (opts.colW as number[]).map((w: number) => emu(w));
+  } else if (opts.colRatio && Array.isArray(opts.colRatio)) {
+    const total = (opts.colRatio as number[]).reduce((s: number, r: number) => s + r, 0);
+    colWidths = (opts.colRatio as number[]).map((r: number) => Math.round(cx * r / total));
   } else if (opts.autoColW && rows.length > 0) {
     // Calculate column widths proportional to max text length in each column
     const maxLens = Array(numCols).fill(0);
@@ -2028,7 +2050,8 @@ function buildTableXml(
         if (hs.fontFace && !co.fontFace) co.fontFace = hs.fontFace;
         if (hs.color && !co.color) co.color = hs.color;
         if (hs.bold != null && co.bold == null) co.bold = hs.bold;
-        if (hs.fill && !co.fill && !co.gradient) co.fill = hs.fill;
+        if (hs.gradient && !co.gradient) co.gradient = hs.gradient;
+        else if (hs.fill && !co.fill && !co.gradient) co.fill = hs.fill;
       }
 
       // Cell text
@@ -2372,7 +2395,7 @@ function buildConnectorLabelXml(
     `<a:lstStyle/>` +
     `<a:p><a:r>` +
     `<a:rPr lang="en-US" sz="${sz100(conn.labelSize ?? 14)}"${italic} dirty="0">` +
-    `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    `<a:solidFill><a:srgbClr val="${conn.labelColor ?? conn.color}"/></a:solidFill>` +
     `<a:latin typeface="${escXml(sansFont)}"/>` +
     `</a:rPr>` +
     `<a:t>${escXml(conn.label ?? "")}</a:t>` +

@@ -147,6 +147,9 @@
 - [x] **Image tooltip** — `tooltip` on AddImageOpts → `<a:hlinkHover>` on image `<p:cNvPr>`.
 - [x] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
 - [x] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts → `<a:spAutoFit/>` for auto-shrinking shape text.
+- [x] **Text box hyperlink** — `href` on AddTextOpts → `<a:hlinkClick>` on text shape `<p:cNvPr>`.
+- [x] **Shape text margin** — `textMargin` on AddShapeOpts → `lIns/tIns/rIns/bIns` on shape text `<a:bodyPr>`.
+- [x] **Group animation** — `animation` setter on GroupShape for entrance animations on entire groups.
 
 ## Open
 
@@ -190,7 +193,10 @@
 - [x] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
 - [ ] **Table cell click action** — `action` on TableCell options for built-in PowerPoint navigation actions.
 - [x] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts to auto-size text within shapes.
-- [ ] **Group animation** — `animation` on GroupShape for entrance animations on entire groups.
-- [ ] **Text box hyperlink** — `href` on AddTextOpts to make the entire text box clickable (not just individual runs).
-- [ ] **Shape text margin** — `textMargin` on AddShapeOpts for custom padding around text inside shapes.
+- [x] **Group animation** — `animation` on GroupShape for entrance animations on entire groups.
+- [x] **Text box hyperlink** — `href` on AddTextOpts to make the entire text box clickable.
+- [x] **Shape text margin** — `textMargin` on AddShapeOpts for custom padding around text inside shapes.
 - [ ] **Image aspect ratio lock** — `aspectRatio: "contain" | "cover"` on AddImageOpts for smart image sizing.
+- [ ] **Shape line gradient** — gradient fills on shape lines via `<a:gradFill>` inside `<a:ln>`.
+- [ ] **Text character spacing** — `charSpacing` on AddShapeOpts for letter-spacing in shape text.
+- [ ] **Table cell rotation with direction** — `textDirection: "btLr" | "vert"` on TableCell for complex text flows.

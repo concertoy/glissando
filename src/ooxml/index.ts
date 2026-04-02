@@ -211,6 +211,8 @@ export interface AddTextOpts {
   innerShadow?: { color?: string; blur?: number; offset?: number; angle?: number; opacity?: number };
   /** Hover tooltip text on the text box. */
   tooltip?: string;
+  /** Hyperlink URL — makes the entire text box clickable (shape-level, not per-run). */
+  href?: string;
   /** Entrance animation preset. Plays on click or after delay. */
   animation?: ShapeAnimationOpts;
 }
@@ -288,6 +290,8 @@ export interface AddShapeOpts {
   wrap?: "none" | "square";
   /** Auto-shrink text to fit within the shape. */
   autoFit?: boolean;
+  /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
+  textMargin?: number | [number, number, number, number];
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -767,6 +771,13 @@ export class GroupShape {
   }
   private _href?: string;
 
+  /** Set an entrance animation on the entire group. */
+  set animation(opts: ShapeAnimationOpts) {
+    this._animation = opts;
+    this._slide._shapeAnimations.push({ shapeId: this._grpId, opts });
+  }
+  private _animation?: ShapeAnimationOpts;
+
   toString(): string {
     const gx = emu(this._x), gy = emu(this._y);
     const gcx = emu(this._w), gcy = emu(this._h);
@@ -902,7 +913,8 @@ export class Slide {
   }
 
   addText(content: string | TextRun[], opts?: AddTextOpts): void {
-    const o: Record<string, any> = opts ?? {};
+    const o: Record<string, any> = { ...(opts ?? {}) };
+    if (o.href) o._hlinkRId = this._addHyperlink(o.href);
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `TextBox_${id}`;
     this._elements.push(buildTextShapeXml(id, name, content, o, this));
@@ -1153,6 +1165,7 @@ function buildTextShapeXml(
   const txBoxAttr = isTextBox ? ' txBox="1"' : "";
   const descrAttr = opts.altText ? ` descr="${escXml(opts.altText)}"` : "";
   const cNvPrChildren: string[] = [];
+  if (opts._hlinkRId) cNvPrChildren.push(`<a:hlinkClick r:id="${opts._hlinkRId}"/>`);
   if (opts.tooltip) cNvPrChildren.push(`<a:hlinkHover r:id="" tooltip="${escXml(opts.tooltip)}"/>`);
   const cNvPr = cNvPrChildren.length > 0
     ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}>${cNvPrChildren.join("")}</p:cNvPr>`
@@ -1642,10 +1655,19 @@ function buildShapeXml(
     const wrapMode = opts.wrap ?? "square";
     const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
       + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
+    let marginAttrs = "";
+    if (opts.textMargin != null) {
+      if (typeof opts.textMargin === "number") {
+        const m = emu(opts.textMargin);
+        marginAttrs = ` lIns="${m}" tIns="${m}" rIns="${m}" bIns="${m}"`;
+      } else {
+        marginAttrs = ` tIns="${emu(opts.textMargin[0])}" rIns="${emu(opts.textMargin[1])}" bIns="${emu(opts.textMargin[2])}" lIns="${emu(opts.textMargin[3])}"`;
+      }
+    }
     const fitXml = opts.autoFit ? `<a:spAutoFit/>` : "";
     const bodyPr = fitXml
-      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}>${fitXml}</a:bodyPr>`
-      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}/>`;
+      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}>${fitXml}</a:bodyPr>`
+      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}/>`;
 
     if (typeof opts.text === "string") {
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];

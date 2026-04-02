@@ -2469,4 +2469,61 @@ describe("OOXML", () => {
       expect(xml).toContain("<a:spAutoFit/>");
     });
   });
+
+  describe("Text box hyperlink (shape-level)", () => {
+    it("adds hlinkClick to text shape cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Click me", { x: 1, y: 1, w: 4, href: "https://example.com" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("hlinkClick");
+      expect(slide._hyperlinks.some(h => h.url === "https://example.com")).toBe(true);
+    });
+  });
+
+  describe("Shape text margin", () => {
+    it("adds margin attrs to shape bodyPr (uniform)", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "CCCCCC" },
+        text: "Padded",
+        textMargin: 0.2,
+      });
+      const xml = slide._toXml(1);
+      // 0.2 inches = 182880 EMU
+      expect(xml).toContain('lIns="182880"');
+      expect(xml).toContain('tIns="182880"');
+    });
+
+    it("adds per-side margin attrs to shape bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "CCCCCC" },
+        text: "Padded",
+        textMargin: [0.1, 0.2, 0.3, 0.4],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('tIns="91440"'); // 0.1 in
+      expect(xml).toContain('rIns="182880"'); // 0.2 in
+      expect(xml).toContain('bIns="274320"'); // 0.3 in
+      expect(xml).toContain('lIns="365760"'); // 0.4 in
+    });
+  });
+
+  describe("Group animation", () => {
+    it("generates timing for animated group", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 0, y: 0, w: 4, h: 3 });
+      grp.animation = { type: "fade", duration: 800 };
+      grp.addText("Inside group", { x: 0, y: 0, w: 2, h: 1 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:timing>");
+      expect(xml).toContain("<p:animEffect");
+    });
+  });
 });

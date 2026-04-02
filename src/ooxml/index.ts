@@ -558,6 +558,8 @@ export class Presentation {
   /** @internal */ _colorVars = new Map<string, string>();
   /** @internal */ _customProps = new Map<string, string | number | boolean>();
   /** @internal */ _sections: Array<{ name: string; firstSlideIndex: number }> = [];
+  /** @internal */ _embeddedFonts: Array<{ name: string; data: Buffer; style: "regular" | "bold" | "italic" | "boldItalic" }> = [];
+  /** @internal */ _thumbnail?: Buffer;
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -594,6 +596,29 @@ export class Presentation {
   /** Add a named section starting at the next slide added. */
   addSection(name: string): void {
     this._sections.push({ name, firstSlideIndex: this._slides.length });
+  }
+
+  /**
+   * Embed a font file (TTF/OTF) in the PPTX for portability.
+   * @param name Font family name (must match the typeface used in text runs).
+   * @param fontPath Path to .ttf or .otf file.
+   * @param style Font style variant (default "regular").
+   */
+  embedFont(name: string, fontPath: string, style: "regular" | "bold" | "italic" | "boldItalic" = "regular"): void {
+    const data = readFileSync(fontPath);
+    this._embeddedFonts.push({ name, data, style });
+  }
+
+  /**
+   * Embed a font from a Buffer (for programmatic use).
+   */
+  embedFontData(name: string, data: Buffer, style: "regular" | "bold" | "italic" | "boldItalic" = "regular"): void {
+    this._embeddedFonts.push({ name, data, style });
+  }
+
+  /** Set a custom thumbnail image for the presentation (JPEG data as Buffer). */
+  setThumbnail(data: Buffer): void {
+    this._thumbnail = data;
   }
 
   /** Set a default slide transition for all slides that don't have their own. */
@@ -2101,17 +2126,28 @@ function buildTableXml(
     colWidths = (opts.colRatio as number[]).map((r: number) => Math.round(cx * r / total));
   } else if (opts.autoColW && rows.length > 0) {
     // Calculate column widths proportional to max text length in each column
+    // When a cell has colspan > 1, distribute its text length across spanned columns
     const maxLens = Array(numCols).fill(0);
     for (const row of rows) {
       for (let col = 0; col < numCols && col < row.length; col++) {
         const cell = row[col];
-        const text = typeof cell === "string" ? cell : (typeof cell.text === "string" ? cell.text : "");
-        maxLens[col] = Math.max(maxLens[col], text.length);
+        const cellObj = typeof cell === "string" ? { text: cell } : cell;
+        const text = typeof cellObj.text === "string" ? cellObj.text : "";
+        const span = cellObj.options?.colspan ?? 1;
+        if (span > 1) {
+          // Distribute text length evenly across spanned columns
+          const perCol = text.length / span;
+          for (let s = 0; s < span && col + s < numCols; s++) {
+            maxLens[col + s] = Math.max(maxLens[col + s], perCol);
+          }
+        } else {
+          maxLens[col] = Math.max(maxLens[col], text.length);
+        }
       }
     }
     // Minimum 1 char width to avoid zero-width columns
-    const totalLen = maxLens.reduce((s, l) => s + Math.max(l, 1), 0);
-    colWidths = maxLens.map((l) => Math.round(cx * Math.max(l, 1) / totalLen));
+    const totalLen = maxLens.reduce((s: number, l: number) => s + Math.max(l, 1), 0);
+    colWidths = maxLens.map((l: number) => Math.round(cx * Math.max(l, 1) / totalLen));
   } else {
     colWidths = Array(numCols).fill(Math.round(cx / numCols));
   }

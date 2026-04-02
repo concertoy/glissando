@@ -31,10 +31,12 @@ export async function assemblePptx(pres: Presentation): Promise<Buffer> {
 
   // ── [Content_Types].xml ──────────────────────────────────────────
   const hasCustomProps = pres._customProps.size > 0;
-  zip.file("[Content_Types].xml", contentTypesXml(slides, mediaFiles, hasAnyNotes, hasCustomProps));
+  const hasEmbeddedFonts = pres._embeddedFonts.length > 0;
+  const hasThumbnail = pres._thumbnail != null;
+  zip.file("[Content_Types].xml", contentTypesXml(slides, mediaFiles, hasAnyNotes, hasCustomProps, hasEmbeddedFonts, hasThumbnail));
 
   // ── _rels/.rels ──────────────────────────────────────────────────
-  zip.file("_rels/.rels", rootRelsXml(hasCustomProps));
+  zip.file("_rels/.rels", rootRelsXml(hasCustomProps, hasThumbnail));
 
   // ── docProps ─────────────────────────────────────────────────────
   zip.file("docProps/core.xml", coreXml(pres._metadata));
@@ -43,9 +45,20 @@ export async function assemblePptx(pres: Presentation): Promise<Buffer> {
     zip.file("docProps/custom.xml", customPropsXml(pres._customProps));
   }
 
+  // ── Thumbnail ────────────────────────────────────────────────────
+  if (pres._thumbnail) {
+    zip.file("docProps/thumbnail.jpeg", pres._thumbnail);
+  }
+
+  // ── Embedded fonts ──────────────────────────────────────────────
+  for (let i = 0; i < pres._embeddedFonts.length; i++) {
+    const font = pres._embeddedFonts[i];
+    zip.file(`ppt/fonts/font${i + 1}.fntdata`, font.data);
+  }
+
   // ── ppt/presentation.xml ─────────────────────────────────────────
   zip.file("ppt/presentation.xml", presentationXml(pres));
-  zip.file("ppt/_rels/presentation.xml.rels", presentationRelsXml(slides, hasAnyNotes));
+  zip.file("ppt/_rels/presentation.xml.rels", presentationRelsXml(slides, hasAnyNotes, pres._embeddedFonts.length));
 
   // ── ppt/theme/theme1.xml ─────────────────────────────────────────
   zip.file("ppt/theme/theme1.xml", themeXml(pres._headFont, pres._bodyFont));
@@ -108,6 +121,8 @@ function contentTypesXml(
   mediaFiles: Array<{ contentType: string }>,
   hasAnyNotes: boolean,
   hasCustomProps = false,
+  hasEmbeddedFonts = false,
+  hasThumbnail = false,
 ): string {
   const overrides: string[] = [
     `<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`,
@@ -161,7 +176,9 @@ function contentTypesXml(
     `<Default Extension="xml" ContentType="application/xml"/>`,
   ];
   if (mediaTypes.has("image/png")) defaults.push(`<Default Extension="png" ContentType="image/png"/>`);
-  if (mediaTypes.has("image/jpeg")) defaults.push(`<Default Extension="jpg" ContentType="image/jpeg"/>`);
+  if (mediaTypes.has("image/jpeg") || hasThumbnail) defaults.push(`<Default Extension="jpg" ContentType="image/jpeg"/>`);
+  if (hasThumbnail) defaults.push(`<Default Extension="jpeg" ContentType="image/jpeg"/>`);
+  if (hasEmbeddedFonts) defaults.push(`<Default Extension="fntdata" ContentType="application/x-fontdata"/>`);
 
   return (
     xmlDecl() +
@@ -174,7 +191,7 @@ function contentTypesXml(
 
 // ─── _rels/.rels ───────────────────────────────────────────────────
 
-function rootRelsXml(hasCustomProps = false): string {
+function rootRelsXml(hasCustomProps = false, hasThumbnail = false): string {
   return (
     xmlDecl() +
     `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
@@ -182,6 +199,7 @@ function rootRelsXml(hasCustomProps = false): string {
     `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>` +
     `<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>` +
     (hasCustomProps ? `<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>` : "") +
+    (hasThumbnail ? `<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail" Target="docProps/thumbnail.jpeg"/>` : "") +
     `</Relationships>`
   );
 }
@@ -238,6 +256,21 @@ function presentationXml(pres: Presentation): string {
     ` xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` +
     ` saveSubsetFonts="1">` +
     `<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rIdMaster"/></p:sldMasterIdLst>` +
+    (() => {
+      if (pres._embeddedFonts.length === 0) return "";
+      const styleMap: Record<string, string> = { regular: "Regular", bold: "Bold", italic: "Italic", boldItalic: "Bold Italic" };
+      const entries = pres._embeddedFonts.map((f, i) => {
+        const tagMap: Record<string, string> = { regular: "regular", bold: "bold", italic: "italic", boldItalic: "boldItalic" };
+        const tag = tagMap[f.style] ?? "regular";
+        return (
+          `<p:embeddedFont>` +
+          `<p:font typeface="${escXml(f.name)}" panose="00000000000000000000" pitchFamily="0" charset="0"/>` +
+          `<p:${tag} r:id="rIdFont${i + 1}"/>` +
+          `</p:embeddedFont>`
+        );
+      }).join("");
+      return `<p:embeddedFontLst>${entries}</p:embeddedFontLst>`;
+    })() +
     `<p:sldIdLst>${slideIds}</p:sldIdLst>` +
     `<p:sldSz cx="${cx}" cy="${cy}"/>` +
     `<p:notesSz cx="${cy}" cy="${cx}"/>` +
@@ -261,6 +294,7 @@ function presentationXml(pres: Presentation): string {
 function presentationRelsXml(
   slides: Presentation["_slides"],
   hasAnyNotes: boolean,
+  fontCount = 0,
 ): string {
   const rels: string[] = [
     `<Relationship Id="rIdMaster" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>`,
@@ -276,6 +310,12 @@ function presentationRelsXml(
   if (hasAnyNotes) {
     rels.push(
       `<Relationship Id="rIdNotesMaster" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`,
+    );
+  }
+
+  for (let i = 0; i < fontCount; i++) {
+    rels.push(
+      `<Relationship Id="rIdFont${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font${i + 1}.fntdata"/>`,
     );
   }
 

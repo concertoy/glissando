@@ -3502,4 +3502,56 @@ describe("OOXML", () => {
       expect(xml).toContain("a:gradFill");
     });
   });
+
+  describe("font embedding", () => {
+    it("stores embedded font data on Presentation", () => {
+      const pres = new Presentation();
+      const fakeFont = Buffer.from("fake-font-data");
+      pres.embedFontData("TestFont", fakeFont, "regular");
+      expect(pres._embeddedFonts).toHaveLength(1);
+      expect(pres._embeddedFonts[0].name).toBe("TestFont");
+      expect(pres._embeddedFonts[0].style).toBe("regular");
+    });
+
+    it("supports multiple font styles", () => {
+      const pres = new Presentation();
+      pres.embedFontData("TestFont", Buffer.from("regular"), "regular");
+      pres.embedFontData("TestFont", Buffer.from("bold"), "bold");
+      expect(pres._embeddedFonts).toHaveLength(2);
+    });
+  });
+
+  describe("presentation thumbnail", () => {
+    it("stores thumbnail data on Presentation", () => {
+      const pres = new Presentation();
+      const thumb = Buffer.from("fake-jpeg");
+      pres.setThumbnail(thumb);
+      expect(pres._thumbnail).toBe(thumb);
+    });
+  });
+
+  describe("table colspan auto-width", () => {
+    it("distributes colspan text across spanned columns", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [
+          [
+            { text: "Short", options: {} },
+            { text: "Short", options: {} },
+            { text: "Short", options: {} },
+          ],
+          [
+            { text: "This is a very long cell that spans two columns", options: { colspan: 2 } },
+            { text: "", options: { _hMerge: true } },
+            { text: "X", options: {} },
+          ],
+        ],
+        { x: 0.5, y: 0.5, w: 8, autoColW: true },
+      );
+      const xml = slide._toXml(1);
+      // Should contain table XML with gridCol elements
+      expect(xml).toContain("a:gridCol");
+    });
+  });
 });

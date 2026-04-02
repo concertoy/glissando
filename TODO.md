@@ -201,6 +201,9 @@
 - [x] **Shape rotation animation** — `spin` animation type with `spinAngle` → `<p:animRot>` for shape rotation.
 - [x] **Animation path** — `path` animation type with `motionPath` → `<p:animMotion>` for motion along SVG paths.
 - [x] **Table cell vertical align** — verified `valign` on TableCell works with textDirection, textGradient, and all new features.
+- [x] **Font embedding** — `pres.embedFont(name, path)` / `pres.embedFontData(name, data)` → `ppt/fonts/*.fntdata` with OOXML relationships.
+- [x] **Slide thumbnail** — `pres.setThumbnail(data)` → `docProps/thumbnail.jpeg` in the PPTX package.
+- [x] **Table column span auto-width** — `autoColW` now distributes colspan text evenly across spanned columns.
 
 ## Open
 
@@ -213,7 +216,7 @@
 ### Medium impact
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
-- [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
+- [x] **Font embedding** — embed custom fonts in the PPTX for portability.
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
 - [ ] **OLE embedding** — `slide.addOleObject()` for embedding Excel/PDF objects as icons or inline frames.
@@ -262,7 +265,7 @@
 - [x] **Table cell background image** — `bgImage` on TableCell options for image fills via `<a:blipFill>` in `<a:tcPr>`.
 - [x] **Shape text line spacing** — `lineSpacing` on AddShapeOpts for controlling line height in shape text.
 - [x] **Image opacity** — `opacity` on AddImageOpts → `<a:alphaModFix>` on blip fill for transparent images.
-- [ ] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
+- [x] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
 - [x] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
 - [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
 - [x] **Slide background opacity** — `opacity` on slide.background for semi-transparent fills over master.
@@ -279,7 +282,7 @@
 - [x] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
 - [x] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts for baseline shifts in shape text.
 - [ ] **Image caption component** — `imageWithCaption(slide, { ... })` combining image + styled caption as a group.
-- [ ] **Slide thumbnail** — `slide.thumbnail(path)` to set a custom thumbnail image for the slide.
+- [x] **Slide thumbnail** — `pres.setThumbnail(data)` to set a custom thumbnail image for the presentation.
 - [x] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
 - [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
 - [x] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.

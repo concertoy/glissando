@@ -221,6 +221,9 @@
 - [x] **Table cell indent** — `indent`/`marginLeft` on TableCell → `indent`/`marL` attributes on cell `<a:pPr>`.
 - [x] **Image hue/saturation** — `hue`/`saturation` on AddImageOpts → `<a:hsl>` on blip for color adjustment.
 - [x] **Shape text vertical direction** — `vertical` on AddShapeOpts → `vert` attribute on shape text `<a:bodyPr>`.
+- [x] **Table cell kerning** — `kerning` on TableCell → `kern` attribute on cell text `<a:rPr>`.
+- [x] **Shape text transform** — `textTransform` on AddShapeOpts → `<a:prstTxWarp>` in shape text `<a:bodyPr>`.
+- [x] **Shape text fit shrink** — `fit: "shrink" | { minFontScale }` on AddShapeOpts → `<a:normAutofit>` for auto-shrinking shape text.
 
 ## Open
 

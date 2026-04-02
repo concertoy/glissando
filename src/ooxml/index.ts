@@ -316,6 +316,8 @@ export interface AddShapeOpts {
   wrap?: "none" | "square";
   /** Auto-shrink text to fit within the shape. */
   autoFit?: boolean;
+  /** Shrink text to fit: "shrink" for default, or { minFontScale: N } for minimum font scale (%). */
+  fit?: "shrink" | { minFontScale: number };
   /** Line spacing multiple for shape text (e.g. 1.5 for 150% line height). */
   lineSpacing?: number;
   /** Strikethrough text in shape. */
@@ -360,6 +362,8 @@ export interface AddShapeOpts {
   textValign?: "top" | "middle" | "bottom";
   /** Vertical text direction in shape. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
   vertical?: "vert" | "vert270";
+  /** WordArt text transform preset for shape text (e.g. "textArchUp", "textWave1"). */
+  textTransform?: string;
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -560,6 +564,8 @@ export interface TableCell {
     indent?: number;
     /** Left margin for cell text paragraph in inches. */
     marginLeft?: number;
+    /** Kerning threshold in points for cell text. */
+    kerning?: number;
   };
 }
 
@@ -1840,11 +1846,23 @@ function buildShapeXml(
         marginAttrs = ` tIns="${emu(opts.textMargin[0])}" rIns="${emu(opts.textMargin[1])}" bIns="${emu(opts.textMargin[2])}" lIns="${emu(opts.textMargin[3])}"`;
       }
     }
-    const fitXml = opts.autoFit ? `<a:spAutoFit/>` : "";
+    let fitXml = "";
+    if (opts.fit) {
+      if (opts.fit === "shrink") {
+        fitXml = `<a:normAutofit/>`;
+      } else if (typeof opts.fit === "object" && opts.fit.minFontScale) {
+        const scale = Math.round(opts.fit.minFontScale * 1000);
+        fitXml = `<a:normAutofit fontScale="${scale}"/>`;
+      }
+    } else if (opts.autoFit) {
+      fitXml = `<a:spAutoFit/>`;
+    }
     const textRotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
     const vertAttr = opts.vertical ? ` vert="${opts.vertical}"` : "";
-    const bodyPr = fitXml
-      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}${vertAttr}>${fitXml}</a:bodyPr>`
+    const txWarpXml = opts.textTransform ? `<a:prstTxWarp prst="${opts.textTransform}"><a:avLst/></a:prstTxWarp>` : "";
+    const bodyPrInner = fitXml + txWarpXml;
+    const bodyPr = bodyPrInner
+      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}${vertAttr}>${bodyPrInner}</a:bodyPr>`
       : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}${vertAttr}/>`;
 
     if (typeof opts.text === "string") {
@@ -2356,6 +2374,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const underline = opts.underline ? ' u="sng"' : "";
   const strike = opts.strike ? ' strike="sngStrike"' : "";
   const capsAttr = opts.caps ? ` cap="${opts.caps === "small" ? "small" : "all"}"` : "";
+  const kernAttr = opts.kerning != null ? ` kern="${Math.round(opts.kerning * 100)}"` : "";
   const align = opts.align ?? "l";
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
@@ -2420,7 +2439,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}"${cellIndentAttr}${cellMarLAttr}>${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
-    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr}${kernAttr} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     (() => {

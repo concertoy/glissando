@@ -3865,4 +3865,58 @@ describe("OOXML", () => {
       expect(xml).toContain('vert="vert270"');
     });
   });
+
+  describe("table cell kerning", () => {
+    it("adds kern attribute to cell rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Kerned", options: { kerning: 18 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      // 18 * 100 = 1800
+      expect(xml).toContain('kern="1800"');
+    });
+  });
+
+  describe("shape text transform", () => {
+    it("adds prstTxWarp to shape text bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Wavy",
+        textTransform: "textWave1",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:prstTxWarp prst="textWave1">');
+    });
+  });
+
+  describe("shape text fit shrink", () => {
+    it("adds normAutofit for fit: shrink", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Shrink to fit",
+        fit: "shrink",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:normAutofit/>");
+    });
+
+    it("adds normAutofit with fontScale for minFontScale", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Min 50%",
+        fit: { minFontScale: 50 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('fontScale="50000"');
+    });
+  });
 });

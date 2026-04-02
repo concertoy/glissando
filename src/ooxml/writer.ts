@@ -29,14 +29,18 @@ export async function assemblePptx(pres: Presentation): Promise<Buffer> {
   }
 
   // ── [Content_Types].xml ──────────────────────────────────────────
-  zip.file("[Content_Types].xml", contentTypesXml(slides, mediaFiles, hasAnyNotes));
+  const hasCustomProps = pres._customProps.size > 0;
+  zip.file("[Content_Types].xml", contentTypesXml(slides, mediaFiles, hasAnyNotes, hasCustomProps));
 
   // ── _rels/.rels ──────────────────────────────────────────────────
-  zip.file("_rels/.rels", rootRelsXml());
+  zip.file("_rels/.rels", rootRelsXml(hasCustomProps));
 
   // ── docProps ─────────────────────────────────────────────────────
   zip.file("docProps/core.xml", coreXml(pres._metadata));
   zip.file("docProps/app.xml", appXml(slides.length));
+  if (pres._customProps.size > 0) {
+    zip.file("docProps/custom.xml", customPropsXml(pres._customProps));
+  }
 
   // ── ppt/presentation.xml ─────────────────────────────────────────
   zip.file("ppt/presentation.xml", presentationXml(pres));
@@ -102,6 +106,7 @@ function contentTypesXml(
   slides: Presentation["_slides"],
   mediaFiles: Array<{ contentType: string }>,
   hasAnyNotes: boolean,
+  hasCustomProps = false,
 ): string {
   const overrides: string[] = [
     `<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`,
@@ -140,6 +145,12 @@ function contentTypesXml(
     }
   }
 
+  if (hasCustomProps) {
+    overrides.push(
+      `<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`,
+    );
+  }
+
   // Collect unique media content types
   const mediaTypes = new Set<string>();
   for (const m of mediaFiles) mediaTypes.add(m.contentType);
@@ -162,13 +173,14 @@ function contentTypesXml(
 
 // ─── _rels/.rels ───────────────────────────────────────────────────
 
-function rootRelsXml(): string {
+function rootRelsXml(hasCustomProps = false): string {
   return (
     xmlDecl() +
     `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
     `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>` +
     `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>` +
     `<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>` +
+    (hasCustomProps ? `<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>` : "") +
     `</Relationships>`
   );
 }
@@ -508,5 +520,32 @@ function notesSlideRelsXml(slideNum: number): string {
     `<Relationship Id="rIdSlide" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide${slideNum}.xml"/>` +
     `<Relationship Id="rIdNotesMaster" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/>` +
     `</Relationships>`
+  );
+}
+
+// ─── Custom Properties ────────────────────────────────────────────
+
+function customPropsXml(props: Map<string, string | number | boolean>): string {
+  let pid = 2; // custom properties start at pid=2
+  const entries: string[] = [];
+  for (const [name, value] of props) {
+    let valXml: string;
+    if (typeof value === "boolean") {
+      valXml = `<vt:bool>${value}</vt:bool>`;
+    } else if (typeof value === "number") {
+      valXml = Number.isInteger(value) ? `<vt:i4>${value}</vt:i4>` : `<vt:r8>${value}</vt:r8>`;
+    } else {
+      valXml = `<vt:lpwstr>${escXml(String(value))}</vt:lpwstr>`;
+    }
+    entries.push(
+      `<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="${pid}" name="${escXml(name)}">${valXml}</property>`,
+    );
+    pid++;
+  }
+  return (
+    xmlDecl() +
+    `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">` +
+    entries.join("") +
+    `</Properties>`
   );
 }

@@ -2058,4 +2058,108 @@ describe("OOXML", () => {
       expect(xml).toContain("<a:spAutoFit/>");
     });
   });
+
+  describe("Shape tooltip", () => {
+    it("emits <a:hlinkHover> with tooltip text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 1,
+        fill: { color: "3366CC" },
+        tooltip: "Click me!",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:hlinkHover");
+      expect(xml).toContain('tooltip="Click me!"');
+    });
+  });
+
+  describe("Image hyperlink", () => {
+    it("emits <a:hlinkClick> on image cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 3, h: 3,
+        href: "https://example.com",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:hlinkClick");
+      expect(xml).toContain("rIdHlink");
+    });
+  });
+
+  describe("Table cell hyperlinks", () => {
+    it("emits <a:hlinkClick> in cell rPr for string text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Click here", options: { href: "https://example.com" } }]],
+        { x: 0, y: 0, w: 5 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:hlinkClick");
+    });
+  });
+
+  describe("Text kerning", () => {
+    it("emits kern attribute on rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Kerned", options: { kerning: 12 } }], { x: 0, y: 0, w: 4, h: 1 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain(`kern="${12 * 100}"`);
+    });
+  });
+
+  describe("Shape line join", () => {
+    it("emits <a:round/> for round line join", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 2, h: 2,
+        line: { color: "000000", width: 3, lineJoin: "round" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:round/>");
+    });
+
+    it("emits <a:bevel/> for bevel line join", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 2, h: 2,
+        line: { color: "000000", lineJoin: "bevel" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:bevel/>");
+    });
+  });
+
+  describe("Shape text wrapping", () => {
+    it("emits wrap='none' when set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        text: "No wrap",
+        wrap: "none",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('wrap="none"');
+    });
+  });
+
+  describe("Presentation custom properties", () => {
+    it("stores custom properties", () => {
+      const pres = new Presentation();
+      pres.setCustomProperty("Project", "VibeSlides");
+      pres.setCustomProperty("Version", 2);
+      pres.setCustomProperty("Draft", true);
+      expect(pres._customProps.size).toBe(3);
+      expect(pres._customProps.get("Project")).toBe("VibeSlides");
+      expect(pres._customProps.get("Version")).toBe(2);
+      expect(pres._customProps.get("Draft")).toBe(true);
+    });
+  });
 });

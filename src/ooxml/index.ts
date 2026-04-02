@@ -79,6 +79,8 @@ export interface TextRunOpts {
   outline?: { color: string; width?: number };
   /** Text capitalization: "all" for ALL CAPS, "small" for Small Caps. */
   caps?: "all" | "small";
+  /** Kerning threshold in points. Text at or above this size gets kerned. 0 to disable. */
+  kerning?: number;
 }
 
 export interface BulletOpts {
@@ -129,6 +131,8 @@ export interface LineOpts {
   headEnd?: LineEndType;
   /** Arrow head at the end of the line. */
   tailEnd?: LineEndType;
+  /** Line join style at corners. */
+  lineJoin?: "round" | "bevel" | "miter";
 }
 
 export interface ShadowOpts {
@@ -257,6 +261,10 @@ export interface AddShapeOpts {
   href?: string;
   /** Built-in PowerPoint click action for the shape. */
   action?: "nextSlide" | "prevSlide" | "firstSlide" | "lastSlide" | "endShow";
+  /** Hover tooltip text. */
+  tooltip?: string;
+  /** Text wrapping mode for shape text. */
+  wrap?: "none" | "square";
 }
 
 /** A single path segment for freeform shapes. */
@@ -318,6 +326,8 @@ export interface AddImageOpts {
   brightness?: number;
   /** Contrast adjustment (-1 to 1, 0=normal). */
   contrast?: number;
+  /** Hyperlink URL — makes the image clickable. */
+  href?: string;
 }
 
 export interface AddTableOpts {
@@ -377,6 +387,8 @@ export interface TableCell {
     vertical?: "vert" | "vert270";
     /** Per-cell margins in points: number for uniform, [top, right, bottom, left] for per-side. */
     margin?: number | [number, number, number, number];
+    /** Hyperlink URL for the entire cell text. */
+    href?: string;
   };
 }
 
@@ -413,6 +425,7 @@ export class Presentation {
   /** @internal */ _metadata: { title?: string; author?: string; subject?: string; keywords?: string } = {};
   /** @internal */ _defaults: PresentationDefaults = {};
   /** @internal */ _colorVars = new Map<string, string>();
+  /** @internal */ _customProps = new Map<string, string | number | boolean>();
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -439,6 +452,11 @@ export class Presentation {
   /** Resolve a color — returns hex from named variables, or the input as-is if not found. */
   resolveColor(nameOrHex: string): string {
     return this._colorVars.get(nameOrHex) ?? nameOrHex;
+  }
+
+  /** Set a custom property on the presentation. */
+  setCustomProperty(name: string, value: string | number | boolean): void {
+    this._customProps.set(name, value);
   }
 
   /** Set presentation-level text defaults (font, size, color). Applied when not overridden per-element. */
@@ -809,7 +827,8 @@ export class Slide {
   }
 
   addImage(opts: AddImageOpts): void {
-    const o: Record<string, any> = opts;
+    const o: Record<string, any> = { ...opts };
+    if (o.href) o._hlinkRId = this._addHyperlink(o.href);
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `Image_${id}`;
     this._mediaCounter++;
@@ -830,7 +849,7 @@ export class Slide {
   addTable(rows: TableCell[][], opts: AddTableOpts): void {
     const o: Record<string, any> = opts;
     const id = this._allocId();
-    this._elements.push(buildTableXml(id, rows, o));
+    this._elements.push(buildTableXml(id, rows, o, this));
   }
 
   /** Add a semi-transparent watermark text across the slide center. */
@@ -1242,6 +1261,7 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   if (opts.charSpacing != null) attrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
   if (opts.caps === "all") attrs.push(`cap="all"`);
   else if (opts.caps === "small") attrs.push(`cap="small"`);
+  if (opts.kerning != null) attrs.push(`kern="${Math.round(opts.kerning * 100)}"`);
   attrs.push(`dirty="0"`);
 
   const children: string[] = [];
@@ -1311,10 +1331,12 @@ function buildLineXml(line: LineOpts): string {
   const tailXml = line.tailEnd && line.tailEnd !== "none"
     ? `<a:tailEnd type="${line.tailEnd}"/>`
     : "";
+  const joinMap: Record<string, string> = { round: "<a:round/>", bevel: "<a:bevel/>", miter: "<a:miter/>" };
+  const joinXml = line.lineJoin ? joinMap[line.lineJoin] ?? "" : "";
   return (
     `<a:ln w="${lw}">` +
     `<a:solidFill><a:srgbClr val="${line.color}"/></a:solidFill>` +
-    dashXml + headXml + tailXml +
+    dashXml + headXml + tailXml + joinXml +
     `</a:ln>`
   );
 }
@@ -1509,6 +1531,10 @@ function buildShapeXml(
     const vAlignMap: Record<string, string> = { top: "t", middle: "ctr", bottom: "b", t: "t", b: "b", ctr: "ctr" };
     const anchor = vAlignMap[opts.valign ?? "middle"] ?? "ctr";
     const algn = alignMap[opts.align ?? "center"] ?? "ctr";
+    const wrapMode = opts.wrap ?? "square";
+    const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
+      + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
+    const bodyPr = `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}/>`;
 
     if (typeof opts.text === "string") {
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
@@ -1520,18 +1546,14 @@ function buildShapeXml(
       const rpr = children.length > 0
         ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
         : `<a:rPr ${rprAttrs.join(" ")}/>`;
-      const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
-        + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
-      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"${colAttrs}/><a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
     } else {
       const runsXml = opts.text.map((run: TextRun) => {
         const ro = run.options ?? {};
         const rProps = buildRunProps({ fontSize: opts.fontSize, fontFace: opts.fontFace, color: opts.color, ...ro });
         return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
       }).join("");
-      const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
-        + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
-      txBody = `<p:txBody><a:bodyPr wrap="square" anchor="${anchor}"${colAttrs}/><a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
+      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
     }
   }
 
@@ -1546,12 +1568,18 @@ function buildShapeXml(
         lastSlide: "ppaction://hlinkshowjump?jump=lastslide",
         endShow: "ppaction://hlinkshowjump?jump=endshow",
       };
+      const inner: string[] = [];
       if (opts._hlinkRId) {
-        return `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`;
+        inner.push(`<a:hlinkClick r:id="${opts._hlinkRId}"/>`);
       } else if (opts.action && actionMap[opts.action]) {
-        return `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="" action="${actionMap[opts.action]}"/></p:cNvPr>`;
+        inner.push(`<a:hlinkClick r:id="" action="${actionMap[opts.action]}"/>`);
       }
-      return `<p:cNvPr id="${id}" name="${escXml(name)}"/>`;
+      if (opts.tooltip) {
+        inner.push(`<a:hlinkHover r:id="" tooltip="${escXml(opts.tooltip)}"/>`);
+      }
+      return inner.length > 0
+        ? `<p:cNvPr id="${id}" name="${escXml(name)}">${inner.join("")}</p:cNvPr>`
+        : `<p:cNvPr id="${id}" name="${escXml(name)}"/>`;
     })() +
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
@@ -1659,7 +1687,9 @@ function buildPictureXml(
   return (
     `<p:pic>` +
     `<p:nvPicPr>` +
-    `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>` +
+    (opts._hlinkRId
+      ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`
+      : `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>`) +
     `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
     `<p:nvPr/>` +
     `</p:nvPicPr>` +
@@ -1724,6 +1754,7 @@ function buildTableXml(
   id: number,
   rows: any[][],
   opts: Record<string, any>,
+  slide?: Slide,
 ): string {
   const x = emu(opts.x ?? 0);
   const y = emu(opts.y ?? 0);
@@ -1781,7 +1812,7 @@ function buildTableXml(
       }
 
       // Cell text
-      const textXml = buildCellTextXml(cellObj.text, co);
+      const textXml = buildCellTextXml(cellObj.text, co, slide);
 
       // Cell properties
       const tcPrParts: string[] = [];
@@ -1856,7 +1887,7 @@ function buildTableXml(
   );
 }
 
-function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): string {
+function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, slide?: Slide): string {
   const fontSize = opts.fontSize ?? 12;
   const fontFace = opts.fontFace ?? "Helvetica Neue";
   const color = opts.color ?? "333333";
@@ -1887,13 +1918,20 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): 
     const parasXml = paragraphs.map((para) => {
       const runsXml = para.map((run) => {
         const ro = run.options ?? {};
-        const rProps = buildRunProps({ fontSize, fontFace, color, ...ro });
+        const rProps = buildRunProps({ fontSize, fontFace, color, ...ro }, slide);
         return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
       }).join("");
       return `<a:p><a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>${runsXml}</a:p>`;
     }).join("");
 
     return `<a:txBody><a:bodyPr/><a:lstStyle/>${parasXml}</a:txBody>`;
+  }
+
+  // Handle cell-level href for plain string text
+  let hlinkXml = "";
+  if (opts.href && slide) {
+    const rId = slide._addHyperlink(opts.href);
+    hlinkXml = `<a:hlinkClick r:id="${rId}"/>`;
   }
 
   return (
@@ -1906,6 +1944,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): 
     `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic} dirty="0">` +
     `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>` +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
+    hlinkXml +
     `</a:rPr>` +
     `<a:t>${escXml(text)}</a:t>` +
     `</a:r>` +

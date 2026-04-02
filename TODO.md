@@ -119,6 +119,14 @@
 - [x] **Gradient text on shapes** — already supported via `TextRun[]` with `gradient` option in shape text.
 - [x] **Text auto-size** — already supported via `autoFit: true` on AddTextOpts → `<a:spAutoFit/>`.
 
+- [x] **Shape tooltip** — `tooltip` on AddShapeOpts → `<a:hlinkHover>` for hover text.
+- [x] **Image hyperlink** — `href` on AddImageOpts → `<a:hlinkClick>` on image `<p:cNvPr>`.
+- [x] **Table cell hyperlinks** — `href` on TableCell options → `<a:hlinkClick>` in cell run properties.
+- [x] **Text kerning** — `kerning` on TextRunOpts → `kern` attribute on `<a:rPr>`.
+- [x] **Shape line join** — `lineJoin: "round" | "bevel" | "miter"` on LineOpts → join elements in `<a:ln>`.
+- [x] **Shape text wrapping** — `wrap: "none" | "square"` on AddShapeOpts → `wrap` attribute on `<a:bodyPr>`.
+- [x] **Presentation custom properties** — `pres.setCustomProperty(name, value)` → `docProps/custom.xml` with string/number/boolean types.
+
 ## Open
 
 ### High impact
@@ -144,12 +152,13 @@
 - [ ] **Table header freeze** — `freezeHeader: true` on AddTableOpts to lock first row in PowerPoint table view.
 - [ ] **Image placeholder** — lazy image loading with `placeholder: true` for decks where images are resolved later.
 - [ ] **Table sorting indicator** — visual sort arrows on header cells for data table presentations.
-- [ ] **Shape tooltip** — `tooltip` on AddShapeOpts for hover text via `<a:hlinkHover>`.
-- [ ] **Image hyperlink** — `href` on AddImageOpts to make images clickable.
-- [ ] **Table cell hyperlinks** — `href` on TableCell options for clickable cells.
 - [ ] **Slide background audio** — `bgAudio` on slide for looping background sound.
-- [ ] **Shape text wrapping control** — `wrap: "none" | "square"` on AddShapeOpts to control text wrapping behavior.
-- [ ] **Presentation custom properties** — `pres.setCustomProperty(name, value)` for metadata beyond core props.
-- [ ] **Text kerning** — `kerning` on TextRunOpts for letter-pair spacing adjustments.
-- [ ] **Shape line join** — `lineJoin: "round" | "bevel" | "miter"` on LineOpts for corner style.
 - [ ] **Slide section markers** — `pres.addSection(name)` to group slides into named sections.
+- [ ] **Shape connection points** — custom `cxnPts` on shapes for additional connector attachment positions.
+- [ ] **Table cell text rotation** — `textRotation` on TableCell options for angled header text.
+- [ ] **Text fit with line count** — `maxLines` on AddTextOpts to limit text to N lines with overflow ellipsis.
+- [ ] **Image effects** — `blur`, `sharpen` on AddImageOpts via `<a:blur>` effect on blip.
+- [ ] **Slide timing** — `advanceAfter` on slide for auto-advance timing (kiosk mode).
+- [ ] **Shape arrow keys navigation** — `tabOrder` on shapes for keyboard navigation order.
+- [ ] **Group shape hyperlinks** — `href` on GroupShape for clickable grouped elements.
+- [ ] **Multi-level numbered lists** — nested `a`, `b`, `c` sub-numbering for outline-style lists.

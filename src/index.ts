@@ -11,8 +11,7 @@
  *   await deck.save("output.pptx");
  */
 
-import PptxGenJS from "pptxgenjs";
-import { patchPptx } from "./pptx-patch.js";
+import { Presentation, Slide } from "./ooxml/index.js";
 import type {
   Theme,
   FontPreset,
@@ -43,6 +42,8 @@ import {
 } from "./layout.js";
 
 export type { Theme, ShapeRef, ConnectionPoint, Rect, FontPreset } from "./types.js";
+export { Presentation, Slide } from "./ooxml/index.js";
+export type { TextRun, TextRunOpts, BulletOpts } from "./ooxml/index.js";
 export { contentArea, contentAreaBelow, columns, rows, below, inset } from "./layout.js";
 export { expandTextWithMath } from "./inline-math.js";
 
@@ -60,12 +61,12 @@ export function applyPreset(theme: Theme, preset: FontPreset): Theme {
 }
 
 /** Add speaker notes to a slide. Convenience wrapper for blank() slides. */
-export function speakerNote(slide: PptxGenJS.Slide, text: string): void {
+export function speakerNote(slide: Slide, text: string): void {
   slide.addNotes(text);
 }
 
 export class Deck {
-  private pres: PptxGenJS;
+  private pres: Presentation;
   private theme: Theme;
   private boundComponents: ReturnType<Theme["createComponents"]>;
   private _connectorDefs: ConnectorDef[] = [];
@@ -79,7 +80,7 @@ export class Deck {
 
   constructor(theme: Theme) {
     this.theme = theme;
-    this.pres = new PptxGenJS();
+    this.pres = new Presentation();
 
     // Create components bound to this theme's config (respects presets)
     // Pass emoji defs accumulator and pending work tracker so components can queue async work
@@ -89,7 +90,7 @@ export class Deck {
     this.pres.defineLayout({ name: "CUSTOM", width: slideWidth, height: slideHeight });
     this.pres.layout = "CUSTOM";
 
-    // Override pptxgenjs default theme fonts (Calibri/Calibri Light)
+    // Set theme fonts for OOXML theme1.xml
     this.pres.theme = {
       headFontFace: theme.config.fonts.heading,
       bodyFontFace: theme.config.fonts.sans,
@@ -168,8 +169,8 @@ export class Deck {
     return this;
   }
 
-  /** Empty slide for custom content. Returns the raw pptxgenjs slide. */
-  blank(props?: BlankLayoutProps): PptxGenJS.Slide {
+  /** Empty slide for custom content. Returns the raw Slide. */
+  blank(props?: BlankLayoutProps): Slide {
     const slide = this.pres.addSlide();
     const bgMap = {
       primary: this.theme.config.colors.bgPrimary,
@@ -199,8 +200,8 @@ export class Deck {
     return this;
   }
 
-  /** Access the underlying pptxgenjs instance for advanced use. */
-  get raw(): PptxGenJS {
+  /** Access the underlying Presentation instance for advanced use. */
+  get raw(): Presentation {
     return this.pres;
   }
 
@@ -280,17 +281,20 @@ export class Deck {
       }
     }
 
-    await this.pres.writeFile({ fileName: path });
-    await patchPptx(path, {
-      fonts: this.theme.config.fonts,
-      spacing: this.theme.config.spacing,
-      footerFont: this.theme.config.fonts.sans,
-      footerSize: this.theme.config.sizes.caption,
-      footerColor: this.theme.config.colors.textMuted,
+    // Apply all deferred processing (connectors, emojis, animations, footers, grouping)
+    this.pres.applyExtras({
       connectorDefs: this._connectorDefs,
       emojiDefs: this._emojiDefs,
       animationDefs: this._animationDefs,
       footerDefs,
+      footerStyle: {
+        spacing: this.theme.config.spacing,
+        font: this.theme.config.fonts.sans,
+        size: this.theme.config.sizes.caption,
+        color: this.theme.config.colors.textMuted,
+      },
     });
+
+    await this.pres.writeFile({ fileName: path });
   }
 }

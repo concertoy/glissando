@@ -1,0 +1,1329 @@
+/**
+ * OOXML PPTX generator — direct replacement for pptxgenjs.
+ *
+ * Generates Office Open XML directly with jszip for packaging.
+ * All features that were previously patched post-hoc (connectors, animations,
+ * grouping, emoji bullets, footers) are first-class.
+ */
+
+import { readFileSync } from "fs";
+import type {
+  ConnectorDef,
+  EmojiDef,
+  AnimationDef,
+  FooterDef,
+  ThemeSpacing,
+} from "../types.js";
+import { assemblePptx } from "./writer.js";
+
+// ─── Constants ──────────────────────────────────────────────────────
+
+const EMU = 914400;
+const PT_EMU = 12700;
+
+function emu(inches: number): number { return Math.round(inches * EMU); }
+function ptEmu(pt: number): number { return Math.round(pt * PT_EMU); }
+function sz100(pt: number): number { return Math.round(pt * 100); }
+
+function escXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ─── Public types ───────────────────────────────────────────────────
+
+export interface TextRun {
+  text: string;
+  options?: TextRunOpts;
+}
+
+export interface TextRunOpts {
+  fontSize?: number;
+  fontFace?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  subscript?: boolean;
+  superscript?: boolean;
+  bullet?: BulletOpts | boolean;
+  paraSpaceAfter?: number;
+  paraSpaceBefore?: number;
+  indentLevel?: number;
+  lineSpacingMultiple?: number;
+  breakLine?: boolean;
+  valign?: string;
+  align?: string;
+}
+
+export interface BulletOpts {
+  type?: "bullet" | "number";
+  code?: string;
+  color?: string;
+}
+
+export interface TableCell {
+  text: string;
+  options?: Record<string, any>;
+}
+
+// ─── Extras passed at write time ────────────────────────────────────
+
+export interface WriteExtras {
+  connectorDefs?: ConnectorDef[];
+  emojiDefs?: EmojiDef[];
+  animationDefs?: AnimationDef[];
+  footerDefs?: FooterDef[];
+  footerStyle?: {
+    spacing: ThemeSpacing;
+    font: string;
+    size: number;
+    color: string;
+  };
+}
+
+// ─── Presentation ───────────────────────────────────────────────────
+
+export class Presentation {
+  /** @internal */ _slides: Slide[] = [];
+  /** @internal */ _width = 10;
+  /** @internal */ _height = 5.625;
+  /** @internal */ _headFont = "Calibri";
+  /** @internal */ _bodyFont = "Calibri";
+  /** @internal */ _extras: WriteExtras = {};
+
+  defineLayout(opts: { name: string; width: number; height: number }): void {
+    this._width = opts.width;
+    this._height = opts.height;
+  }
+
+  set layout(_name: string) { /* used with defineLayout, no-op here */ }
+  get layout(): string { return "CUSTOM"; }
+
+  set theme(t: { headFontFace?: string; bodyFontFace?: string }) {
+    if (t.headFontFace) this._headFont = t.headFontFace;
+    if (t.bodyFontFace) this._bodyFont = t.bodyFontFace;
+  }
+
+  get theme(): { headFontFace?: string; bodyFontFace?: string } {
+    return { headFontFace: this._headFont, bodyFontFace: this._bodyFont };
+  }
+
+  addSlide(): Slide {
+    const slide = new Slide(this._slides.length);
+    this._slides.push(slide);
+    return slide;
+  }
+
+  /**
+   * Apply deferred extras (connectors, emojis, animations, footers).
+   * Must be called before writeFile.
+   */
+  applyExtras(extras: WriteExtras): void {
+    this._extras = extras;
+  }
+
+  async writeFile(opts: { fileName: string }): Promise<void> {
+    // Apply deferred processing to slides
+    this._applyConnectors();
+    this._applyEmojiBullets();
+    this._applyAnimations();
+    this._applyFooters();
+    this._applyGrouping();
+
+    const buf = await assemblePptx(this);
+    const { writeFileSync } = await import("fs");
+    writeFileSync(opts.fileName, buf);
+  }
+
+  // -- Deferred processing --
+
+  private _applyConnectors(): void {
+    const defs = this._extras.connectorDefs;
+    if (!defs?.length) return;
+    const bySlide = new Map<number, ConnectorDef[]>();
+    for (const d of defs) {
+      const list = bySlide.get(d.slideIndex) ?? [];
+      list.push(d);
+      bySlide.set(d.slideIndex, list);
+    }
+    for (const [idx, conns] of bySlide) {
+      const slide = this._slides[idx - 1]; // slideIndex is 1-based
+      if (!slide) continue;
+      for (const conn of conns) {
+        const fromId = slide._nameToId.get(conn.from._shapeName);
+        const toId = slide._nameToId.get(conn.to._shapeName);
+        if (!fromId || !toId) continue;
+        slide._elements.push(buildConnectorXml(conn, fromId, toId, slide._allocId()));
+        if (conn.label) {
+          slide._elements.push(buildConnectorLabelXml(conn, slide._allocId(), this._bodyFont));
+        }
+      }
+    }
+  }
+
+  private _applyEmojiBullets(): void {
+    const defs = this._extras.emojiDefs;
+    if (!defs?.length) return;
+    for (const def of defs) {
+      // Find the slide containing this objectName
+      for (const slide of this._slides) {
+        if (!slide._nameToId.has(def.objectName)) continue;
+        // Find the element XML and patch emoji bullets
+        for (let i = 0; i < slide._elements.length; i++) {
+          if (!slide._elements[i].includes(`name="${def.objectName}"`)) continue;
+          slide._elements[i] = patchEmojiBulletsInXml(
+            slide._elements[i], def, slide,
+          );
+        }
+        break;
+      }
+    }
+  }
+
+  private _applyAnimations(): void {
+    const defs = this._extras.animationDefs;
+    if (!defs?.length) return;
+    for (const def of defs) {
+      for (const slide of this._slides) {
+        const spid = slide._nameToId.get(def.objectName);
+        if (spid === undefined) continue;
+        slide._timing = buildTimingXml(String(spid), def.paragraphCount);
+        break;
+      }
+    }
+  }
+
+  private _applyFooters(): void {
+    const defs = this._extras.footerDefs;
+    const style = this._extras.footerStyle;
+    if (!defs?.length || !style) return;
+
+    const sp = style.spacing;
+    const footerY = sp.slideHeight - 0.35;
+    const footerH = 0.25;
+    const leftX = sp.marginLeft;
+    const leftW = sp.slideWidth - sp.marginLeft - sp.marginRight - 1.5;
+    const rightW = 1.2;
+    const rightX = sp.slideWidth - sp.marginRight - rightW;
+
+    for (const def of defs) {
+      const slide = this._slides[def.slideIndex];
+      if (!slide) continue;
+
+      if (def.slideNumber) {
+        const id = slide._allocId();
+        slide._elements.push(buildFooterTextBox(
+          id, "SlideNum", rightX, footerY, rightW, footerH, "r", def.slideNumber, style,
+        ));
+      }
+      const leftParts: string[] = [];
+      if (def.text) leftParts.push(def.text);
+      if (def.citations) leftParts.push(def.citations);
+      if (leftParts.length > 0) {
+        const id = slide._allocId();
+        slide._elements.push(buildFooterTextBox(
+          id, "FooterText", leftX, footerY, leftW, footerH, "l", leftParts.join("  \u00B7  "), style,
+        ));
+      }
+    }
+  }
+
+  private _applyGrouping(): void {
+    for (const slide of this._slides) {
+      applyCodeBlockGrouping(slide);
+      applyCalloutGrouping(slide);
+    }
+  }
+}
+
+// ─── Slide ──────────────────────────────────────────────────────────
+
+export class Slide {
+  /** @internal */ _slideIndex: number;
+  /** @internal */ _bg: string = "FFFFFF";
+  /** @internal */ _elements: string[] = [];
+  /** @internal */ _nextId: number = 2;
+  /** @internal */ _nameToId = new Map<string, number>();
+  /** @internal */ _images: Array<{ rId: string; fileName: string; data: Buffer; contentType: string }> = [];
+  /** @internal */ _notes?: string;
+  /** @internal */ _timing?: string;
+  /** @internal */ _mediaCounter = 0;
+
+  constructor(index: number) {
+    this._slideIndex = index;
+  }
+
+  set background(bg: { color: string }) { this._bg = bg.color; }
+  get background(): { color: string } { return { color: this._bg }; }
+
+  /** @internal */
+  _allocId(name?: string): number {
+    const id = this._nextId++;
+    if (name) this._nameToId.set(name, id);
+    return id;
+  }
+
+  addText(content: string | TextRun[], opts?: Record<string, any>): void {
+    const o = opts ?? {};
+    const id = this._allocId(o.objectName);
+    const name = o.objectName ?? `TextBox_${id}`;
+    this._elements.push(buildTextShapeXml(id, name, content, o));
+  }
+
+  addShape(type: string, opts: Record<string, any>): void {
+    const id = this._allocId(opts.objectName);
+    const name = opts.objectName ?? `Shape_${id}`;
+    this._elements.push(buildShapeXml(id, name, type, opts));
+  }
+
+  addImage(opts: Record<string, any>): void {
+    const id = this._allocId(opts.objectName);
+    const name = opts.objectName ?? `Image_${id}`;
+    this._mediaCounter++;
+    const resolved = resolveImageData(opts);
+    const fileName = `img_s${this._slideIndex + 1}_${this._mediaCounter}.${resolved.ext}`;
+    const rId = `rImg${this._mediaCounter}`;
+    this._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
+    this._elements.push(buildPictureXml(id, name, rId, opts));
+  }
+
+  addTable(rows: any[][], opts: Record<string, any>): void {
+    const id = this._allocId();
+    this._elements.push(buildTableXml(id, rows, opts));
+  }
+
+  addNotes(text: string): void {
+    this._notes = text;
+  }
+
+  /** Build the full <p:sld> XML. @internal */
+  _toXml(): string {
+    const bgXml =
+      `<p:bg><p:bgPr>` +
+      `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>` +
+      `<a:effectLst/>` +
+      `</p:bgPr></p:bg>`;
+
+    const spTree =
+      `<p:spTree>` +
+      `<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
+      `<p:grpSpPr><a:xfrm>` +
+      `<a:off x="0" y="0"/><a:ext cx="0" cy="0"/>` +
+      `<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/>` +
+      `</a:xfrm></p:grpSpPr>` +
+      this._elements.join("") +
+      `</p:spTree>`;
+
+    const timing = this._timing ?? "";
+
+    return (
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"` +
+      ` xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"` +
+      ` xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+      `<p:cSld>${bgXml}${spTree}</p:cSld>` +
+      `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>` +
+      timing +
+      `</p:sld>`
+    );
+  }
+
+  /** Build relationships XML for this slide. @internal */
+  _toRelsXml(hasNotes: boolean): string {
+    const rels: string[] = [
+      `<Relationship Id="rIdLayout" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`,
+    ];
+    for (const img of this._images) {
+      rels.push(
+        `<Relationship Id="${img.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${img.fileName}"/>`,
+      );
+    }
+    if (hasNotes) {
+      rels.push(
+        `<Relationship Id="rIdNotes" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../noteSlides/notesSlide${this._slideIndex + 1}.xml"/>`,
+      );
+    }
+    return (
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      rels.join("") +
+      `</Relationships>`
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// XML BUILDERS
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Text shape ─────────────────────────────────────────────────────
+
+function buildTextShapeXml(
+  id: number,
+  name: string,
+  content: string | TextRun[],
+  opts: Record<string, any>,
+): string {
+  const x = emu(opts.x ?? 0);
+  const y = emu(opts.y ?? 0);
+  const cx = emu(opts.w ?? 1);
+  const cy = emu(opts.h ?? 0.5);
+
+  // Determine if this is a text box or a shaped text element
+  const shapeType: string = opts.shape ?? "rect";
+  const isTextBox = !opts.shape && !opts.fill;
+
+  // Transform
+  const xfrmXml =
+    `<a:xfrm>` +
+    `<a:off x="${x}" y="${y}"/>` +
+    `<a:ext cx="${cx}" cy="${cy}"/>` +
+    `</a:xfrm>`;
+
+  // Geometry
+  let geomXml: string;
+  if (shapeType === "roundRect") {
+    const radius = opts.rectRadius ?? 0.1;
+    const shorter = Math.min(opts.w ?? 1, opts.h ?? 0.5);
+    const adj = Math.round((radius / shorter) * 100000);
+    geomXml = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
+  } else {
+    geomXml = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
+  }
+
+  // Fill
+  let fillXml: string;
+  if (isTextBox) {
+    fillXml = `<a:noFill/>`;
+  } else if (opts.fill) {
+    fillXml = `<a:solidFill><a:srgbClr val="${opts.fill.color}"/></a:solidFill>`;
+  } else {
+    fillXml = `<a:noFill/>`;
+  }
+
+  // Line
+  let lineXml = "";
+  if (opts.line) {
+    const lw = ptEmu(opts.line.width ?? 1);
+    lineXml =
+      `<a:ln w="${lw}">` +
+      `<a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>` +
+      `</a:ln>`;
+  }
+
+  // Shadow
+  let shadowXml = "";
+  if (opts.shadow) {
+    const blur = opts.shadow.blur ?? 3;
+    const dist = opts.shadow.offset ?? 1;
+    const opacPct = Math.round((opts.shadow.opacity ?? 0.1) * 100000);
+    shadowXml =
+      `<a:effectLst><a:outerShdw blurRad="${ptEmu(blur)}" dist="${ptEmu(dist)}" dir="2700000">` +
+      `<a:srgbClr val="${opts.shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+      `</a:outerShdw></a:effectLst>`;
+  }
+
+  // Non-visual properties
+  const txBoxAttr = isTextBox ? ' txBox="1"' : "";
+  const nvSpPr =
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvSpPr${txBoxAttr}/>` +
+    `<p:nvPr/>` +
+    `</p:nvSpPr>`;
+
+  // Shape properties
+  const spPr = `<p:spPr>${xfrmXml}${geomXml}${fillXml}${lineXml}${shadowXml}</p:spPr>`;
+
+  // Text body
+  const txBody = buildTextBodyXml(content, opts);
+
+  return `<p:sp>${nvSpPr}${spPr}${txBody}</p:sp>`;
+}
+
+// ─── Text body XML (<p:txBody>) ─────────────────────────────────────
+
+function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>): string {
+  // Body properties
+  const valignMap: Record<string, string> = { top: "t", middle: "ctr", bottom: "b", b: "b", t: "t", ctr: "ctr" };
+  const anchor = valignMap[opts.valign ?? "top"] ?? "t";
+
+  // Margins (in EMU). pptxgenjs margin is [top, right, bottom, left] in POINTS
+  let lIns = 91440, tIns = 45720, rIns = 91440, bIns = 45720; // defaults
+  if (opts.margin != null) {
+    if (typeof opts.margin === "number") {
+      const m = ptEmu(opts.margin);
+      lIns = tIns = rIns = bIns = m;
+    } else if (Array.isArray(opts.margin)) {
+      // pptxgenjs order: [left, right, bottom, top] (yes, it's weird)
+      // see pptx-patch.ts comment: "NOTE: pptxgenjs addText margin array order is [left, right, bottom, top]"
+      lIns = ptEmu(opts.margin[0]);
+      rIns = ptEmu(opts.margin[1]);
+      bIns = ptEmu(opts.margin[2]);
+      tIns = ptEmu(opts.margin[3]);
+    }
+  }
+
+  let fitXml = "";
+  if (opts.fit === "shrink") {
+    fitXml = `<a:normAutofit/>`;
+  } else if (opts.autoFit) {
+    fitXml = `<a:spAutoFit/>`;
+  }
+
+  const bodyPr =
+    `<a:bodyPr wrap="square" lIns="${lIns}" tIns="${tIns}" rIns="${rIns}" bIns="${bIns}" rtlCol="0" anchor="${anchor}"` +
+    (opts.charSpacing != null ? ` spcFirstLastPara="0"` : "") +
+    `>${fitXml}</a:bodyPr>`;
+
+  // Build paragraphs
+  const paragraphs = buildParagraphsXml(content, opts);
+
+  return `<p:txBody>${bodyPr}<a:lstStyle/>${paragraphs}</p:txBody>`;
+}
+
+function buildParagraphsXml(content: string | TextRun[], opts: Record<string, any>): string {
+  if (typeof content === "string") {
+    // Simple single-paragraph text
+    return buildSingleParagraph(content, opts);
+  }
+
+  // Array of text runs — group into paragraphs by breakLine or bullet
+  // A run with `bullet` starts a new paragraph (matches pptxgenjs behavior)
+  const paragraphs: TextRun[][] = [[]];
+  for (const run of content) {
+    if (run.options?.bullet && paragraphs[paragraphs.length - 1].length > 0) {
+      paragraphs.push([]);
+    }
+    paragraphs[paragraphs.length - 1].push(run);
+    if (run.options?.breakLine) {
+      paragraphs.push([]);
+    }
+  }
+  // Remove trailing empty paragraph
+  if (paragraphs[paragraphs.length - 1].length === 0) {
+    paragraphs.pop();
+  }
+
+  return paragraphs.map((runs) => buildParagraphFromRuns(runs, opts)).join("");
+}
+
+function buildSingleParagraph(text: string, opts: Record<string, any>): string {
+  const pPr = buildParagraphProps(opts);
+  const rPr = buildRunProps(opts);
+  return `<a:p>${pPr}<a:r>${rPr}<a:t>${escXml(text)}</a:t></a:r></a:p>`;
+}
+
+function buildParagraphFromRuns(runs: TextRun[], parentOpts: Record<string, any>): string {
+  if (runs.length === 0) return `<a:p><a:endParaRPr lang="en-US"/></a:p>`;
+
+  // Paragraph props come from the first run
+  const firstRun = runs[0];
+  const pOpts = { ...parentOpts, ...firstRun.options };
+  const pPr = buildParagraphProps(pOpts);
+
+  const runXmls = runs.map((run) => {
+    const o = { ...parentOpts, ...run.options };
+    const rPr = buildRunProps(o);
+    return `<a:r>${rPr}<a:t>${escXml(run.text)}</a:t></a:r>`;
+  });
+
+  return `<a:p>${pPr}${runXmls.join("")}</a:p>`;
+}
+
+function buildParagraphProps(opts: Record<string, any>): string {
+  const parts: string[] = [];
+
+  // Alignment
+  const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
+  if (opts.align) parts.push(`algn="${alignMap[opts.align] ?? "l"}"`);
+
+  // Indent level
+  if (opts.indentLevel != null) {
+    parts.push(`lvl="${opts.indentLevel}"`);
+    parts.push(`indent="0"`);
+    parts.push(`marL="${opts.indentLevel * 457200}"`);
+  }
+
+  const children: string[] = [];
+
+  // Line spacing
+  if (opts.lineSpacingMultiple) {
+    const val = Math.round(opts.lineSpacingMultiple * 100000);
+    children.push(`<a:lnSpc><a:spcPct val="${val}"/></a:lnSpc>`);
+  }
+  if (opts.lineSpacing) {
+    const val = Math.round(opts.lineSpacing * 100);
+    children.push(`<a:lnSpc><a:spcPts val="${val}"/></a:lnSpc>`);
+  }
+
+  // Space after/before
+  if (opts.paraSpaceAfter != null) {
+    children.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
+  }
+  if (opts.paraSpaceBefore != null) {
+    children.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
+  }
+
+  // Bullet
+  const bullet = opts.bullet;
+  if (bullet && bullet !== false) {
+    const bOpts = typeof bullet === "object" ? bullet : {};
+    if (bOpts.color) {
+      children.push(`<a:buClr><a:srgbClr val="${bOpts.color}"/></a:buClr>`);
+    }
+    children.push(`<a:buSzPct val="100000"/>`);
+
+    if (bOpts.type === "number") {
+      children.push(`<a:buFont typeface="Arial"/>`);
+      children.push(`<a:buAutoNum type="arabicPeriod"/>`);
+    } else {
+      // Default: bullet character
+      const char = bOpts.code ? String.fromCodePoint(parseInt(bOpts.code, 16)) : "\u2022";
+      children.push(`<a:buFont typeface="Arial" pitchFamily="34" charset="0"/>`);
+      children.push(`<a:buChar char="${escXml(char)}"/>`);
+    }
+  }
+
+  if (parts.length === 0 && children.length === 0) return "";
+
+  return `<a:pPr${parts.length ? " " + parts.join(" ") : ""}>${children.join("")}</a:pPr>`;
+}
+
+function buildRunProps(opts: Record<string, any>): string {
+  const attrs: string[] = ['lang="en-US"'];
+
+  if (opts.fontSize) attrs.push(`sz="${sz100(opts.fontSize)}"`);
+  if (opts.bold) attrs.push(`b="1"`);
+  if (opts.italic) attrs.push(`i="1"`);
+  if (opts.subscript) attrs.push(`baseline="-40000"`);
+  if (opts.superscript) attrs.push(`baseline="30000"`);
+  if (opts.charSpacing != null) attrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
+  attrs.push(`dirty="0"`);
+
+  const children: string[] = [];
+  if (opts.color) {
+    children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
+  }
+  if (opts.fontFace) {
+    children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+  }
+
+  if (children.length > 0) {
+    return `<a:rPr ${attrs.join(" ")}>${children.join("")}</a:rPr>`;
+  }
+  return `<a:rPr ${attrs.join(" ")}/>`;
+}
+
+// ─── Shape XML ──────────────────────────────────────────────────────
+
+function buildShapeXml(
+  id: number,
+  name: string,
+  type: string,
+  opts: Record<string, any>,
+): string {
+  const x = emu(opts.x ?? 0);
+  const y = emu(opts.y ?? 0);
+  const cx = emu(opts.w ?? 1);
+  const cy = emu(opts.h ?? 0);
+
+  // Transform with optional flip
+  const flipH = opts.flipH ? ' flipH="1"' : "";
+  const flipV = opts.flipV ? ' flipV="1"' : "";
+  const rot = opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : "";
+  const xfrm = `<a:xfrm${flipH}${flipV}${rot}><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`;
+
+  // Geometry
+  let geom: string;
+  if (type === "roundRect") {
+    const radius = opts.rectRadius ?? 0.1;
+    const shorter = Math.min(opts.w ?? 1, Math.max(opts.h ?? 0.001, 0.001));
+    const adj = Math.round((radius / shorter) * 100000);
+    geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
+  } else if (type === "line") {
+    geom = `<a:prstGeom prst="line"><a:avLst/></a:prstGeom>`;
+  } else {
+    geom = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
+  }
+
+  // Fill
+  let fill: string;
+  if (type === "line") {
+    fill = `<a:noFill/>`;
+  } else if (opts.fill) {
+    const opacAttr = opts.opacity != null
+      ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>`
+      : "";
+    fill = `<a:solidFill><a:srgbClr val="${opts.fill.color}">${opacAttr}</a:srgbClr></a:solidFill>`;
+  } else {
+    fill = `<a:noFill/>`;
+  }
+
+  // Line / stroke
+  let line = "";
+  if (opts.line) {
+    const lw = ptEmu(opts.line.width ?? 1);
+    const dashXml = opts.line.dashType === "dash"
+      ? `<a:prstDash val="dash"/>`
+      : "";
+    const headXml = opts.lineHead && opts.lineHead !== "none"
+      ? `<a:headEnd type="${opts.lineHead}"/>`
+      : "";
+    const tailXml = opts.lineTail && opts.lineTail !== "none"
+      ? `<a:tailEnd type="${opts.lineTail}"/>`
+      : "";
+    line =
+      `<a:ln w="${lw}">` +
+      `<a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>` +
+      dashXml + headXml + tailXml +
+      `</a:ln>`;
+  }
+
+  // Shadow
+  let shadow = "";
+  if (opts.shadow) {
+    const blur = opts.shadow.blur ?? 3;
+    const dist = opts.shadow.offset ?? 1;
+    const opacPct = Math.round((opts.shadow.opacity ?? 0.1) * 100000);
+    shadow =
+      `<a:effectLst><a:outerShdw blurRad="${ptEmu(blur)}" dist="${ptEmu(dist)}" dir="2700000">` +
+      `<a:srgbClr val="${opts.shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+      `</a:outerShdw></a:effectLst>`;
+  }
+
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvSpPr/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}</p:spPr>` +
+    `</p:sp>`
+  );
+}
+
+// ─── Picture XML ────────────────────────────────────────────────────
+
+function buildPictureXml(
+  id: number,
+  name: string,
+  rId: string,
+  opts: Record<string, any>,
+): string {
+  const x = emu(opts.x ?? 0);
+  const y = emu(opts.y ?? 0);
+  const cx = emu(opts.w ?? 1);
+  const cy = emu(opts.h ?? 1);
+
+  // Geometry — roundRect for rounding, rect otherwise
+  let geom: string;
+  if (opts.rounding) {
+    geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 5000"/></a:avLst></a:prstGeom>`;
+  } else {
+    geom = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
+  }
+
+  return (
+    `<p:pic>` +
+    `<p:nvPicPr>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
+    `<p:nvPr/>` +
+    `</p:nvPicPr>` +
+    `<p:blipFill>` +
+    `<a:blip r:embed="${rId}"/>` +
+    `<a:stretch><a:fillRect/></a:stretch>` +
+    `</p:blipFill>` +
+    `<p:spPr>` +
+    `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    geom +
+    `</p:spPr>` +
+    `</p:pic>`
+  );
+}
+
+function resolveImageData(opts: Record<string, any>): { data: Buffer; ext: string; contentType: string } {
+  if (opts.data) {
+    // Data URI: "image/png;base64,..." or "data:image/png;base64,..."
+    let raw = opts.data as string;
+    let mime = "image/png";
+    if (raw.startsWith("data:")) raw = raw.slice(5);
+    const semiIdx = raw.indexOf(";base64,");
+    if (semiIdx >= 0) {
+      mime = raw.slice(0, semiIdx);
+      raw = raw.slice(semiIdx + 8);
+    }
+    const ext = mime.includes("jpeg") || mime.includes("jpg") ? "jpg" : "png";
+    return { data: Buffer.from(raw, "base64"), ext, contentType: mime };
+  }
+  if (opts.path) {
+    const path: string = opts.path;
+    const ext = path.endsWith(".jpg") || path.endsWith(".jpeg") ? "jpg" : "png";
+    const contentType = ext === "jpg" ? "image/jpeg" : "image/png";
+    return { data: readFileSync(path), ext, contentType };
+  }
+  throw new Error("addImage requires either `path` or `data`");
+}
+
+// ─── Table XML ──────────────────────────────────────────────────────
+
+function buildTableXml(
+  id: number,
+  rows: any[][],
+  opts: Record<string, any>,
+): string {
+  const x = emu(opts.x ?? 0);
+  const y = emu(opts.y ?? 0);
+  const cx = emu(opts.w ?? 8);
+  const rowH = emu(opts.rowH ?? 0.4);
+
+  const numCols = rows[0]?.length ?? 1;
+  const colWidths: number[] = opts.colW
+    ? (opts.colW as number[]).map((w: number) => emu(w))
+    : Array(numCols).fill(Math.round(cx / numCols));
+
+  // Table margin (cell inset) in EMU
+  let cellMargin = ptEmu(4); // default
+  if (opts.margin != null) {
+    if (typeof opts.margin === "number") {
+      cellMargin = ptEmu(opts.margin);
+    } else if (Array.isArray(opts.margin)) {
+      cellMargin = ptEmu(opts.margin[0]); // use first value as uniform
+    }
+  }
+
+  const totalH = rows.length * (opts.rowH ? emu(opts.rowH) : rowH);
+
+  const gridCols = colWidths.map((w) => `<a:gridCol w="${w}"/>`).join("");
+
+  const rowXmls = rows.map((row) => {
+    const cells = row.map((cell: any) => {
+      const cellObj = typeof cell === "string" ? { text: cell } : cell;
+      const co = cellObj.options ?? {};
+
+      // Cell text
+      const textXml = buildCellTextXml(cellObj.text, co);
+
+      // Cell properties
+      const tcPrParts: string[] = [];
+      tcPrParts.push(`marL="${cellMargin}" marR="${cellMargin}" marT="${cellMargin}" marB="${cellMargin}"`);
+      if (co.valign) {
+        const va: Record<string, string> = { top: "t", middle: "ctr", bottom: "b" };
+        tcPrParts.push(`anchor="${va[co.valign] ?? "ctr"}"`);
+      }
+
+      const tcPrChildren: string[] = [];
+
+      // Borders
+      if (co.border) {
+        tcPrChildren.push(buildCellBordersXml(co.border));
+      }
+
+      // Fill
+      if (co.fill) {
+        tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}"/></a:solidFill>`);
+      }
+
+      return (
+        `<a:tc>` +
+        textXml +
+        `<a:tcPr ${tcPrParts.join(" ")}>${tcPrChildren.join("")}</a:tcPr>` +
+        `</a:tc>`
+      );
+    }).join("");
+
+    return `<a:tr h="${rowH}">${cells}</a:tr>`;
+  }).join("");
+
+  return (
+    `<p:graphicFrame>` +
+    `<p:nvGraphicFramePr>` +
+    `<p:cNvPr id="${id}" name="Table_${id}"/>` +
+    `<p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>` +
+    `<p:nvPr/>` +
+    `</p:nvGraphicFramePr>` +
+    `<p:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${totalH}"/></p:xfrm>` +
+    `<a:graphic>` +
+    `<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">` +
+    `<a:tbl>` +
+    `<a:tblPr firstRow="1" bandRow="1"><a:noFill/></a:tblPr>` +
+    `<a:tblGrid>${gridCols}</a:tblGrid>` +
+    rowXmls +
+    `</a:tbl>` +
+    `</a:graphicData>` +
+    `</a:graphic>` +
+    `</p:graphicFrame>`
+  );
+}
+
+function buildCellTextXml(text: string, opts: Record<string, any>): string {
+  const fontSize = opts.fontSize ?? 12;
+  const fontFace = opts.fontFace ?? "Helvetica Neue";
+  const color = opts.color ?? "333333";
+  const bold = opts.bold ? ' b="1"' : "";
+  const italic = opts.italic ? ' i="1"' : "";
+  const align = opts.align ?? "l";
+  const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
+
+  const pPrChildren: string[] = [];
+  if (opts.paraSpaceBefore != null) {
+    pPrChildren.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
+  }
+  if (opts.paraSpaceAfter != null) {
+    pPrChildren.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
+  }
+
+  return (
+    `<a:txBody>` +
+    `<a:bodyPr/>` +
+    `<a:lstStyle/>` +
+    `<a:p>` +
+    `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
+    `<a:r>` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic} dirty="0">` +
+    `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>` +
+    `<a:latin typeface="${escXml(fontFace)}"/>` +
+    `</a:rPr>` +
+    `<a:t>${escXml(text)}</a:t>` +
+    `</a:r>` +
+    `</a:p>` +
+    `</a:txBody>`
+  );
+}
+
+function buildCellBordersXml(borders: any[]): string {
+  // borders: [top, right, bottom, left]
+  const names = ["Top", "Right", "Bottom", "Left"];
+  return names.map((side, i) => {
+    const b = borders[i];
+    if (!b || b.type === "none") {
+      return `<a:ln${side === "Top" ? "T" : side === "Right" ? "R" : side === "Bottom" ? "B" : "L"}><a:noFill/></a:ln${side === "Top" ? "T" : side === "Right" ? "R" : side === "Bottom" ? "B" : "L"}>`;
+    }
+    const w = ptEmu(b.pt ?? 1);
+    const tag = side === "Top" ? "T" : side === "Right" ? "R" : side === "Bottom" ? "B" : "L";
+    return (
+      `<a:ln${tag} w="${w}">` +
+      `<a:solidFill><a:srgbClr val="${b.color ?? "000000"}"/></a:solidFill>` +
+      `</a:ln${tag}>`
+    );
+  }).join("");
+}
+
+// ─── Connector XML ──────────────────────────────────────────────────
+
+function buildConnectorXml(
+  conn: ConnectorDef,
+  fromId: number,
+  toId: number,
+  id: number,
+): string {
+  const fromX = emu(conn.from.x);
+  const fromY = emu(conn.from.y);
+  const toX = emu(conn.to.x);
+  const toY = emu(conn.to.y);
+
+  const lineW = ptEmu(conn.width);
+  const headMap: Record<string, string> = { arrow: "triangle", stealth: "stealth", triangle: "triangle", none: "none" };
+  const headType = headMap[conn.head] ?? "triangle";
+  const tailType = headMap[conn.tail] ?? "none";
+
+  if (conn.type === "curved") {
+    return buildCurvedArcXml(conn, fromX, fromY, toX, toY, id, lineW, headType);
+  }
+
+  // Straight or elbow connector
+  const x = Math.min(fromX, toX);
+  const y = Math.min(fromY, toY);
+  const cx = Math.abs(toX - fromX);
+  const cy = Math.abs(toY - fromY);
+  const flipH = toX < fromX ? ' flipH="1"' : "";
+  const flipV = toY < fromY ? ' flipV="1"' : "";
+
+  const presetMap: Record<string, string> = { straight: "straightConnector1", elbow: "bentConnector3" };
+  const preset = presetMap[conn.type] ?? "straightConnector1";
+  const avLst = conn.type === "elbow"
+    ? `<a:avLst><a:gd name="adj1" fmla="val 50000"/></a:avLst>`
+    : `<a:avLst/>`;
+
+  return (
+    `<p:cxnSp>` +
+    `<p:nvCxnSpPr>` +
+    `<p:cNvPr id="${id}" name="Connector ${id}"/>` +
+    `<p:cNvCxnSpPr>` +
+    `<a:cxnSpLocks noChangeShapeType="1"/>` +
+    `<a:stCxn id="${fromId}" idx="${conn.from.idx}"/>` +
+    `<a:endCxn id="${toId}" idx="${conn.to.idx}"/>` +
+    `</p:cNvCxnSpPr>` +
+    `<p:nvPr/>` +
+    `</p:nvCxnSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm${flipH}${flipV}>` +
+    `<a:off x="${Math.round(x)}" y="${Math.round(y)}"/>` +
+    `<a:ext cx="${Math.round(cx)}" cy="${Math.round(cy)}"/>` +
+    `</a:xfrm>` +
+    `<a:prstGeom prst="${preset}">${avLst}</a:prstGeom>` +
+    `<a:ln w="${lineW}">` +
+    `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    `<a:headEnd type="${tailType}"/>` +
+    `<a:tailEnd type="${headType}"/>` +
+    `</a:ln>` +
+    `</p:spPr>` +
+    `</p:cxnSp>`
+  );
+}
+
+function buildCurvedArcXml(
+  conn: ConnectorDef,
+  fromX: number, fromY: number, toX: number, toY: number,
+  id: number, lineW: number, headType: string,
+): string {
+  const arcBow = Math.round(0.7 * EMU);
+  const arcOffX = Math.round(Math.max(fromX, toX));
+  const arcOffY = Math.round(Math.min(fromY, toY));
+  const arcCx = arcBow;
+  const arcCy = Math.round(Math.abs(toY - fromY));
+  const cpBow = arcBow;
+  const cp1y = Math.round(arcCy * 0.75);
+  const cp2y = Math.round(arcCy * 0.25);
+  const goingUp = fromY > toY;
+  const pathStartY = goingUp ? arcCy : 0;
+  const pathEndY = goingUp ? 0 : arcCy;
+  const cpA_y = goingUp ? cp1y : cp2y;
+  const cpB_y = goingUp ? cp2y : cp1y;
+
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="Arc ${id}"/>` +
+    `<p:cNvSpPr/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm><a:off x="${arcOffX}" y="${arcOffY}"/><a:ext cx="${arcCx}" cy="${arcCy}"/></a:xfrm>` +
+    `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/>` +
+    `<a:rect l="0" t="0" r="${arcCx}" b="${arcCy}"/>` +
+    `<a:pathLst><a:path w="${arcCx}" h="${arcCy}">` +
+    `<a:moveTo><a:pt x="0" y="${pathStartY}"/></a:moveTo>` +
+    `<a:cubicBezTo>` +
+    `<a:pt x="${cpBow}" y="${cpA_y}"/>` +
+    `<a:pt x="${cpBow}" y="${cpB_y}"/>` +
+    `<a:pt x="0" y="${pathEndY}"/>` +
+    `</a:cubicBezTo>` +
+    `</a:path></a:pathLst></a:custGeom>` +
+    `<a:noFill/>` +
+    `<a:ln w="${lineW}">` +
+    `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    `<a:tailEnd type="${headType}"/>` +
+    `</a:ln>` +
+    `</p:spPr>` +
+    `</p:sp>`
+  );
+}
+
+function buildConnectorLabelXml(
+  conn: ConnectorDef,
+  id: number,
+  sansFont: string,
+): string {
+  const fromX = emu(conn.from.x);
+  const fromY = emu(conn.from.y);
+  const toX = emu(conn.to.x);
+  const toY = emu(conn.to.y);
+
+  let labelX: number, labelY: number;
+  if (conn.type === "curved") {
+    labelX = Math.max(fromX, toX) + emu(0.6);
+    labelY = (fromY + toY) / 2 - emu(0.15);
+  } else {
+    labelX = (fromX + toX) / 2;
+    labelY = (fromY + toY) / 2 - emu(0.25);
+  }
+  const labelW = emu(1.0);
+  const labelH = emu(0.35);
+  const italic = conn.labelItalic !== false ? ' i="1"' : "";
+
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="Label ${id}"/>` +
+    `<p:cNvSpPr txBox="1"/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm><a:off x="${Math.round(labelX)}" y="${Math.round(labelY)}"/><a:ext cx="${labelW}" cy="${labelH}"/></a:xfrm>` +
+    `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>` +
+    `<a:noFill/>` +
+    `</p:spPr>` +
+    `<p:txBody>` +
+    `<a:bodyPr wrap="square" rtlCol="0"/>` +
+    `<a:lstStyle/>` +
+    `<a:p><a:r>` +
+    `<a:rPr lang="en-US" sz="1400"${italic} dirty="0">` +
+    `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    `<a:latin typeface="${escXml(sansFont)}"/>` +
+    `</a:rPr>` +
+    `<a:t>${escXml(conn.label ?? "")}</a:t>` +
+    `</a:r></a:p>` +
+    `</p:txBody>` +
+    `</p:sp>`
+  );
+}
+
+// ─── Footer text box ────────────────────────────────────────────────
+
+function buildFooterTextBox(
+  id: number,
+  name: string,
+  x: number, y: number, w: number, h: number,
+  align: "l" | "r" | "ctr",
+  text: string,
+  style: { font: string; size: number; color: string },
+): string {
+  return (
+    `<p:sp>` +
+    `<p:nvSpPr>` +
+    `<p:cNvPr id="${id}" name="${name}"/>` +
+    `<p:cNvSpPr txBox="1"/><p:nvPr/>` +
+    `</p:nvSpPr>` +
+    `<p:spPr>` +
+    `<a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(w)}" cy="${emu(h)}"/></a:xfrm>` +
+    `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>` +
+    `<a:noFill/>` +
+    `</p:spPr>` +
+    `<p:txBody>` +
+    `<a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="b"/>` +
+    `<a:lstStyle/>` +
+    `<a:p><a:pPr algn="${align}"/>` +
+    `<a:r>` +
+    `<a:rPr lang="en-US" sz="${sz100(style.size)}" dirty="0">` +
+    `<a:solidFill><a:srgbClr val="${style.color}"/></a:solidFill>` +
+    `<a:latin typeface="${escXml(style.font)}"/>` +
+    `</a:rPr>` +
+    `<a:t>${escXml(text)}</a:t>` +
+    `</a:r></a:p>` +
+    `</p:txBody>` +
+    `</p:sp>`
+  );
+}
+
+// ─── Timing / build animations ──────────────────────────────────────
+
+function buildTimingXml(spid: string, paragraphCount: number): string {
+  let nextId = 1;
+  const id = () => nextId++;
+
+  const bulletPars: string[] = [];
+  for (let p = 0; p < paragraphCount; p++) {
+    const parId = id(), innerParId = id(), bhvrId = id();
+    bulletPars.push(
+      `<p:par><p:cTn id="${parId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst><p:par><p:cTn id="${innerParId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst><p:set><p:cBhvr>` +
+      `<p:cTn id="${bhvrId}" dur="1" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>` +
+      `<p:tgtEl><p:spTgt spid="${spid}">` +
+      `<p:txEl><p:pRg st="${p}" end="${p}"/></p:txEl>` +
+      `</p:spTgt></p:tgtEl>` +
+      `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+      `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
+      `</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>`,
+    );
+  }
+
+  const rootId = id(), seqId = id();
+  return (
+    `<p:timing><p:tnLst><p:par>` +
+    `<p:cTn id="${rootId}" dur="indefinite" restart="never" nodeType="tmRoot">` +
+    `<p:childTnLst><p:seq concurrent="1" nextAc="seek">` +
+    `<p:cTn id="${seqId}" dur="indefinite" nodeType="mainSeq">` +
+    `<p:childTnLst>${bulletPars.join("")}</p:childTnLst></p:cTn>` +
+    `<p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>` +
+    `<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst>` +
+    `</p:seq></p:childTnLst></p:cTn>` +
+    `</p:par></p:tnLst></p:timing>`
+  );
+}
+
+// ─── Emoji bullet patching ──────────────────────────────────────────
+
+function patchEmojiBulletsInXml(
+  shapeXml: string,
+  def: EmojiDef,
+  slide: Slide,
+): string {
+  const paragraphs = [...shapeXml.matchAll(/<a:p>[\s\S]*?<\/a:p>/g)];
+
+  let result = shapeXml;
+  for (let bi = 0; bi < def.bulletIndices.length; bi++) {
+    const paraIdx = def.bulletIndices[bi];
+    if (paraIdx >= paragraphs.length) continue;
+
+    const paraXml = paragraphs[paraIdx][0];
+
+    // Embed PNG as media file
+    slide._mediaCounter++;
+    const fileName = `emoji_s${slide._slideIndex + 1}_${slide._mediaCounter}.png`;
+    const rId = `rIdEmoji${slide._mediaCounter}`;
+
+    const pngData = def.emojiPngs[bi];
+    const base64 = pngData.replace(/^image\/png;base64,/, "").replace(/^data:image\/png;base64,/, "");
+    slide._images.push({
+      rId,
+      fileName,
+      data: Buffer.from(base64, "base64"),
+      contentType: "image/png",
+    });
+
+    // Replace bullet char/font/autonum with buBlip
+    let newParaXml = paraXml;
+    newParaXml = newParaXml.replace(/<a:buFont[^/]*\/>/g, "");
+    newParaXml = newParaXml.replace(/<a:buChar[^/]*\/>/g, "");
+    newParaXml = newParaXml.replace(/<a:buAutoNum[^/]*\/>/g, "");
+
+    const buBlipXml =
+      `<a:buSzPct val="100000"/>` +
+      `<a:buBlip>` +
+      `<a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/>` +
+      `</a:buBlip>`;
+
+    if (newParaXml.includes("</a:pPr>")) {
+      newParaXml = newParaXml.replace("</a:pPr>", buBlipXml + "</a:pPr>");
+    }
+
+    result = result.replace(paraXml, newParaXml);
+  }
+  return result;
+}
+
+// ─── Shape grouping ─────────────────────────────────────────────────
+
+function extractElement(xml: string, objectName: string, tag: string): string | null {
+  const nameStr = `name="${objectName}"`;
+  const nameIdx = xml.indexOf(nameStr);
+  if (nameIdx === -1) return null;
+
+  const openTag = `<${tag}`;
+  const closeTag = `</${tag}>`;
+
+  let start = nameIdx;
+  while (start > 0) {
+    if (xml.startsWith(openTag, start)) {
+      const ch = xml[start + openTag.length];
+      if (ch === ">" || ch === " ") break;
+    }
+    start--;
+  }
+
+  let end = nameIdx;
+  while (end < xml.length) {
+    if (xml.startsWith(closeTag, end)) { end += closeTag.length; break; }
+    end++;
+  }
+
+  if (start === 0 && !xml.startsWith(openTag + ">") && !xml.startsWith(openTag + " ")) return null;
+  return xml.substring(start, end);
+}
+
+function applyCodeBlockGrouping(slide: Slide): void {
+  // Combine all elements into a single string for grouping
+  let allXml = slide._elements.join("\n<!SPLIT!>\n");
+
+  const groupIds = new Set<string>();
+  const namePattern = /name="cb-(\d+)-bg"/g;
+  let m;
+  while ((m = namePattern.exec(allXml)) !== null) groupIds.add(m[1]);
+  if (groupIds.size === 0) return;
+
+  for (const gid of groupIds) {
+    const parts = ["bg", "label", "rule", "code"];
+    const shapes: string[] = [];
+
+    for (const part of parts) {
+      const shapeXml = extractElement(allXml, `cb-${gid}-${part}`, "p:sp");
+      if (shapeXml) {
+        allXml = allXml.replace(shapeXml, "");
+        shapes.push(shapeXml);
+      }
+    }
+    if (shapes.length === 0) continue;
+
+    const offMatch = shapes[0].match(/<a:off x="(\d+)" y="(\d+)"/);
+    const extMatch = shapes[0].match(/<a:ext cx="(\d+)" cy="(\d+)"/);
+    if (!offMatch || !extMatch) continue;
+
+    const gx = offMatch[1], gy = offMatch[2], gcx = extMatch[1], gcy = extMatch[2];
+    const grpId = slide._allocId();
+
+    const grpXml =
+      `<p:grpSp>` +
+      `<p:nvGrpSpPr>` +
+      `<p:cNvPr id="${grpId}" name="CodeBlock ${gid}"/>` +
+      `<p:cNvGrpSpPr><a:grpSpLocks noChangeAspect="0"/></p:cNvGrpSpPr>` +
+      `<p:nvPr/>` +
+      `</p:nvGrpSpPr>` +
+      `<p:grpSpPr><a:xfrm>` +
+      `<a:off x="${gx}" y="${gy}"/><a:ext cx="${gcx}" cy="${gcy}"/>` +
+      `<a:chOff x="${gx}" y="${gy}"/><a:chExt cx="${gcx}" cy="${gcy}"/>` +
+      `</a:xfrm></p:grpSpPr>` +
+      shapes.join("") +
+      `</p:grpSp>`;
+
+    allXml += "\n<!SPLIT!>\n" + grpXml;
+  }
+
+  slide._elements = allXml.split("\n<!SPLIT!>\n").filter(Boolean);
+}
+
+function applyCalloutGrouping(slide: Slide): void {
+  let allXml = slide._elements.join("\n<!SPLIT!>\n");
+
+  const groupIds = new Set<string>();
+  const namePattern = /name="co-(\d+)-bg"/g;
+  let m;
+  while ((m = namePattern.exec(allXml)) !== null) groupIds.add(m[1]);
+  if (groupIds.size === 0) return;
+
+  for (const gid of groupIds) {
+    const shapes: string[] = [];
+
+    const bgXml = extractElement(allXml, `co-${gid}-bg`, "p:sp");
+    if (bgXml) { allXml = allXml.replace(bgXml, ""); shapes.push(bgXml); }
+
+    const iconXml = extractElement(allXml, `co-${gid}-icon`, "p:pic");
+    if (iconXml) { allXml = allXml.replace(iconXml, ""); shapes.push(iconXml); }
+
+    if (shapes.length < 2) {
+      for (const s of shapes) allXml += "\n<!SPLIT!>\n" + s;
+      continue;
+    }
+
+    const offMatch = shapes[0].match(/<a:off x="(\d+)" y="(\d+)"/);
+    const extMatch = shapes[0].match(/<a:ext cx="(\d+)" cy="(\d+)"/);
+    if (!offMatch || !extMatch) continue;
+
+    const gx = offMatch[1], gy = offMatch[2], gcx = extMatch[1], gcy = extMatch[2];
+    const grpId = slide._allocId();
+
+    const grpXml =
+      `<p:grpSp>` +
+      `<p:nvGrpSpPr>` +
+      `<p:cNvPr id="${grpId}" name="Callout ${gid}"/>` +
+      `<p:cNvGrpSpPr><a:grpSpLocks noChangeAspect="0"/></p:cNvGrpSpPr>` +
+      `<p:nvPr/>` +
+      `</p:nvGrpSpPr>` +
+      `<p:grpSpPr><a:xfrm>` +
+      `<a:off x="${gx}" y="${gy}"/><a:ext cx="${gcx}" cy="${gcy}"/>` +
+      `<a:chOff x="${gx}" y="${gy}"/><a:chExt cx="${gcx}" cy="${gcy}"/>` +
+      `</a:xfrm></p:grpSpPr>` +
+      shapes.join("") +
+      `</p:grpSp>`;
+
+    allXml += "\n<!SPLIT!>\n" + grpXml;
+  }
+
+  slide._elements = allXml.split("\n<!SPLIT!>\n").filter(Boolean);
+}

@@ -5,7 +5,7 @@
  * so they respect font presets and config overrides.
  */
 
-import type PptxGenJS from "pptxgenjs";
+import type { Slide, TextRun } from "../../ooxml/index.js";
 import type {
   ThemeConfig,
   ThemeComponents,
@@ -45,7 +45,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   const { colors: c, fonts: f, sizes: s } = cfg;
 
   // --- Accent bar ---
-  function accentBar(slide: PptxGenJS.Slide, props: AccentBarProps): Rect {
+  function accentBar(slide: Slide, props: AccentBarProps): Rect {
     const w = props.w ?? 2, h = props.h ?? 0.04;
     slide.addShape("rect", {
       x: props.x, y: props.y, w, h,
@@ -56,7 +56,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Heading ---
-  function heading(slide: PptxGenJS.Slide, props: HeadingProps): Rect {
+  function heading(slide: Slide, props: HeadingProps): Rect {
     const h = 0.7;
     slide.addText(props.text, {
       x: props.x, y: props.y, w: props.w, h,
@@ -72,7 +72,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   // --- Body text ---
   // Supports leading :emoji: — e.g. ":rocket: Launch the product"
   // Emoji is placed as an image before the text, text is shifted right.
-  function bodyText(slide: PptxGenJS.Slide, props: BodyTextProps): Rect {
+  function bodyText(slide: Slide, props: BodyTextProps): Rect {
     const h = props.h ?? 0.5;
     const leading = cfg.emojiSet ? extractLeadingEmoji(props.text) : null;
 
@@ -139,7 +139,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let bulletListCounter = 0;
 
-  function bulletList(slide: PptxGenJS.Slide, props: BulletListProps): Rect {
+  function bulletList(slide: Slide, props: BulletListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
     const h = props.h ?? 4.5;
 
@@ -161,7 +161,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const objName = needsName ? `bl-${bulletListCounter++}` : undefined;
 
     const baseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
-    const textRows: PptxGenJS.TextProps[] = processedItems.flatMap((item): PptxGenJS.TextProps[] => {
+    const textRows: TextRun[] = processedItems.flatMap((item): TextRun[] => {
       const mathRuns = expandTextWithMath(item, baseOpts);
       if (mathRuns) {
         return mathRuns.map((run, j) => ({
@@ -220,12 +220,12 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Numbered list ---
-  function numberedList(slide: PptxGenJS.Slide, props: NumberedListProps): Rect {
+  function numberedList(slide: Slide, props: NumberedListProps): Rect {
     const fontSize = props.fontSize ?? s.body;
     const h = props.h ?? 4.5;
     const nlObjName = props.build ? `nl-${bulletListCounter++}` : undefined;
     const numBaseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
-    const textRows: PptxGenJS.TextProps[] = props.items.flatMap((item): PptxGenJS.TextProps[] => {
+    const textRows: TextRun[] = props.items.flatMap((item): TextRun[] => {
       const mathRuns = expandTextWithMath(item, numBaseOpts);
       if (mathRuns) {
         return mathRuns.map((run, j) => ({
@@ -284,7 +284,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let codeBlockCounter = 0;
 
-  function codeBlock(slide: PptxGenJS.Slide, props: CodeBlockProps): Rect {
+  function codeBlock(slide: Slide, props: CodeBlockProps): Rect {
     const cs = cfg.codeStyle;
     const lang = props.language ?? "";
     const gid = lang ? codeBlockCounter++ : -1;
@@ -355,7 +355,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
       // Shape 4: syntax-highlighted code text (below rule)
       const hlLines = highlightCode(truncated, lang, cs);
-      const textRows: PptxGenJS.TextProps[] = [];
+      const textRows: TextRun[] = [];
       for (let li = 0; li < hlLines.length; li++) {
         const tokens = hlLines[li];
         for (let ti = 0; ti < tokens.length; ti++) {
@@ -402,7 +402,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Quote box ---
-  function quoteBox(slide: PptxGenJS.Slide, props: QuoteBoxProps): Rect {
+  function quoteBox(slide: Slide, props: QuoteBoxProps): Rect {
     slide.addShape("rect", {
       x: props.x, y: props.y, w: 0.06, h: props.h,
       fill: { color: c.accent },
@@ -430,8 +430,8 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Table ---
-  function table(slide: PptxGenJS.Slide, props: TableProps): Rect {
-    const headerRow: PptxGenJS.TableCell[] = props.headers.map((h) => ({
+  function table(slide: Slide, props: TableProps): Rect {
+    const headerRow: any[] = props.headers.map((h) => ({
       text: h,
       options: {
         fontSize: s.small, fontFace: f.sans, color: c.text, bold: true,
@@ -443,7 +443,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         valign: "middle" as const, paraSpaceBefore: 4, paraSpaceAfter: 4,
       },
     }));
-    const dataRows: PptxGenJS.TableCell[][] = props.rows.map((row) =>
+    const dataRows: any[][] = props.rows.map((row) =>
       row.map((cell) => ({
         text: cell,
         options: {
@@ -469,7 +469,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   // --- Caption ---
   // --- Image — themed image with optional caption and border ---
 
-  function image(slide: PptxGenJS.Slide, props: ImageComponentProps): Rect {
+  function image(slide: Slide, props: ImageComponentProps): Rect {
     const borderPad = props.border ? 0.06 : 0;
     const imgX = props.x + borderPad;
     const imgY = props.y + borderPad;
@@ -511,7 +511,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   // --- Caption ---
 
-  function caption(slide: PptxGenJS.Slide, props: CaptionProps): Rect {
+  function caption(slide: Slide, props: CaptionProps): Rect {
     const h = 0.35;
     slide.addText(props.text, {
       x: props.x, y: props.y, w: props.w, h,
@@ -536,7 +536,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   let calloutCounter = 0;
 
-  async function calloutBlock(slide: PptxGenJS.Slide, props: CalloutBlockProps): Promise<Rect> {
+  async function calloutBlock(slide: Slide, props: CalloutBlockProps): Promise<Rect> {
     const style = calloutStyles[props.variant];
     const gid = calloutCounter++;
 
@@ -579,7 +579,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       });
     } else if (props.bullets) {
       const coBulletBase = { fontSize: s.small, fontFace: f.sans, color: style.textColor };
-      const rows: PptxGenJS.TextProps[] = props.bullets.flatMap((item): PptxGenJS.TextProps[] => {
+      const rows: TextRun[] = props.bullets.flatMap((item): TextRun[] => {
         const mathRuns = expandTextWithMath(item, coBulletBase);
         if (mathRuns) {
           return mathRuns.map((run, j) => ({
@@ -631,7 +631,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
   // --- Text block — icon-free rounded panel with optional title/subtitle ---
 
-  function textBlock(slide: PptxGenJS.Slide, props: TextBlockProps): Rect {
+  function textBlock(slide: Slide, props: TextBlockProps): Rect {
     const fillColor = props.fill ?? c.bgCard;
     const borderColor = props.border ?? c.textMuted;
     const bodyColor = props.textColor ?? c.text;
@@ -639,7 +639,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const margin: [number, number, number, number] = [pad, pad, pad, pad];
 
     // Build text rows top-to-bottom: title, subtitle, then body/bullets
-    const rows: PptxGenJS.TextProps[] = [];
+    const rows: TextRun[] = [];
 
     if (props.title) {
       rows.push({
@@ -751,7 +751,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Diagram box — round-cornered labeled rectangle (single object, text built-in) ---
-  function diagramBox(slide: PptxGenJS.Slide, props: DiagramBoxProps): ShapeRef {
+  function diagramBox(slide: Slide, props: DiagramBoxProps): ShapeRef {
     const name = `diag-box-${shapeCounter++}`;
     slide.addText(props.text, {
       x: props.x, y: props.y, w: props.w, h: props.h,
@@ -775,7 +775,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Straight arrow with optional arrowheads ---
-  function arrow(slide: PptxGenJS.Slide, props: ArrowProps): void {
+  function arrow(slide: Slide, props: ArrowProps): void {
     const color = props.color ?? defaultArrowColor;
     const w = props.to.x - props.from.x;
     const h = props.to.y - props.from.y;
@@ -798,7 +798,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Hook arrow (L-shaped connector with right-angle bend) ---
-  function hookArrow(slide: PptxGenJS.Slide, props: HookArrowProps): void {
+  function hookArrow(slide: Slide, props: HookArrowProps): void {
     const color = props.color ?? defaultArrowColor;
     const lineWidth = props.width ?? 1;
     const dashType = props.dashed ? "dash" : "solid";
@@ -873,7 +873,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Container — large grouping rectangle with label ---
-  function container(slide: PptxGenJS.Slide, props: ContainerProps): ShapeRef {
+  function container(slide: Slide, props: ContainerProps): ShapeRef {
     const name = `diag-ctr-${shapeCounter++}`;
     slide.addShape("roundRect", {
       x: props.x, y: props.y, w: props.w, h: props.h,
@@ -905,7 +905,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Equation — LaTeX rendered to PNG via MathJax + sharp ---
-  async function equation(slide: PptxGenJS.Slide, props: EquationProps): Promise<Rect> {
+  async function equation(slide: Slide, props: EquationProps): Promise<Rect> {
     const color = props.color ?? c.text;
     const result = await renderEquation(props.latex, color);
 
@@ -943,7 +943,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
   }
 
   // --- Standalone emoji image ---
-  async function emoji(slide: PptxGenJS.Slide, props: EmojiProps): Promise<Rect> {
+  async function emoji(slide: Slide, props: EmojiProps): Promise<Rect> {
     const w = props.w ?? 0.4, h = props.h ?? 0.4;
     const data = await renderEmoji(props.name, cfg.emojiSet);
     slide.addImage({

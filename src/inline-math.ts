@@ -9,7 +9,7 @@
  *   - Complex:  \frac{a}{b}, \sqrt{x} → warning, rendered as-is
  */
 
-import type PptxGenJS from "pptxgenjs";
+import type { TextRun } from "./ooxml/index.js";
 
 // ---------------------------------------------------------------------------
 // Greek letter map — LaTeX command → Unicode character
@@ -167,10 +167,10 @@ function extractArg(str: string, pos: number): [string, number] {
 export function mathToTextRuns(
   latex: string,
   base: BaseTextOpts,
-): PptxGenJS.TextProps[] | null {
+): TextRun[] | null {
   if (isComplexMath(latex)) return null;
 
-  const runs: PptxGenJS.TextProps[] = [];
+  const runs: TextRun[] = [];
   const subFontSize = Math.round(base.fontSize * 0.7);
 
   // Pre-process: replace Greek commands and diacritics
@@ -280,7 +280,7 @@ export function mathToTextRuns(
 export function expandTextWithMath(
   text: string,
   base: BaseTextOpts,
-): PptxGenJS.TextProps[] | null {
+): TextRun[] | null {
   if (!text.includes("$")) return null;
 
   const segments = parseInlineMath(text);
@@ -288,7 +288,7 @@ export function expandTextWithMath(
   // If parsing produced only text segments, no math was found
   if (segments.every((s) => s.type === "text")) return null;
 
-  const runs: PptxGenJS.TextProps[] = [];
+  const runs: TextRun[] = [];
 
   for (const seg of segments) {
     if (seg.type === "text") {

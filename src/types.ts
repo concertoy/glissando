@@ -7,7 +7,7 @@
  *   - Layouts:    pre-designed slide arrangements that compose components
  */
 
-import type PptxGenJS from "pptxgenjs";
+import type { Presentation, Slide } from "./ooxml/index.js";
 
 // ---------------------------------------------------------------------------
 // Layout geometry
@@ -394,24 +394,24 @@ export interface EquationProps {
 // ---------------------------------------------------------------------------
 
 export interface ThemeComponents {
-  accentBar: (slide: PptxGenJS.Slide, props: AccentBarProps) => Rect;
-  heading: (slide: PptxGenJS.Slide, props: HeadingProps) => Rect;
-  bodyText: (slide: PptxGenJS.Slide, props: BodyTextProps) => Rect;
-  bulletList: (slide: PptxGenJS.Slide, props: BulletListProps) => Rect;
-  numberedList: (slide: PptxGenJS.Slide, props: NumberedListProps) => Rect;
-  codeBlock: (slide: PptxGenJS.Slide, props: CodeBlockProps) => Rect;
-  quoteBox: (slide: PptxGenJS.Slide, props: QuoteBoxProps) => Rect;
-  table: (slide: PptxGenJS.Slide, props: TableProps) => Rect;
-  caption: (slide: PptxGenJS.Slide, props: CaptionProps) => Rect;
-  calloutBlock: (slide: PptxGenJS.Slide, props: CalloutBlockProps) => Promise<Rect>;
-  textBlock: (slide: PptxGenJS.Slide, props: TextBlockProps) => Rect;
-  diagramBox: (slide: PptxGenJS.Slide, props: DiagramBoxProps) => ShapeRef;
-  arrow: (slide: PptxGenJS.Slide, props: ArrowProps) => void;
-  hookArrow: (slide: PptxGenJS.Slide, props: HookArrowProps) => void;
-  container: (slide: PptxGenJS.Slide, props: ContainerProps) => ShapeRef;
-  image: (slide: PptxGenJS.Slide, props: ImageComponentProps) => Rect;
-  equation: (slide: PptxGenJS.Slide, props: EquationProps) => Promise<Rect>;
-  emoji?: (slide: PptxGenJS.Slide, props: EmojiProps) => Promise<Rect>;
+  accentBar: (slide: Slide, props: AccentBarProps) => Rect;
+  heading: (slide: Slide, props: HeadingProps) => Rect;
+  bodyText: (slide: Slide, props: BodyTextProps) => Rect;
+  bulletList: (slide: Slide, props: BulletListProps) => Rect;
+  numberedList: (slide: Slide, props: NumberedListProps) => Rect;
+  codeBlock: (slide: Slide, props: CodeBlockProps) => Rect;
+  quoteBox: (slide: Slide, props: QuoteBoxProps) => Rect;
+  table: (slide: Slide, props: TableProps) => Rect;
+  caption: (slide: Slide, props: CaptionProps) => Rect;
+  calloutBlock: (slide: Slide, props: CalloutBlockProps) => Promise<Rect>;
+  textBlock: (slide: Slide, props: TextBlockProps) => Rect;
+  diagramBox: (slide: Slide, props: DiagramBoxProps) => ShapeRef;
+  arrow: (slide: Slide, props: ArrowProps) => void;
+  hookArrow: (slide: Slide, props: HookArrowProps) => void;
+  container: (slide: Slide, props: ContainerProps) => ShapeRef;
+  image: (slide: Slide, props: ImageComponentProps) => Rect;
+  equation: (slide: Slide, props: EquationProps) => Promise<Rect>;
+  emoji?: (slide: Slide, props: EmojiProps) => Promise<Rect>;
 }
 
 // ---------------------------------------------------------------------------
@@ -486,16 +486,16 @@ export interface BlankLayoutProps extends BaseLayoutProps {
 // ---------------------------------------------------------------------------
 
 export interface ThemeLayouts {
-  title: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TitleLayoutProps) => PptxGenJS.Slide;
-  section: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: SectionLayoutProps) => PptxGenJS.Slide;
-  content: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ContentLayoutProps) => PptxGenJS.Slide;
-  twoColumn: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TwoColumnLayoutProps) => PptxGenJS.Slide;
-  code: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: CodeLayoutProps) => PptxGenJS.Slide;
-  quote: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: QuoteLayoutProps) => PptxGenJS.Slide;
-  image: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: ImageLayoutProps) => PptxGenJS.Slide;
-  table: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: TableLayoutProps) => PptxGenJS.Slide;
-  equation: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: EquationLayoutProps) => Promise<PptxGenJS.Slide>;
-  blank: (pres: PptxGenJS, config: ThemeConfig, components: ThemeComponents, props: BlankLayoutProps) => PptxGenJS.Slide;
+  title: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: TitleLayoutProps) => Slide;
+  section: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: SectionLayoutProps) => Slide;
+  content: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: ContentLayoutProps) => Slide;
+  twoColumn: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: TwoColumnLayoutProps) => Slide;
+  code: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: CodeLayoutProps) => Slide;
+  quote: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: QuoteLayoutProps) => Slide;
+  image: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: ImageLayoutProps) => Slide;
+  table: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: TableLayoutProps) => Slide;
+  equation: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: EquationLayoutProps) => Promise<Slide>;
+  blank: (pres: Presentation, config: ThemeConfig, components: ThemeComponents, props: BlankLayoutProps) => Slide;
 }
 
 // ---------------------------------------------------------------------------

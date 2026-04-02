@@ -5,7 +5,7 @@
  * All positioning is pre-configured — the user only provides content.
  */
 
-import type PptxGenJS from "pptxgenjs";
+import type { Presentation, Slide } from "../../ooxml/index.js";
 import type {
   ThemeConfig,
   ThemeComponents,
@@ -27,9 +27,9 @@ import type {
 // ---------------------------------------------------------------------------
 
 function title(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: TitleLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   slide.background = { color: c.bgDark };
@@ -70,9 +70,9 @@ function title(
 // ---------------------------------------------------------------------------
 
 function section(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: SectionLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   slide.background = { color: c.bgAccent };
@@ -110,9 +110,9 @@ function section(
 // ---------------------------------------------------------------------------
 
 function content(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: ContentLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -161,9 +161,9 @@ function content(
 // ---------------------------------------------------------------------------
 
 function twoColumn(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: TwoColumnLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, fonts: f, sizes: s, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -236,9 +236,9 @@ function twoColumn(
 // ---------------------------------------------------------------------------
 
 function code(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: CodeLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -270,9 +270,9 @@ function code(
 // ---------------------------------------------------------------------------
 
 function quote(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: QuoteLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   slide.background = { color: c.bgAccent };
@@ -293,9 +293,9 @@ function quote(
 // ---------------------------------------------------------------------------
 
 function image(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: ImageLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -339,9 +339,9 @@ function image(
 // ---------------------------------------------------------------------------
 
 function tableLayout(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: TableLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;
@@ -371,9 +371,9 @@ function tableLayout(
 // ---------------------------------------------------------------------------
 
 function blank(
-  pres: PptxGenJS, cfg: ThemeConfig, _comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, _comp: ThemeComponents,
   props: BlankLayoutProps,
-): PptxGenJS.Slide {
+): Slide {
   const slide = pres.addSlide();
   const bgMap = {
     primary: cfg.colors.bgPrimary,
@@ -389,9 +389,9 @@ function blank(
 // ---------------------------------------------------------------------------
 
 async function equationLayout(
-  pres: PptxGenJS, cfg: ThemeConfig, comp: ThemeComponents,
+  pres: Presentation, cfg: ThemeConfig, comp: ThemeComponents,
   props: EquationLayoutProps,
-): Promise<PptxGenJS.Slide> {
+): Promise<Slide> {
   const slide = pres.addSlide();
   const { colors: c, spacing: sp } = cfg;
   const contentW = sp.slideWidth - sp.marginLeft - sp.marginRight;

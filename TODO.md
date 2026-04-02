@@ -224,6 +224,9 @@
 - [x] **Table cell kerning** — `kerning` on TableCell → `kern` attribute on cell text `<a:rPr>`.
 - [x] **Shape text transform** — `textTransform` on AddShapeOpts → `<a:prstTxWarp>` in shape text `<a:bodyPr>`.
 - [x] **Shape text fit shrink** — `fit: "shrink" | { minFontScale }` on AddShapeOpts → `<a:normAutofit>` for auto-shrinking shape text.
+- [x] **Table cell superscript/subscript** — `superscript`/`subscript` on TableCell → `baseline` attribute on cell text `<a:rPr>`.
+- [x] **Image tint** — `tint` on AddImageOpts → `<a:tint>` on blip for tint adjustment.
+- [x] **Group shape rotation** — `rotate` setter on GroupShape → `rot` attribute on group `<a:xfrm>`.
 
 ## Open
 
@@ -317,6 +320,14 @@
 - [x] **Table cell vertical align** — verified `valign` on TableCell works with all new features.
 - [x] **Connector curved direction** — `curveDir: "left" | "right"` on ConnectorDef for controlling curve direction.
 - [x] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
+- [x] **Table cell superscript/subscript** — `superscript`/`subscript` on TableCell for baseline shifts in cell text.
+- [x] **Image colorize tint** — `tint` on AddImageOpts for image tint adjustment via `<a:tint>`.
+- [x] **Group shape rotation** — `rotate` on GroupShape for rotating entire groups.
+- [ ] **Shape text font size auto** — `fontSizeAuto: true` on AddShapeOpts to auto-calculate font size from shape height.
+- [ ] **Slide master logo** — `pres.setLogo(data, position)` to overlay a logo on all slides.
+- [ ] **Table cell nowrap** — `nowrap: true` on TableCell to prevent word wrap in narrow cells.
+- [ ] **Shape text URL auto-detect** — auto-hyperlink `http://...` in shape text.
+- [ ] **Connector elbow routing** — `elbowRoute: "auto"` on ConnectorDef for intelligent elbow connector routing around obstacles.
 - [x] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.
 - [x] **Image rounded corners** — `roundingRadius` on AddImageOpts for custom corner rounding amount.
 - [x] **Shape text rotation** — `textRotation` on AddShapeOpts for rotated text inside shapes.

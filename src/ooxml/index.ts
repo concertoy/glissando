@@ -445,6 +445,8 @@ export interface AddImageOpts {
   lockAspectRatio?: boolean;
   /** Image opacity 0–1 (1 = fully opaque, 0 = fully transparent). */
   opacity?: number;
+  /** Tint amount (0–100, percentage). Applied via `<a:tint>` on blip. */
+  tint?: number;
   /** Hue shift in degrees (-180 to 180). */
   hue?: number;
   /** Saturation adjustment (-1 to 1, 0=normal, -1=desaturate, 1=oversaturate). */
@@ -566,6 +568,10 @@ export interface TableCell {
     marginLeft?: number;
     /** Kerning threshold in points for cell text. */
     kerning?: number;
+    /** Superscript text in cell. */
+    superscript?: boolean;
+    /** Subscript text in cell. */
+    subscript?: boolean;
   };
 }
 
@@ -933,6 +939,12 @@ export class GroupShape {
   }
   private _animation?: ShapeAnimationOpts;
 
+  /** Rotation angle in degrees (clockwise). */
+  set rotate(degrees: number) {
+    this._rotate = degrees;
+  }
+  private _rotate?: number;
+
   toString(): string {
     const gx = emu(this._x), gy = emu(this._y);
     const gcx = emu(this._w), gcy = emu(this._h);
@@ -949,7 +961,7 @@ export class GroupShape {
       `<p:cNvGrpSpPr><a:grpSpLocks noChangeAspect="0"/></p:cNvGrpSpPr>` +
       `<p:nvPr/>` +
       `</p:nvGrpSpPr>` +
-      `<p:grpSpPr><a:xfrm>` +
+      `<p:grpSpPr><a:xfrm${this._rotate ? ` rot="${Math.round(this._rotate * 60000)}"` : ""}>` +
       `<a:off x="${gx}" y="${gy}"/><a:ext cx="${gcx}" cy="${gcy}"/>` +
       `<a:chOff x="${gx}" y="${gy}"/><a:chExt cx="${gcx}" cy="${gcy}"/>` +
       `</a:xfrm></p:grpSpPr>` +
@@ -2127,6 +2139,9 @@ function buildPictureXml(
       if (opts.recolor) {
         effects.push(`<a:duotone><a:srgbClr val="${opts.recolor[0]}"/><a:srgbClr val="${opts.recolor[1]}"/></a:duotone>`);
       }
+      if (opts.tint != null && opts.tint > 0) {
+        effects.push(`<a:tint amt="${Math.round(opts.tint * 1000)}"/>`);
+      }
       if (opts.hue != null || opts.saturation != null) {
         const h = Math.round((opts.hue ?? 0) * 60000);
         const s = Math.round((opts.saturation ?? 0) * 100000);
@@ -2375,6 +2390,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const strike = opts.strike ? ' strike="sngStrike"' : "";
   const capsAttr = opts.caps ? ` cap="${opts.caps === "small" ? "small" : "all"}"` : "";
   const kernAttr = opts.kerning != null ? ` kern="${Math.round(opts.kerning * 100)}"` : "";
+  const baselineAttr = opts.superscript ? ' baseline="30000"' : (opts.subscript ? ' baseline="-40000"' : "");
   const align = opts.align ?? "l";
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
@@ -2439,7 +2455,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}"${cellIndentAttr}${cellMarLAttr}>${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
-    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr}${kernAttr} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr}${kernAttr}${baselineAttr} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     (() => {

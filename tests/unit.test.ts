@@ -3919,4 +3919,56 @@ describe("OOXML", () => {
       expect(xml).toContain('fontScale="50000"');
     });
   });
+
+  describe("table cell superscript/subscript", () => {
+    it("adds baseline for superscript", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "E=mc²", options: { superscript: true } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('baseline="30000"');
+    });
+
+    it("adds baseline for subscript", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "H₂O", options: { subscript: true } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('baseline="-40000"');
+    });
+  });
+
+  describe("image tint", () => {
+    it("adds tint element to image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        tint: 50,
+      });
+      const xml = slide._toXml(1);
+      // 50 * 1000 = 50000
+      expect(xml).toContain('<a:tint amt="50000"/>');
+    });
+  });
+
+  describe("group shape rotation", () => {
+    it("adds rot attribute to group xfrm", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 1, y: 1, w: 4, h: 3 });
+      grp.rotate = 45;
+      grp.addShape("rect", { x: 1, y: 1, w: 2, h: 1, fill: { color: "FF0000" } });
+      const xml = slide._toXml(1);
+      // 45 * 60000 = 2700000
+      expect(xml).toContain('rot="2700000"');
+    });
+  });
 });

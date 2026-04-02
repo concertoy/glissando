@@ -2333,4 +2333,70 @@ describe("OOXML", () => {
       expect(pres._defaultTransition!.type).toBe("fade");
     });
   });
+
+  describe("Shape animation presets", () => {
+    it("generates timing XML for appear animation on text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Animated", { x: 1, y: 1, w: 4, animation: { type: "appear" } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:timing>");
+      expect(xml).toContain("style.visibility");
+    });
+
+    it("generates animEffect for fade animation on shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 3, h: 2, animation: { type: "fade", duration: 1000 } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:animEffect");
+      expect(xml).toContain('filter="fade"');
+    });
+
+    it("generates wipe animation with direction", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 3, h: 2, animation: { type: "wipe", direction: "fromLeft" } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("wipe(from left)");
+    });
+  });
+
+  describe("Table header row styling", () => {
+    it("applies headerStyle to first row cells", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["Name", "Value"], ["A", "1"]],
+        { x: 0, y: 0, w: 6, headerStyle: { bold: true, color: "FFFFFF", fill: { color: "333333" } } },
+      );
+      const xml = slide._toXml(1);
+      // Header row should have fill and white text
+      expect(xml).toContain("333333");
+      expect(xml).toContain("FFFFFF");
+    });
+  });
+
+  describe("Shape preset shadows", () => {
+    it("subtle shadow has low opacity", () => {
+      const shadow = shapePresets.shadows.subtle();
+      expect(shadow.opacity).toBeLessThan(0.1);
+      expect(shadow.blur).toBeLessThan(5);
+    });
+
+    it("dramatic shadow has high opacity and blur", () => {
+      const shadow = shapePresets.shadows.dramatic();
+      expect(shadow.opacity).toBeGreaterThanOrEqual(0.25);
+      expect(shadow.blur).toBeGreaterThanOrEqual(15);
+    });
+
+    it("all shadow presets return valid ShadowOpts", () => {
+      for (const name of ["subtle", "soft", "medium", "dramatic", "contact"] as const) {
+        const s = shapePresets.shadows[name]();
+        expect(s.color).toBeDefined();
+        expect(s.blur).toBeDefined();
+        expect(s.offset).toBeDefined();
+      }
+    });
+  });
 });

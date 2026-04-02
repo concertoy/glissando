@@ -209,6 +209,21 @@ export interface AddTextOpts {
   extrusion?: { depth?: number; color?: string };
   /** Inner shadow effect. */
   innerShadow?: { color?: string; blur?: number; offset?: number; angle?: number; opacity?: number };
+  /** Entrance animation preset. Plays on click or after delay. */
+  animation?: ShapeAnimationOpts;
+}
+
+export interface ShapeAnimationOpts {
+  /** Animation type. */
+  type: "appear" | "fade" | "fly" | "wipe" | "zoom";
+  /** Trigger: "onClick" (default) or "afterPrevious" or "withPrevious". */
+  trigger?: "onClick" | "afterPrevious" | "withPrevious";
+  /** Duration in milliseconds (default 500). */
+  duration?: number;
+  /** Delay in milliseconds before animation starts (default 0). */
+  delay?: number;
+  /** Direction for fly/wipe (default "fromBottom"). */
+  direction?: "fromLeft" | "fromRight" | "fromTop" | "fromBottom";
 }
 
 export interface AddShapeOpts {
@@ -269,6 +284,8 @@ export interface AddShapeOpts {
   tooltip?: string;
   /** Text wrapping mode for shape text. */
   wrap?: "none" | "square";
+  /** Entrance animation preset. */
+  animation?: ShapeAnimationOpts;
 }
 
 /** A single path segment for freeform shapes. */
@@ -350,6 +367,14 @@ export interface AddTableOpts {
   margin?: number | number[];
   /** Alternating row stripe colors [evenColor, oddColor]. Applied to data rows (not header). */
   stripe?: [string, string];
+  /** Style applied to the first row (header). Overrides per-cell options for font, color, fill, bold. */
+  headerStyle?: {
+    fontSize?: number;
+    fontFace?: string;
+    color?: string;
+    bold?: boolean;
+    fill?: FillOpts;
+  };
 }
 
 export type TransitionType = "fade" | "push" | "wipe" | "cover" | "split" | "cut";
@@ -779,6 +804,7 @@ export class Slide {
   /** @internal */ _hidden = false;
   /** @internal */ _defaults: PresentationDefaults = {};
   /** @internal */ _comments: Array<{ text: string; author: string; x?: number; y?: number }> = [];
+  /** @internal */ _shapeAnimations: Array<{ shapeId: number; opts: ShapeAnimationOpts }> = [];
 
   constructor(index: number) {
     this._slideIndex = index;
@@ -870,6 +896,7 @@ export class Slide {
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `TextBox_${id}`;
     this._elements.push(buildTextShapeXml(id, name, content, o, this));
+    if (o.animation) this._shapeAnimations.push({ shapeId: id, opts: o.animation });
   }
 
   addShape(type: string, opts: AddShapeOpts): void {
@@ -878,6 +905,7 @@ export class Slide {
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `Shape_${id}`;
     this._elements.push(buildShapeXml(id, name, type, o));
+    if (o.animation) this._shapeAnimations.push({ shapeId: id, opts: o.animation });
   }
 
   addImage(opts: AddImageOpts): void {
@@ -978,7 +1006,11 @@ export class Slide {
       this._elements.join("") +
       `</p:spTree>`;
 
-    const timing = this._timing ?? "";
+    const timing = this._timing
+      ? this._timing
+      : this._shapeAnimations.length > 0
+        ? buildShapeAnimTimingXml(this._shapeAnimations)
+        : "";
     const transition = this._transition ? buildTransitionXml(this._transition) : "";
 
     return (
@@ -1876,6 +1908,16 @@ function buildTableXml(
         co.fill = { color: (rowIdx - 1) % 2 === 0 ? stripe[0] : stripe[1] };
       }
 
+      // Apply header style to first row
+      const hs = opts.headerStyle;
+      if (hs && rowIdx === 0) {
+        if (hs.fontSize != null && !co.fontSize) co.fontSize = hs.fontSize;
+        if (hs.fontFace && !co.fontFace) co.fontFace = hs.fontFace;
+        if (hs.color && !co.color) co.color = hs.color;
+        if (hs.bold != null && co.bold == null) co.bold = hs.bold;
+        if (hs.fill && !co.fill && !co.gradient) co.fill = hs.fill;
+      }
+
       // Cell text
       const textXml = buildCellTextXml(cellObj.text, co, slide);
 
@@ -2302,6 +2344,139 @@ function buildTimingXml(spid: string, paragraphCount: number): string {
   );
 }
 
+/**
+ * Build timing XML for shape-level entrance animations.
+ * Supports: appear, fade, fly, wipe, zoom.
+ */
+function buildShapeAnimTimingXml(
+  anims: Array<{ shapeId: number; opts: ShapeAnimationOpts }>,
+): string {
+  let nextId = 1;
+  const id = () => nextId++;
+
+  const clickPars: string[] = [];
+  for (const anim of anims) {
+    const dur = anim.opts.duration ?? 500;
+    const delay = anim.opts.delay ?? 0;
+    const spid = String(anim.shapeId);
+
+    // Build the inner animation effect based on type
+    let effectXml: string;
+    switch (anim.opts.type) {
+      case "appear": {
+        // Simple visibility set (instant appear)
+        const bhvrId = id();
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${bhvrId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>`;
+        break;
+      }
+      case "fade": {
+        // Fade in via animEffect
+        const setId = id(), aeId = id();
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
+          `<p:animEffect transition="in" filter="fade">` +
+          `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animEffect>`;
+        break;
+      }
+      case "fly": {
+        const dir = anim.opts.direction ?? "fromBottom";
+        const dirMap: Record<string, string> = {
+          fromLeft: "from left", fromRight: "from right",
+          fromTop: "from top", fromBottom: "from bottom",
+        };
+        const setId = id(), aeId = id();
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
+          `<p:animEffect transition="in" filter="wipe(${dirMap[dir]})">` +
+          `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animEffect>`;
+        break;
+      }
+      case "wipe": {
+        const dir = anim.opts.direction ?? "fromBottom";
+        const dirMap: Record<string, string> = {
+          fromLeft: "from left", fromRight: "from right",
+          fromTop: "from top", fromBottom: "from bottom",
+        };
+        const setId = id(), aeId = id();
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
+          `<p:animEffect transition="in" filter="wipe(${dirMap[dir]})">` +
+          `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animEffect>`;
+        break;
+      }
+      case "zoom": {
+        const setId = id(), aeId = id();
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
+          `<p:animEffect transition="in" filter="fade">` +
+          `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animEffect>`;
+        break;
+      }
+    }
+
+    const parId = id(), innerParId = id();
+    clickPars.push(
+      `<p:par><p:cTn id="${parId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst><p:par><p:cTn id="${innerParId}" fill="hold">` +
+      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+      `<p:childTnLst>${effectXml}</p:childTnLst>` +
+      `</p:cTn></p:par></p:childTnLst></p:cTn></p:par>`,
+    );
+  }
+
+  const rootId = id(), seqId = id();
+  return (
+    `<p:timing><p:tnLst><p:par>` +
+    `<p:cTn id="${rootId}" dur="indefinite" restart="never" nodeType="tmRoot">` +
+    `<p:childTnLst><p:seq concurrent="1" nextAc="seek">` +
+    `<p:cTn id="${seqId}" dur="indefinite" nodeType="mainSeq">` +
+    `<p:childTnLst>${clickPars.join("")}</p:childTnLst></p:cTn>` +
+    `<p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>` +
+    `<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst>` +
+    `</p:seq></p:childTnLst></p:cTn>` +
+    `</p:par></p:tnLst></p:timing>`
+  );
+}
+
 // ─── Emoji bullet patching ──────────────────────────────────────────
 
 function patchEmojiBulletsInXml(
@@ -2527,6 +2702,19 @@ export const shapePresets = {
     shadow: { blur: 16, offset: 6, angle: 315, color: "000000", opacity: 0.2 },
     rectRadius: 0.08,
   }),
+  /** Named shadow presets for quick styling. Returns ShadowOpts. */
+  shadows: {
+    /** Barely visible shadow for subtle depth. */
+    subtle: (): ShadowOpts => ({ blur: 3, offset: 1, angle: 315, color: "000000", opacity: 0.08 }),
+    /** Standard soft shadow. */
+    soft: (): ShadowOpts => ({ blur: 6, offset: 3, angle: 315, color: "000000", opacity: 0.15 }),
+    /** Medium shadow for cards and panels. */
+    medium: (): ShadowOpts => ({ blur: 10, offset: 4, angle: 315, color: "000000", opacity: 0.2 }),
+    /** Heavy shadow for dramatic depth. */
+    dramatic: (): ShadowOpts => ({ blur: 20, offset: 8, angle: 315, color: "000000", opacity: 0.3 }),
+    /** Tight contact shadow directly under the shape. */
+    contact: (): ShadowOpts => ({ blur: 4, offset: 1, angle: 270, color: "000000", opacity: 0.25 }),
+  },
 } as const;
 
 /** Lighten a hex color by a percentage (0–100). */

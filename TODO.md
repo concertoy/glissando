@@ -138,6 +138,9 @@
 - [x] **Table cell diagonal borders** — `diagonalDown`/`diagonalUp` on TableCell → `<a:lnTlToBr>`/`<a:lnBlToTr>` in `<a:tcPr>`.
 - [x] **Image recolor** — `recolor: [shadow, highlight]` on AddImageOpts → `<a:duotone>` on blip.
 - [x] **Presentation-wide slide transitions** — `pres.setTransition(opts)` applies default transition to all slides without one.
+- [x] **Shape animation presets** — `animation: { type, trigger, duration, delay, direction }` on AddTextOpts/AddShapeOpts → `<p:timing>` with appear, fade, fly, wipe, zoom effects.
+- [x] **Table header row styling** — `headerStyle` on AddTableOpts for separate header font/color/fill without manual cell options.
+- [x] **Shape preset shadows** — `shapePresets.shadows.subtle()`, `.soft()`, `.medium()`, `.dramatic()`, `.contact()` named ShadowOpts presets.
 
 ## Open
 
@@ -155,7 +158,6 @@
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
 - [ ] **OLE embedding** — `slide.addOleObject()` for embedding Excel/PDF objects as icons or inline frames.
 - [ ] **Slide layout templates** — `pres.addLayout(name, { placeholders })` for custom slide layouts in slideMasters.
-- [ ] **Shape animation presets** — `appear`, `fadeIn`, `flyIn` on shapes via `<p:timing>` (extend build animations beyond bullets).
 
 ### New proposals
 - [ ] **Treemap / heatmap component** — `treemap(slide, { data, ... })` for data visualization using nested colored rects.
@@ -169,8 +171,12 @@
 - [ ] **Shape arrow keys navigation** — `tabOrder` on shapes for keyboard navigation order.
 - [ ] **Slide master footer placeholders** — wire `<p:ph type="ftr"/>`, `<p:ph type="sldNum"/>`, `<p:ph type="dt"/>` on slide masters for native footer rendering.
 - [ ] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
-- [ ] **Shape preset shadows** — named shadow presets (e.g., `shadow: "subtle"`, `shadow: "dramatic"`) for quick styling.
 - [ ] **Slide background gradient mesh** — multi-point gradient fills on slide backgrounds.
-- [ ] **Text auto-shrink** — `shrinkOnOverflow: true` on AddTextOpts → `<a:normAutofit>` with configurable min scale.
-- [ ] **Table header row styling** — `headerStyle` on AddTableOpts for separate header font/color/fill without manual cell options.
 - [ ] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:anim>` targeting `r` attribute.
+- [ ] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
+- [ ] **Shape exit animations** — `exitAnimation` on shapes for disappear/fadeOut/flyOut effects.
+- [ ] **Animation sequencing** — `afterPrevious`/`withPrevious` trigger modes for automatic animation chains.
+- [ ] **Table cell background image** — `bgImage` on TableCell options for image fills in cells.
+- [ ] **Presentation password protection** — `pres.protect({ password })` for basic file encryption.
+- [ ] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
+- [ ] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.

@@ -197,6 +197,10 @@
 - [x] **Shape text vertical align override** — `textValign` on AddShapeOpts → separate anchor from shape valign.
 - [x] **Connector curved control point** — `curvature` on ConnectorDef/ConnectorProps → adjustable arc bow amount in inches.
 - [x] **Connector curved direction** — `curveDir: "left" | "right"` on ConnectorDef/ConnectorProps → controls which side the arc bows toward.
+- [x] **Slide background blur** — `bgBlur` on slide.background → `<a:blur>` on background image blip.
+- [x] **Shape rotation animation** — `spin` animation type with `spinAngle` → `<p:animRot>` for shape rotation.
+- [x] **Animation path** — `path` animation type with `motionPath` → `<p:animMotion>` for motion along SVG paths.
+- [x] **Table cell vertical align** — verified `valign` on TableCell works with textDirection, textGradient, and all new features.
 
 ## Open
 
@@ -228,7 +232,7 @@
 - [ ] **Slide master footer placeholders** — wire `<p:ph type="ftr"/>`, `<p:ph type="sldNum"/>`, `<p:ph type="dt"/>` on slide masters for native footer rendering.
 - [x] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
 - [ ] **Slide background gradient mesh** — multi-point gradient fills on slide backgrounds.
-- [ ] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:anim>` targeting `r` attribute.
+- [x] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:animRot>`.
 - [x] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
 - [x] **Shape exit animations** — `exit: true` on ShapeAnimationOpts for disappear/fadeOut effects.
 - [x] **Animation sequencing** — `trigger: "afterPrevious"/"withPrevious"` on ShapeAnimationOpts.
@@ -269,7 +273,7 @@
 - [x] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.
 - [x] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
 - [x] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
-- [ ] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along bezier curves.
+- [x] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along SVG paths.
 - [x] **Shape text gradient** — `textGradient` on AddShapeOpts for gradient-filled shape text via `<a:gradFill>` in rPr.
 - [x] **Table column widths by ratio** — `colRatio: [1, 2, 1]` on AddTableOpts for proportional column sizing.
 - [x] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
@@ -283,11 +287,11 @@
 - [x] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
 - [x] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
 - [x] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
-- [ ] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
+- [x] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
 - [x] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
 - [x] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.
 - [x] **Shape text outline** — `textOutline` on AddShapeOpts for stroked text in shapes via `<a:ln>` in rPr.
-- [ ] **Table cell vertical align** — verify `valign` on TableCell works with all new features.
+- [x] **Table cell vertical align** — verified `valign` on TableCell works with all new features.
 - [x] **Connector curved direction** — `curveDir: "left" | "right"` on ConnectorDef for controlling curve direction.
 - [x] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
 - [x] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.

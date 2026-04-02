@@ -221,7 +221,7 @@ export interface AddTextOpts {
 
 export interface ShapeAnimationOpts {
   /** Animation type. */
-  type: "appear" | "fade" | "fly" | "wipe" | "zoom";
+  type: "appear" | "fade" | "fly" | "wipe" | "zoom" | "spin" | "path";
   /** Trigger: "onClick" (default) or "afterPrevious" or "withPrevious". */
   trigger?: "onClick" | "afterPrevious" | "withPrevious";
   /** Duration in milliseconds (default 500). */
@@ -234,6 +234,10 @@ export interface ShapeAnimationOpts {
   exit?: boolean;
   /** Auto-stagger: index multiplier for delay (ms). delay = stagger * animationIndex within slide. */
   stagger?: number;
+  /** Spin angle in degrees (default 360 for full rotation). Used with type: "spin". */
+  spinAngle?: number;
+  /** Motion path in SVG path format (e.g. "M 0 0 L 0.5 0.5"). Used with type: "path". Coordinates are fractions of slide size. */
+  motionPath?: string;
 }
 
 export interface AddShapeOpts {
@@ -888,6 +892,7 @@ export class Slide {
   /** @internal */ _bgImageRId?: string;
   /** @internal */ _bgTile = false;
   /** @internal */ _bgOpacity?: number;
+  /** @internal */ _bgBlur?: number;
   /** @internal */ _elements: Array<string | { toString(): string }> = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
@@ -916,6 +921,7 @@ export class Slide {
     s._bgImageRId = this._bgImageRId;
     s._bgTile = this._bgTile;
     s._bgOpacity = this._bgOpacity;
+    s._bgBlur = this._bgBlur;
     s._elements = this._elements.map(e => typeof e === "string" ? e : e.toString());
     s._nextId = this._nextId;
     s._nameToId = new Map(this._nameToId);
@@ -931,12 +937,13 @@ export class Slide {
     return s;
   }
 
-  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string; tile?: boolean; opacity?: number }) {
+  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string; tile?: boolean; opacity?: number; bgBlur?: number }) {
     this._bg = bg.color;
     this._bgGradient = bg.gradient;
     this._bgPattern = bg.patternFill;
     this._bgTile = bg.tile ?? false;
     this._bgOpacity = bg.opacity;
+    this._bgBlur = bg.bgBlur;
     if (bg.image) {
       const resolved = resolveImageData({ data: bg.image });
       this._mediaCounter++;
@@ -1091,7 +1098,11 @@ export class Slide {
       const fillMode = this._bgTile
         ? `<a:tile tx="0" ty="0" sx="100000" sy="100000" flip="none" algn="tl"/>`
         : `<a:stretch><a:fillRect/></a:stretch>`;
-      bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"/>${fillMode}</a:blipFill>`;
+      const blurXml = this._bgBlur != null && this._bgBlur > 0
+        ? `<a:blur rad="${Math.round(this._bgBlur * 12700)}"/>`
+        : "";
+      const blipInner = blurXml ? `>${blurXml}</a:blip>` : `/>`;
+      bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"${blipInner}${fillMode}</a:blipFill>`;
     } else if (this._bgGradient) {
       bgFill = buildGradientFillXml(this._bgGradient);
     } else if (this._bgPattern) {
@@ -2722,6 +2733,42 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `</p:cBhvr></p:animEffect>`;
+        break;
+      }
+      case "spin": {
+        // Rotation animation via <p:animRot>
+        const setId = id(), rotId = id();
+        const angle = (anim.opts.spinAngle ?? 360) * 60000; // degrees to 60000ths
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animRot by="${angle}">` +
+          `<p:cBhvr><p:cTn id="${rotId}" dur="${dur}" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animRot>`;
+        break;
+      }
+      case "path": {
+        // Motion path animation via <p:animMotion>
+        const setId = id(), pathId = id();
+        const motionPath = anim.opts.motionPath ?? "M 0 0 L 0.25 0.25";
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animMotion origin="layout" path="${escXml(motionPath)}" pathEditMode="relative">` +
+          `<p:cBhvr><p:cTn id="${pathId}" dur="${dur}" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr></p:animMotion>`;
         break;
       }
     }

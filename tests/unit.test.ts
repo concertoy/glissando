@@ -3391,4 +3391,115 @@ describe("OOXML", () => {
       expect(xml).toContain("cubicBezTo");
     });
   });
+
+  describe("slide background blur", () => {
+    it("adds blur element to background image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = {
+        color: "FFFFFF",
+        image: "data:image/png;base64,iVBORw0KGgo=",
+        bgBlur: 10,
+      };
+      const xml = slide._toXml(1);
+      expect(xml).toContain("a:blur");
+      // 10pt * 12700 = 127000
+      expect(xml).toContain('rad="127000"');
+    });
+
+    it("omits blur when not set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = {
+        color: "FFFFFF",
+        image: "data:image/png;base64,iVBORw0KGgo=",
+      };
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("a:blur");
+    });
+  });
+
+  describe("spin animation", () => {
+    it("generates animRot element for spin type", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "spin", duration: 1000 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("p:animRot");
+      // Default 360 degrees = 360 * 60000 = 21600000
+      expect(xml).toContain('by="21600000"');
+    });
+
+    it("supports custom spin angle", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "spin", spinAngle: 180 },
+      });
+      const xml = slide._toXml(1);
+      // 180 * 60000 = 10800000
+      expect(xml).toContain('by="10800000"');
+    });
+  });
+
+  describe("motion path animation", () => {
+    it("generates animMotion element for path type", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "0000FF" },
+        animation: { type: "path", motionPath: "M 0 0 L 0.5 0.5", duration: 2000 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("p:animMotion");
+      expect(xml).toContain("M 0 0 L 0.5 0.5");
+    });
+  });
+
+  describe("table cell vertical align with features", () => {
+    it("valign works with textDirection", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{
+          text: "Centered",
+          options: { valign: "middle", textDirection: "vert" },
+        }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('anchor="ctr"');
+      expect(xml).toContain('vert="vert"');
+    });
+
+    it("valign works with textGradient", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{
+          text: "Bottom",
+          options: {
+            valign: "bottom",
+            textGradient: {
+              stops: [
+                { position: 0, color: "FF0000" },
+                { position: 100, color: "00FF00" },
+              ],
+            },
+          },
+        }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('anchor="b"');
+      expect(xml).toContain("a:gradFill");
+    });
+  });
 });

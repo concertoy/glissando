@@ -74,13 +74,16 @@
 
 ## Open
 
-- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
+### High impact
 - [ ] **Chart component** — bar/line/pie charts via OOXML chart parts, or fallback to rendered SVG images.
 - [ ] **Video/audio embedding** — embed media files in slides via OOXML media parts.
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
+- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
+
+### Medium impact
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Text auto-size** — `autoSize` on AddTextOpts for OOXML `<a:normAutofit fontScale="...">`.
-- [ ] **Hyperlink colors** — custom colors for hyperlink text via `<a:hlinkClick>` styling.
 - [ ] **Shape group nesting** — allow nested group shapes for complex diagram hierarchies.
+- [ ] **Progress bar component** — reusable progress/step indicator for multi-slide sequences.
+- [ ] **QR code component** — generate QR codes as SVG → PNG for links in slides.

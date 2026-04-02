@@ -318,6 +318,12 @@ export interface AddShapeOpts {
   superscript?: boolean;
   /** Kerning threshold in points. Text at or above this size gets kerned. */
   kerning?: number;
+  /** Text capitalization: "all" for ALL CAPS, "small" for Small Caps. */
+  caps?: "all" | "small";
+  /** Text opacity 0–1 for shape text (applied via alpha on text color). */
+  textOpacity?: number;
+  /** Gradient fill on shape text (replaces solid color on text runs). */
+  textGradient?: GradientFill;
   /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
   textMargin?: number | [number, number, number, number];
   /** Entrance animation preset. */
@@ -488,6 +494,8 @@ export interface TableCell {
     underline?: boolean;
     /** Strikethrough cell text. */
     strike?: boolean;
+    /** Hover tooltip text for the cell. */
+    tooltip?: string;
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
   };
@@ -861,6 +869,7 @@ export class Slide {
   /** @internal */ _bgPattern?: PatternFill;
   /** @internal */ _bgImageRId?: string;
   /** @internal */ _bgTile = false;
+  /** @internal */ _bgOpacity?: number;
   /** @internal */ _elements: Array<string | { toString(): string }> = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
@@ -888,6 +897,7 @@ export class Slide {
     s._bgPattern = this._bgPattern ? { ...this._bgPattern } : undefined;
     s._bgImageRId = this._bgImageRId;
     s._bgTile = this._bgTile;
+    s._bgOpacity = this._bgOpacity;
     s._elements = this._elements.map(e => typeof e === "string" ? e : e.toString());
     s._nextId = this._nextId;
     s._nameToId = new Map(this._nameToId);
@@ -903,11 +913,12 @@ export class Slide {
     return s;
   }
 
-  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string; tile?: boolean }) {
+  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string; tile?: boolean; opacity?: number }) {
     this._bg = bg.color;
     this._bgGradient = bg.gradient;
     this._bgPattern = bg.patternFill;
     this._bgTile = bg.tile ?? false;
+    this._bgOpacity = bg.opacity;
     if (bg.image) {
       const resolved = resolveImageData({ data: bg.image });
       this._mediaCounter++;
@@ -1068,7 +1079,12 @@ export class Slide {
     } else if (this._bgPattern) {
       bgFill = buildPatternFillXml(this._bgPattern);
     } else {
-      bgFill = `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
+      const alphaXml = this._bgOpacity != null && this._bgOpacity < 1
+        ? `<a:alpha val="${Math.round(this._bgOpacity * 100000)}"/>`
+        : "";
+      bgFill = alphaXml
+        ? `<a:solidFill><a:srgbClr val="${this._bg}">${alphaXml}</a:srgbClr></a:solidFill>`
+        : `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
     }
     const bgXml =
       `<p:bg><p:bgPr>` +
@@ -1739,8 +1755,18 @@ function buildShapeXml(
       if (opts.superscript) rprAttrs.push('baseline="30000"');
       if (opts.charSpacing != null) rprAttrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
       if (opts.kerning != null) rprAttrs.push(`kern="${Math.round(opts.kerning * 100)}"`);
+      if (opts.caps) rprAttrs.push(`cap="${opts.caps === "small" ? "small" : "all"}"`);
       const children: string[] = [];
-      if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
+      if (opts.textGradient) {
+        children.push(buildGradientFillXml(opts.textGradient));
+      } else if (opts.color) {
+        const alphaXml = opts.textOpacity != null && opts.textOpacity < 1
+          ? `<a:alpha val="${Math.round(opts.textOpacity * 100000)}"/>`
+          : "";
+        children.push(`<a:solidFill><a:srgbClr val="${opts.color}">${alphaXml}</a:srgbClr></a:solidFill>`);
+      } else if (opts.textOpacity != null && opts.textOpacity < 1) {
+        children.push(`<a:solidFill><a:srgbClr val="000000"><a:alpha val="${Math.round(opts.textOpacity * 100000)}"/></a:srgbClr></a:solidFill>`);
+      }
       if (opts.highlight) children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
       if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
       const rpr = children.length > 0
@@ -2204,6 +2230,9 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     const rId = slide._addHyperlink(opts.href);
     hlinkXml = `<a:hlinkClick r:id="${rId}"/>`;
   }
+  if (opts.tooltip) {
+    hlinkXml += `<a:hlinkHover r:id="" tooltip="${escXml(opts.tooltip)}"/>`;
+  }
 
   const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
   return (
@@ -2393,7 +2422,11 @@ function buildConnectorLabelXml(
     `<p:txBody>` +
     `<a:bodyPr wrap="square" rtlCol="0"/>` +
     `<a:lstStyle/>` +
-    `<a:p><a:r>` +
+    (() => {
+      const algnMap: Record<string, string> = { left: "l", center: "ctr", right: "r" };
+      const algn = algnMap[conn.labelAlign ?? "center"] ?? "ctr";
+      return `<a:p><a:pPr algn="${algn}"/><a:r>`;
+    })() +
     `<a:rPr lang="en-US" sz="${sz100(conn.labelSize ?? 14)}"${italic} dirty="0">` +
     `<a:solidFill><a:srgbClr val="${conn.labelColor ?? conn.color}"/></a:solidFill>` +
     `<a:latin typeface="${escXml(sansFont)}"/>` +

@@ -179,6 +179,12 @@
 - [x] **Table column widths by ratio** — `colRatio` on AddTableOpts for proportional column sizing.
 - [x] **Slide background tiled image** — `tile: true` on slide.background → `<a:tile>` instead of `<a:stretch>`.
 - [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle → `<a:gradFill>` on header row cells.
+- [x] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts → `cap` attribute on shape text `<a:rPr>`.
+- [x] **Shape text opacity** — `textOpacity` on AddShapeOpts → `<a:alpha>` on shape text color.
+- [x] **Shape text gradient** — `textGradient` on AddShapeOpts → `<a:gradFill>` in shape text `<a:rPr>`.
+- [x] **Table cell tooltip** — `tooltip` on TableCell options → `<a:hlinkHover>` on cell text `<a:rPr>`.
+- [x] **Connector label alignment** — `labelAlign` on ConnectorDef/ConnectorProps → `algn` on label `<a:pPr>`.
+- [x] **Slide background opacity** — `opacity` on slide.background → `<a:alpha>` on solid fill color.
 
 ## Open
 
@@ -243,7 +249,7 @@
 - [ ] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
 - [ ] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
 - [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
-- [ ] **Slide background opacity** — `bgOpacity` on slide background for semi-transparent fills over master.
+- [x] **Slide background opacity** — `opacity` on slide.background for semi-transparent fills over master.
 - [x] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
 - [ ] **Image SVG support** — accept `.svg` files in addImage, convert to EMF or inline SVG.
 - [x] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
@@ -252,7 +258,7 @@
 - [x] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
 - [x] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
 - [ ] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along bezier curves.
-- [ ] **Shape text gradient** — `gradient` on AddShapeOpts for gradient-filled shape text via `<a:gradFill>` in rPr.
+- [x] **Shape text gradient** — `textGradient` on AddShapeOpts for gradient-filled shape text via `<a:gradFill>` in rPr.
 - [x] **Table column widths by ratio** — `colRatio: [1, 2, 1]` on AddTableOpts for proportional column sizing.
 - [x] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
 - [x] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts for baseline shifts in shape text.
@@ -260,11 +266,19 @@
 - [ ] **Slide thumbnail** — `slide.thumbnail(path)` to set a custom thumbnail image for the slide.
 - [x] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
 - [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
-- [ ] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.
+- [x] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.
 - [ ] **Table cell gradient text** — `gradient` on TableCell options for gradient-filled text in cells.
 - [ ] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
-- [ ] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
-- [ ] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
+- [x] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
+- [x] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
 - [ ] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
 - [ ] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
-- [ ] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.
+- [x] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.
+- [ ] **Shape text outline** — `textOutline` on AddShapeOpts for stroked text in shapes via `<a:ln>` in rPr.
+- [ ] **Table cell vertical align** — verify `valign` on TableCell works with all new features.
+- [ ] **Connector curved direction** — `curveDir: "up" | "down"` on ConnectorDef for controlling curve direction.
+- [ ] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
+- [ ] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.
+- [ ] **Image rounded corners** — `rounding` radius on AddImageOpts for custom corner rounding amount.
+- [ ] **Shape text rotation** — `textRotation` on AddShapeOpts for rotated text inside shapes.
+- [ ] **Connector weight presets** — `weight: "thin" | "medium" | "thick"` on ConnectorProps for common line weights.

@@ -3027,4 +3027,106 @@ describe("OOXML", () => {
       expect(xml).toContain('val="0000FF"');
     });
   });
+
+  describe("shape text caps", () => {
+    it("applies cap=all for ALL CAPS", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "hello", caps: "all" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('cap="all"');
+    });
+
+    it("applies cap=small for Small Caps", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "hello", caps: "small" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('cap="small"');
+    });
+  });
+
+  describe("shape text opacity", () => {
+    it("applies alpha on text color", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "faded", color: "333333", textOpacity: 0.5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('alpha val="50000"');
+    });
+  });
+
+  describe("shape text gradient", () => {
+    it("applies gradFill to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 2, h: 1, text: "Gradient",
+        textGradient: { type: "linear", angle: 0, stops: [{ position: 0, color: "FF0000" }, { position: 100, color: "0000FF" }] },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("gradFill");
+      expect(xml).toContain('val="FF0000"');
+    });
+  });
+
+  describe("table cell tooltip", () => {
+    it("applies hlinkHover to cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Hover me", options: { tooltip: "Info here" } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('tooltip="Info here"');
+      expect(xml).toContain("hlinkHover");
+    });
+  });
+
+  describe("connector label alignment", () => {
+    it("applies algn to label paragraph", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 1, h: 1, objectName: "la" });
+      slide.addShape("rect", { x: 5, y: 1, w: 1, h: 1, objectName: "lb" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 2, y: 1.5, idx: 1, _shapeName: "la" },
+          to: { x: 5, y: 1.5, idx: 3, _shapeName: "lb" },
+          type: "straight",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          label: "aligned",
+          labelAlign: "left",
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      expect(xml).toContain('algn="l"');
+      expect(xml).toContain("aligned");
+    });
+  });
+
+  describe("slide background opacity", () => {
+    it("applies alpha to solid fill background", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FF0000", opacity: 0.5 };
+      const xml = slide._toXml(1);
+      expect(xml).toContain('alpha val="50000"');
+      expect(xml).toContain('val="FF0000"');
+    });
+
+    it("omits alpha when opacity is 1", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FF0000", opacity: 1 };
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("alpha");
+    });
+  });
 });

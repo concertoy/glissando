@@ -325,6 +325,8 @@ export interface ConnectorProps {
   labelSize?: number;
   /** Label text color (hex, no #). Defaults to connector line color. */
   labelColor?: string;
+  /** Label text alignment. Default "ctr". */
+  labelAlign?: "left" | "center" | "right";
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */
@@ -347,6 +349,8 @@ export interface ConnectorDef {
   labelSize?: number;
   /** Label text color (hex, no #). Defaults to connector line color. */
   labelColor?: string;
+  /** Label text alignment. Default "ctr". */
+  labelAlign?: "left" | "center" | "right";
 }
 
 export interface ArrowProps {

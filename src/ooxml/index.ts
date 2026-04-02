@@ -226,6 +226,10 @@ export interface TableCell {
     border?: any[];
     paraSpaceBefore?: number;
     paraSpaceAfter?: number;
+    /** Number of columns this cell spans (default 1). */
+    colspan?: number;
+    /** Number of rows this cell spans (default 1). */
+    rowspan?: number;
   };
 }
 
@@ -1083,8 +1087,15 @@ function buildTableXml(
         tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}"/></a:solidFill>`);
       }
 
+      // Merge attributes
+      const mergeAttrs: string[] = [];
+      if (co.colspan && co.colspan > 1) mergeAttrs.push(`gridSpan="${co.colspan}"`);
+      if (co.rowspan && co.rowspan > 1) mergeAttrs.push(`rowSpan="${co.rowspan}"`);
+      if (co._hMerge) mergeAttrs.push(`hMerge="1"`);
+      if (co._vMerge) mergeAttrs.push(`vMerge="1"`);
+
       return (
-        `<a:tc>` +
+        `<a:tc${mergeAttrs.length ? " " + mergeAttrs.join(" ") : ""}>` +
         textXml +
         `<a:tcPr ${tcPrParts.join(" ")}>${tcPrChildren.join("")}</a:tcPr>` +
         `</a:tc>`

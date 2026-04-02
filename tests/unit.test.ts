@@ -628,6 +628,32 @@ describe("OOXML", () => {
     });
   });
 
+  describe("table cell merge", () => {
+    it("adds gridSpan for colspan", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Merged", options: { colspan: 2 } }, { text: "", options: { _hMerge: true } as any }],
+        [{ text: "A" }, { text: "B" }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('gridSpan="2"');
+      expect(xml).toContain('hMerge="1"');
+    });
+
+    it("adds rowSpan for rowspan", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Tall", options: { rowspan: 2 } }, { text: "Right" }],
+        [{ text: "", options: { _vMerge: true } as any }, { text: "Right 2" }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('rowSpan="2"');
+      expect(xml).toContain('vMerge="1"');
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

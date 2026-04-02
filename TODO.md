@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 73 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 77 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -47,6 +47,10 @@
 - [x] **Rich text in tables** — `TableCell.text` accepts `TextRun[]` for mixed formatting within cells.
 - [x] **Dashed lines** — `dashType` on LineOpts with 8 OOXML dash presets, applied to shapes, text, and images.
 
+- [x] **Arrow shape presets** — all OOXML preset shapes now pass through (chevron, rightArrow, ellipse, triangle, diamond, pentagon, etc.).
+- [x] **Multi-paragraph table cells** — `breakLine` in rich text runs splits table cells into multiple `<a:p>` elements.
+- [x] **Superscript/subscript in tables** — already supported via rich text `TextRun[]` + `buildRunProps`.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -55,6 +59,6 @@
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
-- [ ] **Arrow shape types** — chevron, notchedArrow, pentagon arrow presets for diagram use.
-- [ ] **Superscript/subscript in tables** — `superscript`/`subscript` on rich text runs in table cells.
-- [ ] **Multi-paragraph table cells** — support `breakLine` in rich text runs for table cells.
+- [ ] **Shape adjust values** — expose `adjustments` on AddShapeOpts for custom shape geometry tuning.
+- [ ] **Gradient on text runs** — gradient fill on individual text characters via `<a:gradFill>` in `<a:rPr>`.
+- [ ] **Table border styles** — typed `TableBorderOpts` replacing `any[]` for cell borders.

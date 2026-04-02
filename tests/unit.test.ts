@@ -737,6 +737,48 @@ describe("OOXML", () => {
     });
   });
 
+  describe("arrow shape presets", () => {
+    it("renders chevron shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("chevron", { x: 0, y: 0, w: 2, h: 1, fill: { color: "FF0000" } });
+      const xml = slide._elements[0];
+      expect(xml).toContain('prst="chevron"');
+    });
+
+    it("renders rightArrow shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rightArrow", { x: 0, y: 0, w: 2, h: 1, fill: { color: "00FF00" } });
+      const xml = slide._elements[0];
+      expect(xml).toContain('prst="rightArrow"');
+    });
+
+    it("renders ellipse shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("ellipse", { x: 0, y: 0, w: 2, h: 2, fill: { color: "0000FF" } });
+      const xml = slide._elements[0];
+      expect(xml).toContain('prst="ellipse"');
+    });
+  });
+
+  describe("multi-paragraph table cells", () => {
+    it("splits rich text on breakLine", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: [
+          { text: "Line 1", options: { breakLine: true } },
+          { text: "Line 2" },
+        ] }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      const pCount = (xml.match(/<a:p>/g) || []).length;
+      expect(pCount).toBe(2);
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

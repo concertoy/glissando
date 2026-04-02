@@ -919,17 +919,17 @@ function buildShapeXml(
   const rot = opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : "";
   const xfrm = `<a:xfrm${flipH}${flipV}${rot}><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`;
 
-  // Geometry
+  // Geometry — roundRect gets special adjustment, everything else passes through as OOXML preset
   let geom: string;
   if (type === "roundRect") {
     const radius = opts.rectRadius ?? 0.1;
     const shorter = Math.min(opts.w ?? 1, Math.max(opts.h ?? 0.001, 0.001));
     const adj = Math.round((radius / shorter) * 100000);
     geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
-  } else if (type === "line") {
-    geom = `<a:prstGeom prst="line"><a:avLst/></a:prstGeom>`;
   } else {
-    geom = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
+    // Pass through any OOXML preset name: rect, ellipse, triangle, diamond,
+    // line, chevron, rightArrow, notchedRightArrow, pentagon, hexagon, etc.
+    geom = `<a:prstGeom prst="${type}"><a:avLst/></a:prstGeom>`;
   }
 
   // Fill
@@ -1173,21 +1173,25 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): 
 
   // Rich text: multiple runs with individual formatting
   if (Array.isArray(text)) {
-    const runsXml = text.map((run) => {
-      const ro = run.options ?? {};
-      const rProps = buildRunProps({ fontSize, fontFace, color, ...ro });
-      return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
+    // Split into paragraphs on breakLine
+    const paragraphs: TextRun[][] = [[]];
+    for (const run of text) {
+      paragraphs[paragraphs.length - 1].push(run);
+      if (run.options?.breakLine) paragraphs.push([]);
+    }
+    // Remove trailing empty paragraph
+    if (paragraphs[paragraphs.length - 1].length === 0) paragraphs.pop();
+
+    const parasXml = paragraphs.map((para) => {
+      const runsXml = para.map((run) => {
+        const ro = run.options ?? {};
+        const rProps = buildRunProps({ fontSize, fontFace, color, ...ro });
+        return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
+      }).join("");
+      return `<a:p><a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>${runsXml}</a:p>`;
     }).join("");
-    return (
-      `<a:txBody>` +
-      `<a:bodyPr/>` +
-      `<a:lstStyle/>` +
-      `<a:p>` +
-      `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
-      runsXml +
-      `</a:p>` +
-      `</a:txBody>`
-    );
+
+    return `<a:txBody><a:bodyPr/><a:lstStyle/>${parasXml}</a:txBody>`;
   }
 
   return (

@@ -189,6 +189,10 @@ export interface AddTextOpts {
   textTransform?: string;
   /** Glow effect around the text shape. */
   glow?: { color: string; radius?: number; opacity?: number };
+  /** Soft edge (feathered) effect radius in points. */
+  softEdge?: number;
+  /** Reflection effect. */
+  reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
 }
 
 export interface AddShapeOpts {
@@ -213,6 +217,10 @@ export interface AddShapeOpts {
   adjustments?: Record<string, number>;
   /** Glow effect around the shape. */
   glow?: { color: string; radius?: number; opacity?: number };
+  /** Soft edge (feathered) effect radius in points. */
+  softEdge?: number;
+  /** Reflection effect. */
+  reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   /** Text inside the shape. */
   text?: string | TextRun[];
   /** Font size for shape text (points). */
@@ -899,10 +907,10 @@ function buildTextShapeXml(
     lineXml = buildLineXml(opts.line);
   }
 
-  // Effects (shadow + glow)
+  // Effects (shadow, glow, soft edge, reflection)
   let shadowXml = "";
-  if (opts.shadow || opts.glow) {
-    shadowXml = buildEffectLstXml(opts.shadow, opts.glow);
+  if (opts.shadow || opts.glow || opts.softEdge || opts.reflection) {
+    shadowXml = buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection);
   }
 
   // Non-visual properties
@@ -1202,9 +1210,16 @@ function buildGlowXml(glow: { color: string; radius?: number; opacity?: number }
   );
 }
 
-/** Build effectLst combining shadow and glow. */
-function buildEffectLstXml(shadow?: ShadowOpts, glow?: { color: string; radius?: number; opacity?: number }): string {
-  if (!shadow && !glow) return "";
+interface EffectOpts {
+  shadow?: ShadowOpts;
+  glow?: { color: string; radius?: number; opacity?: number };
+  softEdge?: number;
+  reflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+}
+
+/** Build effectLst combining shadow, glow, soft edge, and reflection. */
+function buildEffectLstXml(shadow?: ShadowOpts, glow?: EffectOpts["glow"], softEdge?: number, reflection?: EffectOpts["reflection"]): string {
+  if (!shadow && !glow && !softEdge && !reflection) return "";
   const effects: string[] = [];
   if (glow) {
     const rad = ptEmu(glow.radius ?? 5);
@@ -1223,6 +1238,18 @@ function buildEffectLstXml(shadow?: ShadowOpts, glow?: { color: string; radius?:
       `<a:srgbClr val="${shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
       `</a:outerShdw>`
     );
+  }
+  if (reflection) {
+    const blur = ptEmu(reflection.blurRadius ?? 3);
+    const stAlpha = Math.round((reflection.startOpacity ?? 0.5) * 100000);
+    const endAlpha = Math.round((reflection.endOpacity ?? 0) * 100000);
+    const dist = ptEmu(reflection.distance ?? 0);
+    effects.push(
+      `<a:reflection blurRad="${blur}" stA="${stAlpha}" endA="${endAlpha}" dist="${dist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`
+    );
+  }
+  if (softEdge) {
+    effects.push(`<a:softEdge rad="${ptEmu(softEdge)}"/>`);
   }
   return `<a:effectLst>${effects.join("")}</a:effectLst>`;
 }
@@ -1307,8 +1334,10 @@ function buildShapeXml(
     line = buildLineXml(mergedLine);
   }
 
-  // Effects (shadow + glow)
-  const shadow = (opts.shadow || opts.glow) ? buildEffectLstXml(opts.shadow, opts.glow) : "";
+  // Effects (shadow, glow, soft edge, reflection)
+  const shadow = (opts.shadow || opts.glow || opts.softEdge || opts.reflection)
+    ? buildEffectLstXml(opts.shadow, opts.glow, opts.softEdge, opts.reflection)
+    : "";
 
   // Text body (optional text inside shape)
   let txBody = "";

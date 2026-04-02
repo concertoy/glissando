@@ -1085,6 +1085,36 @@ describe("OOXML", () => {
     });
   });
 
+  describe("soft edge effect", () => {
+    it("adds softEdge to effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Soft edges", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        softEdge: 5,
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:softEdge");
+    });
+  });
+
+  describe("reflection effect", () => {
+    it("adds reflection to effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "AAAAAA" },
+        reflection: { blurRadius: 5, startOpacity: 0.5, distance: 2 },
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<a:reflection");
+      expect(xml).toContain("blurRad=");
+    });
+  });
+
   describe("text outline", () => {
     it("adds line element to text run properties", () => {
       const pres = new Presentation();

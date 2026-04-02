@@ -156,6 +156,12 @@
 - [x] **Animation sequencing** — `trigger: "afterPrevious" | "withPrevious"` on ShapeAnimationOpts merges into previous click step.
 - [x] **Shape exit animations** — `exit: true` on ShapeAnimationOpts → `transition="out"` and `visibility: hidden`.
 - [x] **Table minimum row height** — `minRowH` on AddTableOpts clamps row heights to a minimum bound.
+- [x] **Shape text italic** — `italic` on AddShapeOpts → `i="1"` on shape text `<a:rPr>`.
+- [x] **Shape text underline** — `underline` on AddShapeOpts → `u="sng"` on shape text `<a:rPr>`.
+- [x] **Table cell text direction** — `textDirection` on TableCell options → `vert` attribute on `<a:tcPr>` with "btLr", "eaVert", "wordArtVert" flows.
+- [x] **Image aspect ratio lock** — `lockAspectRatio` on AddImageOpts → controls `noChangeAspect` on `<a:picLocks>` (default true).
+- [x] **Connector label background** — `labelFill` on ConnectorDef/ConnectorProps → `<a:solidFill>` on label text box.
+- [x] **Table auto-height** — `addTable()` now returns `{ h: number }` with computed total height in inches.
 
 ## Open
 
@@ -202,14 +208,22 @@
 - [x] **Group animation** — `animation` on GroupShape for entrance animations on entire groups.
 - [x] **Text box hyperlink** — `href` on AddTextOpts to make the entire text box clickable.
 - [x] **Shape text margin** — `textMargin` on AddShapeOpts for custom padding around text inside shapes.
-- [ ] **Image aspect ratio lock** — `aspectRatio: "contain" | "cover"` on AddImageOpts for smart image sizing.
+- [x] **Image aspect ratio lock** — `lockAspectRatio` on AddImageOpts controls `noChangeAspect` (default true).
 - [x] **Shape line gradient** — gradient fills on shape lines via `<a:gradFill>` inside `<a:ln>`.
 - [x] **Text character spacing** — `charSpacing` on AddShapeOpts for letter-spacing in shape text.
-- [ ] **Table cell rotation with direction** — `textDirection: "btLr" | "vert"` on TableCell for complex text flows.
-- [ ] **Shape text italic** — `italic` on AddShapeOpts for italic text in shapes.
-- [ ] **Shape text underline** — `underline` on AddShapeOpts for underlined text in shapes.
-- [ ] **Table auto-height** — compute total table height from content and row count.
-- [ ] **Connector labels with background** — `labelFill` on ConnectorProps for label background box.
+- [x] **Table cell rotation with direction** — `textDirection: "btLr" | "vert"` on TableCell for complex text flows.
+- [x] **Shape text italic** — `italic` on AddShapeOpts for italic text in shapes.
+- [x] **Shape text underline** — `underline` on AddShapeOpts for underlined text in shapes.
+- [x] **Table auto-height** — `addTable()` returns `{ h: number }` with computed total height.
+- [x] **Connector labels with background** — `labelFill` on ConnectorProps for label background box.
 - [ ] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
 - [ ] **Slide background video** — `bgVideo` on slide for looping background video.
 - [ ] **Animation delay chaining** — auto-calculate delays for staggered animation sequences.
+- [ ] **Shape text vertical align override** — `textValign` on AddShapeOpts separate from shape valign for fine control.
+- [ ] **Table cell background image** — `bgImage` on TableCell options for image fills via `<a:blipFill>` in `<a:tcPr>`.
+- [ ] **Shape text line spacing** — `lineSpacing` on AddShapeOpts for controlling line height in shape text.
+- [ ] **Image opacity** — `opacity` on AddImageOpts → `<a:alpha>` on blip fill for transparent images.
+- [ ] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
+- [ ] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
+- [ ] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
+- [ ] **Slide background opacity** — `bgOpacity` on slide background for semi-transparent fills over master.

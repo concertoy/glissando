@@ -197,6 +197,7 @@ export class Deck {
       tail: props.tail ?? "none",
       label: props.label,
       labelItalic: props.labelItalic ?? true,
+      labelFill: props.labelFill,
     });
     return this;
   }
@@ -215,6 +216,7 @@ export class Deck {
     tail?: "arrow" | "stealth" | "triangle" | "none";
     label?: string;
     labelItalic?: boolean;
+    labelFill?: string;
   }): this {
     const sideIdx: Record<string, number> = { top: 0, right: 1, bottom: 2, left: 3 };
     const fromIdx = sideIdx[opts?.fromSide ?? "right"];
@@ -231,6 +233,7 @@ export class Deck {
       tail: opts?.tail,
       label: opts?.label,
       labelItalic: opts?.labelItalic,
+      labelFill: opts?.labelFill,
     });
   }
 

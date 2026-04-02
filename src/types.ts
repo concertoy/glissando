@@ -317,6 +317,8 @@ export interface ConnectorProps {
   tail?: "arrow" | "stealth" | "triangle" | "none";
   label?: string;        // text label positioned near the midpoint
   labelItalic?: boolean;  // italic label (default true)
+  /** Background fill color for the label text box (hex, no #). */
+  labelFill?: string;
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */
@@ -331,6 +333,8 @@ export interface ConnectorDef {
   tail: string;
   label?: string;
   labelItalic?: boolean;
+  /** Background fill color for the label text box (hex). */
+  labelFill?: string;
 }
 
 export interface ArrowProps {

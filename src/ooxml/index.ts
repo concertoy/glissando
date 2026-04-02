@@ -280,6 +280,10 @@ export interface AddShapeOpts {
   valign?: "top" | "middle" | "bottom" | "t" | "ctr" | "b";
   /** Bold text. */
   bold?: boolean;
+  /** Italic text. */
+  italic?: boolean;
+  /** Underline text. */
+  underline?: boolean;
   /** Character spacing in points (e.g. 2 for loose, -1 for tight). */
   charSpacing?: number;
   /** Number of text columns (only applies when text is set). */
@@ -373,6 +377,8 @@ export interface AddImageOpts {
   animation?: ShapeAnimationOpts;
   /** Hover tooltip text on the image. */
   tooltip?: string;
+  /** Lock aspect ratio in PowerPoint (default true). Set false to allow free resizing. */
+  lockAspectRatio?: boolean;
 }
 
 export interface AddTableOpts {
@@ -440,6 +446,8 @@ export interface TableCell {
     rowspan?: number;
     /** Vertical text direction. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
     vertical?: "vert" | "vert270";
+    /** Text direction for complex flows: "btLr" = bottom-to-left-right (rotated 90° CCW), "vert" = top-to-bottom. */
+    textDirection?: "btLr" | "vert" | "vert270" | "eaVert" | "wordArtVert";
     /** Per-cell margins in points: number for uniform, [top, right, bottom, left] for per-side. */
     margin?: number | [number, number, number, number];
     /** Hyperlink URL for the entire cell text. */
@@ -962,10 +970,12 @@ export class Slide {
     if (o.animation) this._shapeAnimations.push({ shapeId: id, opts: o.animation });
   }
 
-  addTable(rows: TableCell[][], opts: AddTableOpts): void {
+  addTable(rows: TableCell[][], opts: AddTableOpts): { h: number } {
     const o: Record<string, any> = opts;
     const id = this._allocId();
-    this._elements.push(buildTableXml(id, rows, o, this));
+    const result = buildTableXml(id, rows, o, this);
+    this._elements.push(result.xml);
+    return { h: result.totalH };
   }
 
   /** Add a semi-transparent watermark text across the slide center. */
@@ -1686,6 +1696,8 @@ function buildShapeXml(
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
       if (opts.fontSize) rprAttrs.push(`sz="${Math.round(opts.fontSize * 100)}"`);
       if (opts.bold) rprAttrs.push('b="1"');
+      if (opts.italic) rprAttrs.push('i="1"');
+      if (opts.underline) rprAttrs.push('u="sng"');
       if (opts.charSpacing != null) rprAttrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
       const children: string[] = [];
       if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
@@ -1842,7 +1854,7 @@ function buildPictureXml(
         ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}>${inner.join("")}</p:cNvPr>`
         : `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>`;
     })() +
-    `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
+    `<p:cNvPicPr><a:picLocks${opts.lockAspectRatio !== false ? ' noChangeAspect="1"' : ""}/></p:cNvPicPr>` +
     `<p:nvPr/>` +
     `</p:nvPicPr>` +
     `<p:blipFill>` +
@@ -1913,7 +1925,7 @@ function buildTableXml(
   rows: any[][],
   opts: Record<string, any>,
   slide?: Slide,
-): string {
+): { xml: string; totalH: number } {
   const x = emu(opts.x ?? 0);
   const y = emu(opts.y ?? 0);
   const cx = emu(opts.w ?? 8);
@@ -1999,7 +2011,9 @@ function buildTableXml(
         const va: Record<string, string> = { top: "t", middle: "ctr", bottom: "b" };
         tcPrParts.push(`anchor="${va[co.valign] ?? "ctr"}"`);
       }
-      if (co.vertical) {
+      if (co.textDirection) {
+        tcPrParts.push(`vert="${co.textDirection}"`);
+      } else if (co.vertical) {
         tcPrParts.push(`vert="${co.vertical}"`);
       }
 
@@ -2044,7 +2058,7 @@ function buildTableXml(
     return `<a:tr h="${rowHeights[rowIdx] ?? defaultRowH}">${cells}</a:tr>`;
   }).join("");
 
-  return (
+  const xml = (
     `<p:graphicFrame>` +
     `<p:nvGraphicFramePr>` +
     `<p:cNvPr id="${id}" name="Table_${id}"/>` +
@@ -2063,6 +2077,7 @@ function buildTableXml(
     `</a:graphic>` +
     `</p:graphicFrame>`
   );
+  return { xml, totalH: totalH / EMU };
 }
 
 function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, slide?: Slide): string {
@@ -2298,7 +2313,9 @@ function buildConnectorLabelXml(
     `<p:spPr>` +
     `<a:xfrm><a:off x="${Math.round(labelX)}" y="${Math.round(labelY)}"/><a:ext cx="${labelW}" cy="${labelH}"/></a:xfrm>` +
     `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>` +
-    `<a:noFill/>` +
+    (conn.labelFill
+      ? `<a:solidFill><a:srgbClr val="${conn.labelFill}"/></a:solidFill>`
+      : `<a:noFill/>`) +
     `</p:spPr>` +
     `<p:txBody>` +
     `<a:bodyPr wrap="square" rtlCol="0"/>` +

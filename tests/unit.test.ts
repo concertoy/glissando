@@ -2620,4 +2620,111 @@ describe("OOXML", () => {
       expect(xml).not.toContain('h="182880"');
     });
   });
+
+  describe("shape text italic", () => {
+    it("applies i=1 to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Hello", italic: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('i="1"');
+    });
+  });
+
+  describe("shape text underline", () => {
+    it("applies u=sng to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Hello", underline: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('u="sng"');
+    });
+  });
+
+  describe("table cell text direction", () => {
+    it("applies textDirection to tcPr vert attribute", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Rotated", options: { textDirection: "btLr" } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('vert="btLr"');
+    });
+
+    it("textDirection takes precedence over vertical", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Dir", options: { textDirection: "eaVert", vertical: "vert270" } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('vert="eaVert"');
+      expect(xml).not.toContain('vert="vert270"');
+    });
+  });
+
+  describe("image lockAspectRatio", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+    it("defaults to locked aspect ratio", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 1, h: 1 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('noChangeAspect="1"');
+    });
+
+    it("removes lock when lockAspectRatio is false", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 1, h: 1, lockAspectRatio: false });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain('noChangeAspect="1"');
+    });
+  });
+
+  describe("connector label fill", () => {
+    it("applies solid fill to label background after writeFile processing", async () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 1, h: 1, objectName: "a" });
+      slide.addShape("rect", { x: 5, y: 1, w: 1, h: 1, objectName: "b" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 2, y: 1.5, idx: 1, _shapeName: "a" },
+          to: { x: 5, y: 1.5, idx: 3, _shapeName: "b" },
+          type: "straight",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          label: "flow",
+          labelFill: "FFFFFF",
+        }],
+      });
+      // Trigger deferred processing (normally done by writeFile)
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      // Label text box should have white fill and label text
+      expect(xml).toContain('val="FFFFFF"');
+      expect(xml).toContain("flow");
+    });
+  });
+
+  describe("table addTable returns height", () => {
+    it("returns computed total height in inches", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const result = slide.addTable(
+        [["A"], ["B"], ["C"]],
+        { x: 0, y: 0, w: 4, rowH: 0.5 },
+      );
+      // 3 rows * 0.5 inches = 1.5 inches
+      expect(result.h).toBeCloseTo(1.5, 2);
+    });
+  });
 });

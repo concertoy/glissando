@@ -2727,4 +2727,97 @@ describe("OOXML", () => {
       expect(result.h).toBeCloseTo(1.5, 2);
     });
   });
+
+  describe("shape text line spacing", () => {
+    it("applies lnSpc with spcPct to shape text pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Hello", lineSpacing: 1.5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:lnSpc><a:spcPct val="150000"/></a:lnSpc>');
+    });
+
+    it("omits lnSpc when lineSpacing is not set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Hello" });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("lnSpc");
+    });
+  });
+
+  describe("image opacity", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+    it("applies alphaModFix to blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 1, h: 1, opacity: 0.5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('alphaModFix amt="50000"');
+    });
+
+    it("omits alphaModFix when opacity is 1", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 1, h: 1, opacity: 1 });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("alphaModFix");
+    });
+  });
+
+  describe("connector dash style", () => {
+    it("applies prstDash to connector line", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 1, h: 1, objectName: "x" });
+      slide.addShape("rect", { x: 5, y: 1, w: 1, h: 1, objectName: "y" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 2, y: 1.5, idx: 1, _shapeName: "x" },
+          to: { x: 5, y: 1.5, idx: 3, _shapeName: "y" },
+          type: "straight",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          dashType: "dash",
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      expect(xml).toContain('prstDash val="dash"');
+    });
+  });
+
+  describe("animation stagger", () => {
+    it("auto-calculates staggered delays", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 1, h: 1, animation: { type: "fade", stagger: 200 } });
+      slide.addShape("rect", { x: 2, y: 0, w: 1, h: 1, animation: { type: "fade", stagger: 200 } });
+      const xml = slide._toXml(1);
+      // First shape: delay = 0 + 200*0 = 0
+      // Second shape: delay = 0 + 200*1 = 200
+      expect(xml).toContain('delay="0"');
+      expect(xml).toContain('delay="200"');
+    });
+  });
+
+  describe("table cell background image", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+    it("applies blipFill to table cell", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Cell", options: { bgImage: tinyPng } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("blipFill");
+      expect(xml).toContain("fillRect");
+    });
+  });
 });

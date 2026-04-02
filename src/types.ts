@@ -319,6 +319,8 @@ export interface ConnectorProps {
   labelItalic?: boolean;  // italic label (default true)
   /** Background fill color for the label text box (hex, no #). */
   labelFill?: string;
+  /** Line dash style for the connector. */
+  dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */
@@ -335,6 +337,8 @@ export interface ConnectorDef {
   labelItalic?: boolean;
   /** Background fill color for the label text box (hex). */
   labelFill?: string;
+  /** Line dash style for the connector. */
+  dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
 }
 
 export interface ArrowProps {

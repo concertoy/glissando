@@ -232,6 +232,8 @@ export interface ShapeAnimationOpts {
   direction?: "fromLeft" | "fromRight" | "fromTop" | "fromBottom";
   /** Set to true for exit animation (disappear instead of appear). */
   exit?: boolean;
+  /** Auto-stagger: index multiplier for delay (ms). delay = stagger * animationIndex within slide. */
+  stagger?: number;
 }
 
 export interface AddShapeOpts {
@@ -300,6 +302,8 @@ export interface AddShapeOpts {
   wrap?: "none" | "square";
   /** Auto-shrink text to fit within the shape. */
   autoFit?: boolean;
+  /** Line spacing multiple for shape text (e.g. 1.5 for 150% line height). */
+  lineSpacing?: number;
   /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
   textMargin?: number | [number, number, number, number];
   /** Entrance animation preset. */
@@ -379,6 +383,8 @@ export interface AddImageOpts {
   tooltip?: string;
   /** Lock aspect ratio in PowerPoint (default true). Set false to allow free resizing. */
   lockAspectRatio?: boolean;
+  /** Image opacity 0–1 (1 = fully opaque, 0 = fully transparent). */
+  opacity?: number;
 }
 
 export interface AddTableOpts {
@@ -460,6 +466,8 @@ export interface TableCell {
     diagonalUp?: TableBorderOpts;
     /** Built-in PowerPoint click action for the cell. */
     action?: "nextSlide" | "prevSlide" | "firstSlide" | "lastSlide" | "endShow";
+    /** Background image for the cell (data URI or file path). */
+    bgImage?: string;
   };
 }
 
@@ -1705,14 +1713,26 @@ function buildShapeXml(
       const rpr = children.length > 0
         ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
         : `<a:rPr ${rprAttrs.join(" ")}/>`;
-      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:pPr algn="${algn}"/><a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+      const lnSpc = opts.lineSpacing
+        ? `<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`
+        : "";
+      const pPr = lnSpc
+        ? `<a:pPr algn="${algn}">${lnSpc}</a:pPr>`
+        : `<a:pPr algn="${algn}"/>`;
+      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p>${pPr}<a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
     } else {
+      const lnSpc = opts.lineSpacing
+        ? `<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`
+        : "";
+      const pPr = lnSpc
+        ? `<a:pPr algn="${algn}">${lnSpc}</a:pPr>`
+        : `<a:pPr algn="${algn}"/>`;
       const runsXml = opts.text.map((run: TextRun) => {
         const ro = run.options ?? {};
         const rProps = buildRunProps({ fontSize: opts.fontSize, fontFace: opts.fontFace, color: opts.color, ...ro });
         return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
       }).join("");
-      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:pPr algn="${algn}"/>${runsXml}</a:p></p:txBody>`;
+      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p>${pPr}${runsXml}</a:p></p:txBody>`;
     }
   }
 
@@ -1860,6 +1880,9 @@ function buildPictureXml(
     `<p:blipFill>` +
     (() => {
       const effects: string[] = [];
+      if (opts.opacity != null && opts.opacity < 1) {
+        effects.push(`<a:alphaModFix amt="${Math.round(opts.opacity * 100000)}"/>`);
+      }
       if (opts.grayscale != null && opts.grayscale > 0) effects.push(`<a:grayscl/>`);
       if (opts.brightness != null || opts.contrast != null) {
         const bright = Math.round((opts.brightness ?? 0) * 100000);
@@ -2034,7 +2057,14 @@ function buildTableXml(
       }
 
       // Fill
-      if (co.gradient) {
+      if (co.bgImage && slide) {
+        const imgInfo = resolveImageData({ data: co.bgImage.startsWith("data:") ? co.bgImage : undefined, path: co.bgImage.startsWith("data:") ? undefined : co.bgImage });
+        slide._mediaCounter++;
+        const fileName = `tblimg_s${slide._slideIndex + 1}_${slide._mediaCounter}.${imgInfo.ext}`;
+        const rId = `rTblImg${slide._mediaCounter}`;
+        slide._images.push({ rId, fileName, data: imgInfo.data, contentType: imgInfo.contentType });
+        tcPrChildren.push(`<a:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></a:blipFill>`);
+      } else if (co.gradient) {
         tcPrChildren.push(buildGradientFillXml(co.gradient));
       } else if (co.fill) {
         tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}"/></a:solidFill>`);
@@ -2227,6 +2257,7 @@ function buildConnectorXml(
     `<a:prstGeom prst="${preset}">${avLst}</a:prstGeom>` +
     `<a:ln w="${lineW}">` +
     `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    (conn.dashType && conn.dashType !== "solid" ? `<a:prstDash val="${conn.dashType}"/>` : "") +
     `<a:headEnd type="${tailType}"/>` +
     `<a:tailEnd type="${headType}"/>` +
     `</a:ln>` +
@@ -2275,6 +2306,7 @@ function buildCurvedArcXml(
     `<a:noFill/>` +
     `<a:ln w="${lineW}">` +
     `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
+    (conn.dashType && conn.dashType !== "solid" ? `<a:prstDash val="${conn.dashType}"/>` : "") +
     `<a:tailEnd type="${headType}"/>` +
     `</a:ln>` +
     `</p:spPr>` +
@@ -2440,9 +2472,12 @@ function buildShapeAnimTimingXml(
   const id = () => nextId++;
 
   const clickPars: string[] = [];
-  for (const anim of anims) {
+  for (let ai = 0; ai < anims.length; ai++) {
+    const anim = anims[ai];
     const dur = anim.opts.duration ?? 500;
-    const delay = anim.opts.delay ?? 0;
+    const delay = anim.opts.stagger != null
+      ? (anim.opts.delay ?? 0) + anim.opts.stagger * ai
+      : (anim.opts.delay ?? 0);
     const spid = String(anim.shapeId);
 
     // Build the inner animation effect based on type

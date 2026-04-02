@@ -162,6 +162,11 @@
 - [x] **Image aspect ratio lock** — `lockAspectRatio` on AddImageOpts → controls `noChangeAspect` on `<a:picLocks>` (default true).
 - [x] **Connector label background** — `labelFill` on ConnectorDef/ConnectorProps → `<a:solidFill>` on label text box.
 - [x] **Table auto-height** — `addTable()` now returns `{ h: number }` with computed total height in inches.
+- [x] **Shape text line spacing** — `lineSpacing` on AddShapeOpts → `<a:lnSpc><a:spcPct>` in shape text paragraph.
+- [x] **Image opacity** — `opacity` on AddImageOpts → `<a:alphaModFix>` on blip for transparent images.
+- [x] **Connector dash style** — `dashType` on ConnectorDef/ConnectorProps → `<a:prstDash>` on connector `<a:ln>`.
+- [x] **Animation delay chaining** — `stagger` on ShapeAnimationOpts auto-calculates delays (delay = stagger * animIndex).
+- [x] **Table cell background image** — `bgImage` on TableCell options → `<a:blipFill>` in `<a:tcPr>` for image fills.
 
 ## Open
 
@@ -197,7 +202,7 @@
 - [x] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
 - [x] **Shape exit animations** — `exit: true` on ShapeAnimationOpts for disappear/fadeOut effects.
 - [x] **Animation sequencing** — `trigger: "afterPrevious"/"withPrevious"` on ShapeAnimationOpts.
-- [ ] **Table cell background image** — `bgImage` on TableCell options for image fills in cells.
+- [x] **Table cell background image** — `bgImage` on TableCell options for image fills in cells.
 - [ ] **Presentation password protection** — `pres.protect({ password })` for basic file encryption.
 - [x] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
 - [x] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.
@@ -218,12 +223,20 @@
 - [x] **Connector labels with background** — `labelFill` on ConnectorProps for label background box.
 - [ ] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
 - [ ] **Slide background video** — `bgVideo` on slide for looping background video.
-- [ ] **Animation delay chaining** — auto-calculate delays for staggered animation sequences.
+- [x] **Animation delay chaining** — `stagger` on ShapeAnimationOpts auto-calculates delays.
 - [ ] **Shape text vertical align override** — `textValign` on AddShapeOpts separate from shape valign for fine control.
-- [ ] **Table cell background image** — `bgImage` on TableCell options for image fills via `<a:blipFill>` in `<a:tcPr>`.
-- [ ] **Shape text line spacing** — `lineSpacing` on AddShapeOpts for controlling line height in shape text.
-- [ ] **Image opacity** — `opacity` on AddImageOpts → `<a:alpha>` on blip fill for transparent images.
+- [x] **Table cell background image** — `bgImage` on TableCell options for image fills via `<a:blipFill>` in `<a:tcPr>`.
+- [x] **Shape text line spacing** — `lineSpacing` on AddShapeOpts for controlling line height in shape text.
+- [x] **Image opacity** — `opacity` on AddImageOpts → `<a:alphaModFix>` on blip fill for transparent images.
 - [ ] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
 - [ ] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
-- [ ] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
+- [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
 - [ ] **Slide background opacity** — `bgOpacity` on slide background for semi-transparent fills over master.
+- [ ] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
+- [ ] **Image SVG support** — accept `.svg` files in addImage, convert to EMF or inline SVG.
+- [ ] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
+- [ ] **Shape text highlight** — `highlight` on AddShapeOpts for background highlight color on shape text runs.
+- [ ] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.
+- [ ] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
+- [ ] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
+- [ ] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along bezier curves.

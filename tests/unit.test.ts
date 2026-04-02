@@ -1946,4 +1946,116 @@ describe("OOXML", () => {
       expect(xml).not.toContain("Georgia");
     });
   });
+
+  describe("Shape click actions", () => {
+    it("emits nextSlide action", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 1,
+        fill: { color: "3366CC" },
+        action: "nextSlide",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("ppaction://hlinkshowjump?jump=nextslide");
+    });
+
+    it("emits endShow action", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 1, h: 1,
+        fill: { color: "FF0000" },
+        action: "endShow",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("ppaction://hlinkshowjump?jump=endshow");
+    });
+
+    it("prefers href over action", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 1, h: 1,
+        fill: { color: "00FF00" },
+        href: "https://example.com",
+        action: "nextSlide",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("rIdHlink");
+      expect(xml).not.toContain("hlinkshowjump");
+    });
+  });
+
+  describe("Slide comments", () => {
+    it("stores comments on slide", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addComment({ text: "Review this section", author: "Alice", x: 2, y: 3 });
+      expect(slide._comments.length).toBe(1);
+      expect(slide._comments[0].text).toBe("Review this section");
+      expect(slide._comments[0].author).toBe("Alice");
+    });
+
+    it("adds comment relationship to slide rels", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addComment({ text: "Fix this" });
+      const relsXml = slide._toRelsXml(false);
+      expect(relsXml).toContain("comments");
+      expect(relsXml).toContain("rIdComments");
+    });
+  });
+
+  describe("Color theme variables", () => {
+    it("defines and resolves named colors", () => {
+      const pres = new Presentation();
+      pres.defineColor("primary", "3366CC");
+      pres.defineColor("accent", "FF6600");
+      expect(pres.resolveColor("primary")).toBe("3366CC");
+      expect(pres.resolveColor("accent")).toBe("FF6600");
+    });
+
+    it("returns hex as-is when not a named color", () => {
+      const pres = new Presentation();
+      expect(pres.resolveColor("AABBCC")).toBe("AABBCC");
+    });
+  });
+
+  describe("Gradient text on shapes", () => {
+    it("supports gradient on TextRun[] in shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 4, h: 2,
+        fill: { color: "FFFFFF" },
+        text: [{
+          text: "Gradient Text",
+          options: {
+            gradient: {
+              type: "linear",
+              angle: 0,
+              stops: [
+                { position: 0, color: "FF0000" },
+                { position: 100, color: "0000FF" },
+              ],
+            },
+          },
+        }],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("Gradient Text");
+    });
+  });
+
+  describe("Text auto-size (autoFit)", () => {
+    it("emits <a:spAutoFit/> for autoFit: true", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Auto-size" }], { x: 0, y: 0, w: 4, h: 1, autoFit: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:spAutoFit/>");
+    });
+  });
 });

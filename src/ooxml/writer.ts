@@ -78,6 +78,11 @@ export async function assemblePptx(pres: Presentation): Promise<Buffer> {
       zip.file(`ppt/notesSlides/notesSlide${n}.xml`, notesSlideXml(slide._notes!, n));
       zip.file(`ppt/notesSlides/_rels/notesSlide${n}.xml.rels`, notesSlideRelsXml(n));
     }
+
+    // Comments
+    if (slide._comments.length > 0) {
+      zip.file(`ppt/comments/comment${n}.xml`, commentXml(slide._comments));
+    }
   }
 
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }) as Promise<Buffer>;
@@ -123,6 +128,15 @@ function contentTypesXml(
           `<Override PartName="/ppt/notesSlides/notesSlide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`,
         );
       }
+    }
+  }
+
+  // Comments
+  for (let i = 0; i < slides.length; i++) {
+    if (slides[i]._comments.length > 0) {
+      overrides.push(
+        `<Override PartName="/ppt/comments/comment${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.comments+xml"/>`,
+      );
     }
   }
 
@@ -461,6 +475,29 @@ function notesSlideXml(notes: string | TextRun[], slideNum: number): string {
     `</p:cSld>` +
     `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>` +
     `</p:notes>`
+  );
+}
+
+// ─── Comments XML ─────────────────────────────────────────────────
+
+function commentXml(comments: Array<{ text: string; author: string; x?: number; y?: number }>): string {
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const cmXmls = comments.map((c, i) => {
+    const posX = emu(c.x ?? 0);
+    const posY = emu(c.y ?? 0);
+    return (
+      `<p:cm authorId="0" dt="${now}" idx="${i + 1}">` +
+      `<p:pos x="${posX}" y="${posY}"/>` +
+      `<p:text>${escXml(c.text)}</p:text>` +
+      `</p:cm>`
+    );
+  }).join("");
+
+  return (
+    xmlDecl() +
+    `<p:cmLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+    cmXmls +
+    `</p:cmLst>`
   );
 }
 

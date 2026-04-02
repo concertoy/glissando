@@ -255,6 +255,8 @@ export interface AddShapeOpts {
   columnSpacing?: number;
   /** Hyperlink URL — makes the entire shape clickable. */
   href?: string;
+  /** Built-in PowerPoint click action for the shape. */
+  action?: "nextSlide" | "prevSlide" | "firstSlide" | "lastSlide" | "endShow";
 }
 
 /** A single path segment for freeform shapes. */
@@ -410,6 +412,7 @@ export class Presentation {
   /** @internal */ _extras: WriteExtras = {};
   /** @internal */ _metadata: { title?: string; author?: string; subject?: string; keywords?: string } = {};
   /** @internal */ _defaults: PresentationDefaults = {};
+  /** @internal */ _colorVars = new Map<string, string>();
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -426,6 +429,16 @@ export class Presentation {
 
   get theme(): { headFontFace?: string; bodyFontFace?: string } {
     return { headFontFace: this._headFont, bodyFontFace: this._bodyFont };
+  }
+
+  /** Define a named color variable. Use `resolveColor(name)` to look it up. */
+  defineColor(name: string, hex: string): void {
+    this._colorVars.set(name, hex);
+  }
+
+  /** Resolve a color — returns hex from named variables, or the input as-is if not found. */
+  resolveColor(nameOrHex: string): string {
+    return this._colorVars.get(nameOrHex) ?? nameOrHex;
   }
 
   /** Set presentation-level text defaults (font, size, color). Applied when not overridden per-element. */
@@ -702,6 +715,7 @@ export class Slide {
   /** @internal */ _transition?: TransitionOpts;
   /** @internal */ _hidden = false;
   /** @internal */ _defaults: PresentationDefaults = {};
+  /** @internal */ _comments: Array<{ text: string; author: string; x?: number; y?: number }> = [];
 
   constructor(index: number) {
     this._slideIndex = index;
@@ -842,6 +856,16 @@ export class Slide {
     this._notes = text;
   }
 
+  /** Add a review comment to the slide. */
+  addComment(opts: { text: string; author?: string; x?: number; y?: number }): void {
+    this._comments.push({
+      text: opts.text,
+      author: opts.author ?? "Author",
+      x: opts.x,
+      y: opts.y,
+    });
+  }
+
   /**
    * Create a group shape. Returns a GroupShape that supports the same
    * addText/addShape/addImage/addGroup methods. Nested groups are supported.
@@ -922,6 +946,11 @@ export class Slide {
     if (hasNotes) {
       rels.push(
         `<Relationship Id="rIdNotes" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../noteSlides/notesSlide${this._slideIndex + 1}.xml"/>`,
+      );
+    }
+    if (this._comments.length > 0) {
+      rels.push(
+        `<Relationship Id="rIdComments" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="../comments/comment${this._slideIndex + 1}.xml"/>`,
       );
     }
     return (
@@ -1509,9 +1538,21 @@ function buildShapeXml(
   return (
     `<p:sp>` +
     `<p:nvSpPr>` +
-    (opts._hlinkRId
-      ? `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`
-      : `<p:cNvPr id="${id}" name="${escXml(name)}"/>`) +
+    (() => {
+      const actionMap: Record<string, string> = {
+        nextSlide: "ppaction://hlinkshowjump?jump=nextslide",
+        prevSlide: "ppaction://hlinkshowjump?jump=previousslide",
+        firstSlide: "ppaction://hlinkshowjump?jump=firstslide",
+        lastSlide: "ppaction://hlinkshowjump?jump=lastslide",
+        endShow: "ppaction://hlinkshowjump?jump=endshow",
+      };
+      if (opts._hlinkRId) {
+        return `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`;
+      } else if (opts.action && actionMap[opts.action]) {
+        return `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="" action="${actionMap[opts.action]}"/></p:cNvPr>`;
+      }
+      return `<p:cNvPr id="${id}" name="${escXml(name)}"/>`;
+    })() +
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
     `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}${(opts.bevel || opts.extrusion) ? build3dXml(opts.bevel, opts.extrusion) : ""}</p:spPr>` +

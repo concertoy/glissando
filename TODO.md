@@ -113,6 +113,12 @@
 - [x] **Image filters** — `grayscale`, `brightness`, `contrast` on AddImageOpts → `<a:grayscl>` and `<a:lum>` on blip.
 - [x] **Presentation-level defaults** — `pres.setDefaults({ fontFace, fontSize, color })` applied as fallback in text runs.
 
+- [x] **Shape click actions** — `action` on AddShapeOpts (`nextSlide`, `prevSlide`, `firstSlide`, `lastSlide`, `endShow`) via `ppaction://hlinkshowjump`.
+- [x] **Slide comments** — `slide.addComment({ text, author, x, y })` → OOXML `ppt/comments/commentN.xml` parts.
+- [x] **Color theme variables** — `pres.defineColor(name, hex)` and `pres.resolveColor(name)` for reusable named colors.
+- [x] **Gradient text on shapes** — already supported via `TextRun[]` with `gradient` option in shape text.
+- [x] **Text auto-size** — already supported via `autoFit: true` on AddTextOpts → `<a:spAutoFit/>`.
+
 ## Open
 
 ### High impact
@@ -136,10 +142,14 @@
 - [ ] **Treemap / heatmap component** — `treemap(slide, { data, ... })` for data visualization using nested colored rects.
 - [ ] **Icon library component** — `icon(slide, { name, ... })` expand beyond Lucide to Material Symbols / Phosphor icons.
 - [ ] **Table header freeze** — `freezeHeader: true` on AddTableOpts to lock first row in PowerPoint table view.
-- [ ] **Shape click actions** — `action` on AddShapeOpts for built-in PowerPoint actions (next slide, previous slide, first/last, end show).
 - [ ] **Image placeholder** — lazy image loading with `placeholder: true` for decks where images are resolved later.
-- [ ] **Text auto-size** — `autoSize: true` on AddTextOpts to auto-shrink text to fit bounding box.
-- [ ] **Slide comments** — `slide.addComment({ text, author })` for review annotations.
-- [ ] **Color theme variables** — `pres.defineColor("accent1", "3366CC")` for reusable named colors across elements.
-- [ ] **Gradient text on shapes** — extend shape text to support gradient fills on text runs within shapes.
 - [ ] **Table sorting indicator** — visual sort arrows on header cells for data table presentations.
+- [ ] **Shape tooltip** — `tooltip` on AddShapeOpts for hover text via `<a:hlinkHover>`.
+- [ ] **Image hyperlink** — `href` on AddImageOpts to make images clickable.
+- [ ] **Table cell hyperlinks** — `href` on TableCell options for clickable cells.
+- [ ] **Slide background audio** — `bgAudio` on slide for looping background sound.
+- [ ] **Shape text wrapping control** — `wrap: "none" | "square"` on AddShapeOpts to control text wrapping behavior.
+- [ ] **Presentation custom properties** — `pres.setCustomProperty(name, value)` for metadata beyond core props.
+- [ ] **Text kerning** — `kerning` on TextRunOpts for letter-pair spacing adjustments.
+- [ ] **Shape line join** — `lineJoin: "round" | "bevel" | "miter"` on LineOpts for corner style.
+- [ ] **Slide section markers** — `pres.addSection(name)` to group slides into named sections.

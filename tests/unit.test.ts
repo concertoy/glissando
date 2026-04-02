@@ -589,6 +589,35 @@ describe("OOXML", () => {
       expect(xml).toContain('<a:srcRect t="10000" r="20000" b="5000" l="15000"/>');
     });
 
+    it("rotates images", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3, rotate: 30 });
+      const xml = slide._elements[0];
+      expect(xml).toContain(`rot="${30 * 60000}"`);
+    });
+
+    it("adds border to images", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3, line: { color: "FF0000", width: 2 } });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:ln");
+      expect(xml).toContain("FF0000");
+    });
+
+    it("adds shadow to images", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3, shadow: { color: "333333", blur: 5 } });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:outerShdw");
+      expect(xml).toContain("333333");
+    });
+
     it("does not add srcRect without crop", () => {
       const pres = new Presentation();
       const slide = pres.addSlide();

@@ -105,6 +105,8 @@ export interface ShadowOpts {
   blur?: number;
   offset?: number;
   opacity?: number;
+  /** Shadow direction angle in degrees (default 45). */
+  angle?: number;
 }
 
 export interface AddTextOpts {
@@ -183,6 +185,12 @@ export interface AddImageOpts {
   altText?: string;
   /** Crop percentages (0–100) from each edge. */
   crop?: { top?: number; right?: number; bottom?: number; left?: number };
+  /** Rotation in degrees (clockwise). */
+  rotate?: number;
+  /** Border line around image. */
+  line?: LineOpts;
+  /** Drop shadow on image. */
+  shadow?: ShadowOpts;
 }
 
 export interface AddTableOpts {
@@ -608,13 +616,7 @@ function buildTextShapeXml(
   // Shadow
   let shadowXml = "";
   if (opts.shadow) {
-    const blur = opts.shadow.blur ?? 3;
-    const dist = opts.shadow.offset ?? 1;
-    const opacPct = Math.round((opts.shadow.opacity ?? 0.1) * 100000);
-    shadowXml =
-      `<a:effectLst><a:outerShdw blurRad="${ptEmu(blur)}" dist="${ptEmu(dist)}" dir="2700000">` +
-      `<a:srgbClr val="${opts.shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
-      `</a:outerShdw></a:effectLst>`;
+    shadowXml = buildShadowXml(opts.shadow);
   }
 
   // Non-visual properties
@@ -836,6 +838,20 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   return `<a:rPr ${attrs.join(" ")}/>`;
 }
 
+// ─── Shadow helper ──────────────────────────────────────────────────
+
+function buildShadowXml(sh: ShadowOpts): string {
+  const blur = ptEmu(sh.blur ?? 3);
+  const dist = ptEmu(sh.offset ?? 1);
+  const dir = Math.round((sh.angle ?? 45) * 60000);
+  const opacPct = Math.round((sh.opacity ?? 0.1) * 100000);
+  return (
+    `<a:effectLst><a:outerShdw blurRad="${blur}" dist="${dist}" dir="${dir}" algn="bl" rotWithShape="0">` +
+    `<a:srgbClr val="${sh.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
+    `</a:outerShdw></a:effectLst>`
+  );
+}
+
 // ─── Gradient fill helper ───────────────────────────────────────────
 
 function buildGradientFillXml(grad: GradientFill): string {
@@ -923,16 +939,7 @@ function buildShapeXml(
   }
 
   // Shadow
-  let shadow = "";
-  if (opts.shadow) {
-    const blur = opts.shadow.blur ?? 3;
-    const dist = opts.shadow.offset ?? 1;
-    const opacPct = Math.round((opts.shadow.opacity ?? 0.1) * 100000);
-    shadow =
-      `<a:effectLst><a:outerShdw blurRad="${ptEmu(blur)}" dist="${ptEmu(dist)}" dir="2700000">` +
-      `<a:srgbClr val="${opts.shadow.color ?? "000000"}"><a:alpha val="${opacPct}"/></a:srgbClr>` +
-      `</a:outerShdw></a:effectLst>`;
-  }
+  const shadow = opts.shadow ? buildShadowXml(opts.shadow) : "";
 
   return (
     `<p:sp>` +
@@ -983,8 +990,12 @@ function buildPictureXml(
     `<a:stretch><a:fillRect/></a:stretch>` +
     `</p:blipFill>` +
     `<p:spPr>` +
-    `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:xfrm${opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : ""}>` +
+    `<a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
+    `</a:xfrm>` +
     geom +
+    (opts.line ? `<a:ln w="${ptEmu(opts.line.width ?? 1)}"><a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill></a:ln>` : "") +
+    (opts.shadow ? buildShadowXml(opts.shadow) : "") +
     `</p:spPr>` +
     `</p:pic>`
   );

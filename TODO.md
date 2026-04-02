@@ -13,21 +13,23 @@
 - [x] Themed emojis — `:emoji:` syntax + standalone component, three styles (openmoji-outline, openmoji, twemoji).
 - [x] Layout helpers — `columns()`, `rows()`, `below()`, `inset()`, `deck.area()`, `deck.contentArea()`.
 - [x] Diagram components — `diagramBox`, `arrow`, `hookArrow`, `container`, native `deck.connector()`.
-- [x] `pptx-to-ts.ts` — 641-line reverse-engineering script with `main()` entry point. `/slides-from-pptx` skill operational.
+- [x] `pptx-to-ts.ts` — reverse-engineering script. `/slides-from-pptx` skill operational.
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
-- [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation (`src/ooxml/index.ts` + `src/ooxml/writer.ts`). Connectors, animations, grouping, emoji bullets, and footers are first-class instead of post-hoc XML patching.
-- [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced `pptxgenjs` with `jszip` in dependencies. Zero external PPTX generation dependencies.
-- [x] **Unit test suite** — vitest with 40 tests covering layout helpers, inline math parsing, OOXML Presentation/Slide API, paragraph splitting, XML escaping, hyperlinks, transitions, and ZIP output validation.
-- [x] **Clean up `as any` casts** — removed all `as any` casts from components.ts and elegant-bw layouts. Zero `as any` in `src/`.
-- [x] **Typed Slide API** — defined `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts`, `FillOpts`, `LineOpts`, `ShadowOpts` interfaces. Full IDE autocomplete for all Slide methods.
-- [x] **Hyperlinks** — `href` property on `TextRunOpts` generates `<a:hlinkClick>` with proper relationship entries. Also added `underline` support.
-- [x] **Slide transitions** — `slide.transition = { type, duration?, advanceAfter? }` generates `<p:transition>` element. Supports fade, push, wipe, cover, split, cut.
+- [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
+- [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
+- [x] **Unit test suite** — vitest with 45 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients.
+- [x] **Clean up `as any` casts** — zero `as any` in `src/`.
+- [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
+- [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
+- [x] **Slide transitions** — fade, push, wipe, cover, split, cut via `<p:transition>`.
+- [x] **Accessibility** — `altText` on AddTextOpts, AddImageOpts → `descr` attribute on `<p:cNvPr>`.
+- [x] **Gradient fills** — linear/radial gradients on shapes and text via `<a:gradFill>`.
 
 ## Open
 
-- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples. Each component and layout should have a copy-pasteable example.
-- [ ] **Accessibility** — alt text helpers for images and equations, semantic slide structure metadata.
+- [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
 - [ ] **Chart component** — bar/line/pie charts via OOXML chart parts, or fallback to rendered SVG images.
-- [ ] **Gradient fills** — support linear/radial gradients on shapes and backgrounds via `<a:gradFill>`.
 - [ ] **Video/audio embedding** — embed media files in slides via OOXML media parts.
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
+- [ ] **Gradient backgrounds** — extend `slide.background` to accept gradient fills, not just solid colors.
+- [ ] **Text highlighting** — background color on individual text runs via `<a:highlight>`.

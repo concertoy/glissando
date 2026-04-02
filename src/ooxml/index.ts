@@ -72,6 +72,18 @@ export interface FillOpts {
   color: string;
 }
 
+export interface GradientStop {
+  position: number; // 0–100
+  color: string;
+}
+
+export interface GradientFill {
+  type?: "linear" | "radial";
+  /** Angle in degrees (0 = left→right, 90 = top→bottom). Only for linear. */
+  angle?: number;
+  stops: GradientStop[];
+}
+
 export interface LineOpts {
   color: string;
   width?: number;
@@ -103,6 +115,7 @@ export interface AddTextOpts {
   margin?: number | number[];
   shape?: string;
   fill?: FillOpts;
+  gradient?: GradientFill;
   line?: LineOpts;
   shadow?: ShadowOpts;
   rectRadius?: number;
@@ -113,6 +126,8 @@ export interface AddTextOpts {
   paraSpaceBefore?: number;
   bullet?: BulletOpts | boolean;
   indentLevel?: number;
+  /** Alt text for accessibility (screen readers). */
+  altText?: string;
 }
 
 export interface AddShapeOpts {
@@ -121,6 +136,7 @@ export interface AddShapeOpts {
   w?: number;
   h?: number;
   fill?: FillOpts;
+  gradient?: GradientFill;
   line?: LineOpts;
   shadow?: ShadowOpts;
   rectRadius?: number;
@@ -143,6 +159,8 @@ export interface AddImageOpts {
   objectName?: string;
   rounding?: boolean;
   sizing?: { type: string; w: number; h: number };
+  /** Alt text for accessibility (screen readers). */
+  altText?: string;
 }
 
 export interface AddTableOpts {
@@ -536,6 +554,8 @@ function buildTextShapeXml(
   let fillXml: string;
   if (isTextBox) {
     fillXml = `<a:noFill/>`;
+  } else if (opts.gradient) {
+    fillXml = buildGradientFillXml(opts.gradient);
   } else if (opts.fill) {
     fillXml = `<a:solidFill><a:srgbClr val="${opts.fill.color}"/></a:solidFill>`;
   } else {
@@ -566,9 +586,10 @@ function buildTextShapeXml(
 
   // Non-visual properties
   const txBoxAttr = isTextBox ? ' txBox="1"' : "";
+  const descrAttr = opts.altText ? ` descr="${escXml(opts.altText)}"` : "";
   const nvSpPr =
     `<p:nvSpPr>` +
-    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>` +
     `<p:cNvSpPr${txBoxAttr}/>` +
     `<p:nvPr/>` +
     `</p:nvSpPr>`;
@@ -760,6 +781,25 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   return `<a:rPr ${attrs.join(" ")}/>`;
 }
 
+// ─── Gradient fill helper ───────────────────────────────────────────
+
+function buildGradientFillXml(grad: GradientFill): string {
+  const stops = grad.stops
+    .map((s) => `<a:gs pos="${Math.round(s.position * 1000)}"><a:srgbClr val="${s.color}"/></a:gs>`)
+    .join("");
+
+  let dirXml: string;
+  if (grad.type === "radial") {
+    dirXml = `<a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>`;
+  } else {
+    // Linear: convert degrees to OOXML 60,000ths of a degree
+    const angle = Math.round((grad.angle ?? 0) * 60000);
+    dirXml = `<a:lin ang="${angle}" scaled="1"/>`;
+  }
+
+  return `<a:gradFill><a:gsLst>${stops}</a:gsLst>${dirXml}</a:gradFill>`;
+}
+
 // ─── Shape XML ──────────────────────────────────────────────────────
 
 function buildShapeXml(
@@ -796,6 +836,8 @@ function buildShapeXml(
   let fill: string;
   if (type === "line") {
     fill = `<a:noFill/>`;
+  } else if (opts.gradient) {
+    fill = buildGradientFillXml(opts.gradient);
   } else if (opts.fill) {
     const opacAttr = opts.opacity != null
       ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>`
@@ -869,10 +911,12 @@ function buildPictureXml(
     geom = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
   }
 
+  const descrAttr = opts.altText ? ` descr="${escXml(opts.altText)}"` : "";
+
   return (
     `<p:pic>` +
     `<p:nvPicPr>` +
-    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>` +
     `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
     `<p:nvPr/>` +
     `</p:nvPicPr>` +

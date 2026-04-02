@@ -343,6 +343,72 @@ describe("OOXML", () => {
     });
   });
 
+  describe("accessibility", () => {
+    it("adds alt text to text shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Hello", { x: 0, y: 0, w: 5, h: 1, altText: "Greeting text" });
+      expect(slide._elements[0]).toContain('descr="Greeting text"');
+    });
+
+    it("adds alt text to images", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      // Use a tiny 1x1 PNG
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 1, h: 1, altText: "A small test image" });
+      expect(slide._elements[0]).toContain('descr="A small test image"');
+    });
+
+    it("escapes special characters in alt text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Test", { x: 0, y: 0, w: 5, h: 1, altText: 'Formula: a < b & c > d' });
+      expect(slide._elements[0]).toContain('descr="Formula: a &lt; b &amp; c &gt; d"');
+    });
+  });
+
+  describe("gradient fills", () => {
+    it("generates linear gradient on shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 5, h: 3,
+        gradient: {
+          type: "linear",
+          angle: 90,
+          stops: [
+            { position: 0, color: "FF0000" },
+            { position: 100, color: "0000FF" },
+          ],
+        },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("0000FF");
+      expect(xml).toContain("<a:lin");
+    });
+
+    it("generates radial gradient", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 5, h: 3,
+        gradient: {
+          type: "radial",
+          stops: [
+            { position: 0, color: "FFFFFF" },
+            { position: 100, color: "000000" },
+          ],
+        },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain('<a:path path="circle">');
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

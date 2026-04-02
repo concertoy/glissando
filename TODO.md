@@ -218,6 +218,9 @@
 - [x] **Table cell line spacing** — `lineSpacing` on TableCell → `<a:lnSpc><a:spcPct>` in cell paragraph properties.
 - [x] **Table cell char spacing** — `charSpacing` on TableCell → `spc` attribute on cell text `<a:rPr>`.
 - [x] **Presentation show properties** — `pres.setShowProperties({ loop, useTimings })` → `<p:showPr>` for kiosk/looping mode.
+- [x] **Table cell indent** — `indent`/`marginLeft` on TableCell → `indent`/`marL` attributes on cell `<a:pPr>`.
+- [x] **Image hue/saturation** — `hue`/`saturation` on AddImageOpts → `<a:hsl>` on blip for color adjustment.
+- [x] **Shape text vertical direction** — `vertical` on AddShapeOpts → `vert` attribute on shape text `<a:bodyPr>`.
 
 ## Open
 

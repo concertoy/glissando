@@ -3799,4 +3799,70 @@ describe("OOXML", () => {
       expect(pres._showProps.useTimings).toBe(true);
     });
   });
+
+  describe("table cell indent", () => {
+    it("adds indent attribute to cell pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Indented", options: { indent: 0.5 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('indent="457200"');
+    });
+
+    it("adds marL attribute to cell pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Margined", options: { marginLeft: 1.0 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('marL="914400"');
+    });
+  });
+
+  describe("image hue/saturation", () => {
+    it("adds hsl element to image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        hue: 90,
+        saturation: 0.5,
+      });
+      const xml = slide._toXml(1);
+      // 90 * 60000 = 5400000, 0.5 * 100000 = 50000
+      expect(xml).toContain('<a:hsl hue="5400000" sat="50000" lum="0"/>');
+    });
+  });
+
+  describe("shape text vertical", () => {
+    it("adds vert attribute to shape text bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 6,
+        text: "Vertical text",
+        vertical: "vert",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('vert="vert"');
+    });
+
+    it("supports vert270 direction", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 6,
+        text: "Bottom up",
+        vertical: "vert270",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('vert="vert270"');
+    });
+  });
 });

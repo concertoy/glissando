@@ -358,6 +358,8 @@ export interface AddShapeOpts {
   wordWrap?: boolean;
   /** Override vertical alignment for text independent of shape valign. */
   textValign?: "top" | "middle" | "bottom";
+  /** Vertical text direction in shape. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
+  vertical?: "vert" | "vert270";
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -439,6 +441,10 @@ export interface AddImageOpts {
   lockAspectRatio?: boolean;
   /** Image opacity 0–1 (1 = fully opaque, 0 = fully transparent). */
   opacity?: number;
+  /** Hue shift in degrees (-180 to 180). */
+  hue?: number;
+  /** Saturation adjustment (-1 to 1, 0=normal, -1=desaturate, 1=oversaturate). */
+  saturation?: number;
   /** Horizontal flip. */
   flipH?: boolean;
   /** Vertical flip. */
@@ -550,6 +556,10 @@ export interface TableCell {
     lineSpacing?: number;
     /** Character spacing in points (e.g. 2 for loose, -1 for tight). */
     charSpacing?: number;
+    /** First-line indent in inches (negative for hanging indent). */
+    indent?: number;
+    /** Left margin for cell text paragraph in inches. */
+    marginLeft?: number;
   };
 }
 
@@ -1832,9 +1842,10 @@ function buildShapeXml(
     }
     const fitXml = opts.autoFit ? `<a:spAutoFit/>` : "";
     const textRotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
+    const vertAttr = opts.vertical ? ` vert="${opts.vertical}"` : "";
     const bodyPr = fitXml
-      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}>${fitXml}</a:bodyPr>`
-      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}/>`;
+      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}${vertAttr}>${fitXml}</a:bodyPr>`
+      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}${vertAttr}/>`;
 
     if (typeof opts.text === "string") {
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
@@ -2098,6 +2109,11 @@ function buildPictureXml(
       if (opts.recolor) {
         effects.push(`<a:duotone><a:srgbClr val="${opts.recolor[0]}"/><a:srgbClr val="${opts.recolor[1]}"/></a:duotone>`);
       }
+      if (opts.hue != null || opts.saturation != null) {
+        const h = Math.round((opts.hue ?? 0) * 60000);
+        const s = Math.round((opts.saturation ?? 0) * 100000);
+        effects.push(`<a:hsl hue="${h}" sat="${s}" lum="0"/>`);
+      }
       return effects.length > 0
         ? `<a:blip r:embed="${rId}">${effects.join("")}</a:blip>`
         : `<a:blip r:embed="${rId}"/>`;
@@ -2344,6 +2360,8 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
   const charSpcAttr = opts.charSpacing != null ? ` spc="${Math.round(opts.charSpacing * 100)}"` : "";
+  const cellIndentAttr = opts.indent != null ? ` indent="${emu(opts.indent)}"` : "";
+  const cellMarLAttr = opts.marginLeft != null ? ` marL="${emu(opts.marginLeft)}"` : "";
 
   const pPrChildren: string[] = [];
   if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
@@ -2371,7 +2389,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
         const rProps = buildRunProps({ fontSize, fontFace, color, ...ro }, slide);
         return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
       }).join("");
-      return `<a:p><a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>${runsXml}</a:p>`;
+      return `<a:p><a:pPr algn="${alignMap[align] ?? "l"}"${cellIndentAttr}${cellMarLAttr}>${pPrChildren.join("")}</a:pPr>${runsXml}</a:p>`;
     }).join("");
 
     const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
@@ -2400,7 +2418,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:bodyPr${rotAttr}/>` +
     `<a:lstStyle/>` +
     `<a:p>` +
-    `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
+    `<a:pPr algn="${alignMap[align] ?? "l"}"${cellIndentAttr}${cellMarLAttr}>${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
     `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +

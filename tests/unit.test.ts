@@ -872,6 +872,31 @@ describe("OOXML", () => {
     });
   });
 
+  describe("line end types", () => {
+    it("adds head and tail ends on text shape lines", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Arrow line", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        line: { color: "000000", headEnd: "arrow", tailEnd: "diamond" },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:headEnd type="arrow"/>');
+      expect(xml).toContain('<a:tailEnd type="diamond"/>');
+    });
+
+    it("adds line ends on image borders", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3, line: { color: "FF0000", tailEnd: "stealth" } });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:tailEnd type="stealth"/>');
+    });
+  });
+
   describe("table cell gradient fills", () => {
     it("applies gradient to table cell", () => {
       const pres = new Presentation();

@@ -105,10 +105,16 @@ export interface PatternFill {
   bgColor: string;
 }
 
+export type LineEndType = "none" | "arrow" | "stealth" | "diamond" | "oval" | "triangle";
+
 export interface LineOpts {
   color: string;
   width?: number;
   dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
+  /** Arrow head at the start of the line. */
+  headEnd?: LineEndType;
+  /** Arrow head at the end of the line. */
+  tailEnd?: LineEndType;
 }
 
 export interface ShadowOpts {
@@ -711,15 +717,7 @@ function buildTextShapeXml(
   // Line
   let lineXml = "";
   if (opts.line) {
-    const lw = ptEmu(opts.line.width ?? 1);
-    const dashXml = opts.line.dashType && opts.line.dashType !== "solid"
-      ? `<a:prstDash val="${opts.line.dashType}"/>`
-      : "";
-    lineXml =
-      `<a:ln w="${lw}">` +
-      `<a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>` +
-      dashXml +
-      `</a:ln>`;
+    lineXml = buildLineXml(opts.line);
   }
 
   // Shadow
@@ -960,6 +958,27 @@ function buildPatternFillXml(pf: PatternFill): string {
   );
 }
 
+// ─── Line helper ────────────────────────────────────────────────────
+
+function buildLineXml(line: LineOpts): string {
+  const lw = ptEmu(line.width ?? 1);
+  const dashXml = line.dashType && line.dashType !== "solid"
+    ? `<a:prstDash val="${line.dashType}"/>`
+    : "";
+  const headXml = line.headEnd && line.headEnd !== "none"
+    ? `<a:headEnd type="${line.headEnd}"/>`
+    : "";
+  const tailXml = line.tailEnd && line.tailEnd !== "none"
+    ? `<a:tailEnd type="${line.tailEnd}"/>`
+    : "";
+  return (
+    `<a:ln w="${lw}">` +
+    `<a:solidFill><a:srgbClr val="${line.color}"/></a:solidFill>` +
+    dashXml + headXml + tailXml +
+    `</a:ln>`
+  );
+}
+
 // ─── Shadow helper ──────────────────────────────────────────────────
 
 function buildShadowXml(sh: ShadowOpts): string {
@@ -1045,24 +1064,13 @@ function buildShapeXml(
     fill = `<a:noFill/>`;
   }
 
-  // Line / stroke
+  // Line / stroke — merge shape-level lineHead/lineTail with LineOpts headEnd/tailEnd
   let line = "";
   if (opts.line) {
-    const lw = ptEmu(opts.line.width ?? 1);
-    const dashXml = opts.line.dashType && opts.line.dashType !== "solid"
-      ? `<a:prstDash val="${opts.line.dashType}"/>`
-      : "";
-    const headXml = opts.lineHead && opts.lineHead !== "none"
-      ? `<a:headEnd type="${opts.lineHead}"/>`
-      : "";
-    const tailXml = opts.lineTail && opts.lineTail !== "none"
-      ? `<a:tailEnd type="${opts.lineTail}"/>`
-      : "";
-    line =
-      `<a:ln w="${lw}">` +
-      `<a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>` +
-      dashXml + headXml + tailXml +
-      `</a:ln>`;
+    const mergedLine: LineOpts = { ...opts.line };
+    if (opts.lineHead && !mergedLine.headEnd) mergedLine.headEnd = opts.lineHead;
+    if (opts.lineTail && !mergedLine.tailEnd) mergedLine.tailEnd = opts.lineTail;
+    line = buildLineXml(mergedLine);
   }
 
   // Shadow
@@ -1121,7 +1129,7 @@ function buildPictureXml(
     `<a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
     `</a:xfrm>` +
     geom +
-    (opts.line ? `<a:ln w="${ptEmu(opts.line.width ?? 1)}"><a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>${opts.line.dashType && opts.line.dashType !== "solid" ? `<a:prstDash val="${opts.line.dashType}"/>` : ""}</a:ln>` : "") +
+    (opts.line ? buildLineXml(opts.line) : "") +
     (opts.shadow ? buildShadowXml(opts.shadow) : "") +
     `</p:spPr>` +
     `</p:pic>`

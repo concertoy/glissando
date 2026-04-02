@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 87 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 89 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -68,6 +68,8 @@
 
 - [x] **Table cell gradient fills** — `gradient` on TableCell options → `<a:gradFill>` in `<a:tcPr>`.
 
+- [x] **Line end types** — `headEnd`/`tailEnd` on LineOpts + shared `buildLineXml` helper for all line rendering.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -77,6 +79,6 @@
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Custom slide dimensions** — allow per-slide dimensions (non-uniform slide sizes).
-- [ ] **Shape text wrapping** — `wrapText` on AddShapeOpts for text inside shapes.
-- [ ] **Line end types** — expose `headEnd`/`tailEnd` on LineOpts for arrow/stealth/diamond ends.
+- [ ] **Text auto-size** — `autoSize` on AddTextOpts for OOXML `<a:normAutofit fontScale="...">`.
+- [ ] **Hyperlink colors** — custom colors for hyperlink text via `<a:hlinkClick>` styling.
+- [ ] **Shape text** — `text` on AddShapeOpts to add text directly inside shapes without separate addText.

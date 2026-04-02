@@ -4043,4 +4043,50 @@ describe("OOXML", () => {
       expect(xml).toContain('<a:clrRepl><a:srgbClr val="0000FF"/></a:clrRepl>');
     });
   });
+
+  describe("image biLevel", () => {
+    it("adds biLevel threshold to image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        biLevel: 50,
+      });
+      const xml = slide._toXml(1);
+      // 50 * 1000 = 50000
+      expect(xml).toContain('<a:biLevel thresh="50000"/>');
+    });
+  });
+
+  describe("table cell text glow", () => {
+    it("adds glow in effectLst on cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Glow", options: { textGlow: { color: "FF0000", radius: 5, opacity: 0.7 } } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      // 5 * 12700 = 63500
+      expect(xml).toContain('<a:glow rad="63500">');
+      expect(xml).toContain('val="FF0000"');
+    });
+  });
+
+  describe("shape text reflection", () => {
+    it("adds reflection in effectLst on shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Reflected",
+        textReflection: { blurRadius: 1, startOpacity: 0.6, distance: 0.5 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:reflection");
+      // 1 * 12700 = 12700
+      expect(xml).toContain('blurRad="12700"');
+    });
+  });
 });

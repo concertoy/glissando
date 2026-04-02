@@ -364,6 +364,8 @@ export interface AddShapeOpts {
   vertical?: "vert" | "vert270";
   /** Glow effect on shape text. */
   textGlow?: { color: string; radius?: number; opacity?: number };
+  /** Reflection effect on shape text. */
+  textReflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   /** WordArt text transform preset for shape text (e.g. "textArchUp", "textWave1"). */
   textTransform?: string;
   /** Entrance animation preset. */
@@ -455,6 +457,8 @@ export interface AddImageOpts {
   saturation?: number;
   /** Replace all colors in image with a single color (monochrome). Hex string. */
   colorReplace?: string;
+  /** Convert to pure black and white at given threshold (0–100). */
+  biLevel?: number;
   /** Horizontal flip. */
   flipH?: boolean;
   /** Vertical flip. */
@@ -582,6 +586,8 @@ export interface TableCell {
     patternFill?: PatternFill;
     /** Fill opacity 0–1 (only applies to solid fill). */
     fillOpacity?: number;
+    /** Glow effect on cell text. */
+    textGlow?: { color: string; radius?: number; opacity?: number };
   };
 }
 
@@ -1931,6 +1937,14 @@ function buildShapeXml(
             `</a:outerShdw>`
           );
         }
+        if (opts.textReflection) {
+          const r = opts.textReflection;
+          const rBlur = Math.round((r.blurRadius ?? 0.5) * 12700);
+          const rStart = Math.round((r.startOpacity ?? 0.5) * 100000);
+          const rEnd = Math.round((r.endOpacity ?? 0) * 100000);
+          const rDist = Math.round((r.distance ?? 0) * 12700);
+          effectParts.push(`<a:reflection blurRad="${rBlur}" stA="${rStart}" endA="${rEnd}" dist="${rDist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`);
+        }
         if (effectParts.length > 0) {
           children.push(`<a:effectLst>${effectParts.join("")}</a:effectLst>`);
         }
@@ -2162,6 +2176,9 @@ function buildPictureXml(
       }
       if (opts.colorReplace) {
         effects.push(`<a:clrRepl><a:srgbClr val="${opts.colorReplace}"/></a:clrRepl>`);
+      }
+      if (opts.biLevel != null) {
+        effects.push(`<a:biLevel thresh="${Math.round(opts.biLevel * 1000)}"/>`);
       }
       if (opts.tint != null && opts.tint > 0) {
         effects.push(`<a:tint amt="${Math.round(opts.tint * 1000)}"/>`);
@@ -2491,14 +2508,21 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     (() => {
       let extras = "";
+      const effectParts: string[] = [];
+      if (opts.textGlow) {
+        const gr = Math.round((opts.textGlow.radius ?? 4) * 12700);
+        const ga = Math.round((opts.textGlow.opacity ?? 0.6) * 100000);
+        effectParts.push(`<a:glow rad="${gr}"><a:srgbClr val="${opts.textGlow.color}"><a:alpha val="${ga}"/></a:srgbClr></a:glow>`);
+      }
       if (opts.textShadow) {
         const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
         const sc = sh.color ?? "000000";
         const sb = Math.round((sh.blur ?? 3) * 12700);
         const sd = Math.round((sh.offset ?? 2) * 12700);
         const sa = Math.round((sh.angle ?? 315) * 60000);
-        extras += `<a:effectLst><a:outerShdw blurRad="${sb}" dist="${sd}" dir="${sa}" algn="bl" rotWithShape="0"><a:srgbClr val="${sc}"><a:alpha val="40000"/></a:srgbClr></a:outerShdw></a:effectLst>`;
+        effectParts.push(`<a:outerShdw blurRad="${sb}" dist="${sd}" dir="${sa}" algn="bl" rotWithShape="0"><a:srgbClr val="${sc}"><a:alpha val="40000"/></a:srgbClr></a:outerShdw>`);
       }
+      if (effectParts.length > 0) extras += `<a:effectLst>${effectParts.join("")}</a:effectLst>`;
       if (opts.textOutline) {
         const lw = ptEmu(opts.textOutline.width ?? 1);
         extras += `<a:ln w="${lw}"><a:solidFill><a:srgbClr val="${opts.textOutline.color}"/></a:solidFill></a:ln>`;

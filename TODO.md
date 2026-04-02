@@ -232,6 +232,9 @@
 - [x] **Table cell fill opacity** — `fillOpacity` on TableCell → `<a:alpha>` on solid fill color.
 - [x] **Shape text glow** — `textGlow` on AddShapeOpts → `<a:glow>` in shape text `<a:effectLst>`.
 - [x] **Image color replace** — `colorReplace` on AddImageOpts → `<a:clrRepl>` on blip for monochrome recoloring.
+- [x] **Image biLevel** — `biLevel` on AddImageOpts → `<a:biLevel>` on blip for black/white threshold conversion.
+- [x] **Table cell text glow** — `textGlow` on TableCell → `<a:glow>` in cell text `<a:effectLst>`.
+- [x] **Shape text reflection** — `textReflection` on AddShapeOpts → `<a:reflection>` in shape text `<a:effectLst>`.
 
 ## Open
 

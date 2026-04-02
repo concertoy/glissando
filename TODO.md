@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 83 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 85 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -60,6 +60,9 @@
 - [x] **Slide notes formatting** — `addNotes` accepts `TextRun[]` for rich text (bold, italic, multi-paragraph) in speaker notes.
 - [x] **Slide duplication** — `deck.duplicate(slideIndex)` / `pres.duplicateSlide(index)` clones slides with all elements and media.
 
+- [x] **Slide reordering** — `deck.moveSlide(from, to)` / `pres.moveSlide()` for rearranging slide order.
+- [x] **Slide deletion** — `deck.removeSlide(index)` / `pres.removeSlide()` for removing slides.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -69,5 +72,5 @@
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Slide reordering** — `deck.moveSlide(from, to)` for rearranging slide order.
-- [ ] **Slide deletion** — `deck.removeSlide(index)` for removing slides after creation.
+- [ ] **Slide count accessor** — `deck.slideCount` getter for querying total slides.
+- [ ] **Presentation metadata** — title, author, subject, keywords via OOXML core properties.

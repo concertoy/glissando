@@ -872,6 +872,35 @@ describe("OOXML", () => {
     });
   });
 
+  describe("slide reordering", () => {
+    it("moves a slide to a new position", () => {
+      const pres = new Presentation();
+      const s1 = pres.addSlide();
+      s1.addText("Slide 1", { x: 0, y: 0, w: 5, h: 1 });
+      const s2 = pres.addSlide();
+      s2.addText("Slide 2", { x: 0, y: 0, w: 5, h: 1 });
+      const s3 = pres.addSlide();
+      s3.addText("Slide 3", { x: 0, y: 0, w: 5, h: 1 });
+      pres.moveSlide(2, 0); // move slide 3 to first position
+      expect(pres._slides[0]._elements[0]).toContain("Slide 3");
+      expect(pres._slides[1]._elements[0]).toContain("Slide 1");
+      expect(pres._slides[2]._elements[0]).toContain("Slide 2");
+    });
+  });
+
+  describe("slide deletion", () => {
+    it("removes a slide", () => {
+      const pres = new Presentation();
+      pres.addSlide().addText("Keep", { x: 0, y: 0, w: 5, h: 1 });
+      pres.addSlide().addText("Remove", { x: 0, y: 0, w: 5, h: 1 });
+      pres.addSlide().addText("Keep2", { x: 0, y: 0, w: 5, h: 1 });
+      pres.removeSlide(1);
+      expect(pres._slides).toHaveLength(2);
+      expect(pres._slides[0]._elements[0]).toContain("Keep");
+      expect(pres._slides[1]._elements[0]).toContain("Keep2");
+    });
+  });
+
   describe("rich text notes", () => {
     it("accepts TextRun[] for notes", () => {
       const pres = new Presentation();

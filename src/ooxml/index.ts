@@ -320,6 +320,24 @@ export class Presentation {
     return clone;
   }
 
+  /** Move a slide from one position to another (0-based indices). */
+  moveSlide(from: number, to: number): void {
+    if (from < 0 || from >= this._slides.length) throw new Error(`Invalid from index ${from}`);
+    if (to < 0 || to >= this._slides.length) throw new Error(`Invalid to index ${to}`);
+    const [slide] = this._slides.splice(from, 1);
+    this._slides.splice(to, 0, slide);
+    // Re-index
+    this._slides.forEach((s, i) => { s._slideIndex = i; });
+  }
+
+  /** Remove a slide at the given position (0-based index). */
+  removeSlide(index: number): void {
+    if (index < 0 || index >= this._slides.length) throw new Error(`Invalid index ${index}`);
+    this._slides.splice(index, 1);
+    // Re-index
+    this._slides.forEach((s, i) => { s._slideIndex = i; });
+  }
+
   /**
    * Apply deferred extras (connectors, emojis, animations, footers).
    * Must be called before writeFile.

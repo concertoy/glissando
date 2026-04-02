@@ -207,6 +207,19 @@ export class Deck {
     return this;
   }
 
+  /** Move a slide from one position to another (1-based indices). */
+  moveSlide(from: number, to: number): this {
+    this.pres.moveSlide(from - 1, to - 1);
+    return this;
+  }
+
+  /** Remove a slide at the given position (1-based index). */
+  removeSlide(slideIndex: number): this {
+    this.pres.removeSlide(slideIndex - 1);
+    this._slideCount--;
+    return this;
+  }
+
   /** Access the underlying Presentation instance for advanced use. */
   get raw(): Presentation {
     return this.pres;

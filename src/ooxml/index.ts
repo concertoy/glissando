@@ -137,6 +137,8 @@ export interface LineOpts {
   lineJoin?: "round" | "bevel" | "miter";
   /** Compound line type (double, thick-thin, etc.). */
   compound?: "dbl" | "thickThin" | "thinThick" | "tri";
+  /** Gradient fill on the line (replaces solid color). */
+  gradient?: GradientFill;
 }
 
 export interface ShadowOpts {
@@ -228,6 +230,8 @@ export interface ShapeAnimationOpts {
   delay?: number;
   /** Direction for fly/wipe (default "fromBottom"). */
   direction?: "fromLeft" | "fromRight" | "fromTop" | "fromBottom";
+  /** Set to true for exit animation (disappear instead of appear). */
+  exit?: boolean;
 }
 
 export interface AddShapeOpts {
@@ -276,6 +280,8 @@ export interface AddShapeOpts {
   valign?: "top" | "middle" | "bottom" | "t" | "ctr" | "b";
   /** Bold text. */
   bold?: boolean;
+  /** Character spacing in points (e.g. 2 for loose, -1 for tight). */
+  charSpacing?: number;
   /** Number of text columns (only applies when text is set). */
   columns?: number;
   /** Column spacing in inches (default 0.3). */
@@ -389,6 +395,8 @@ export interface AddTableOpts {
     bold?: boolean;
     fill?: FillOpts;
   };
+  /** Minimum row height in inches. Row heights below this are clamped up. */
+  minRowH?: number;
 }
 
 export type TransitionType = "fade" | "push" | "wipe" | "cover" | "split" | "cut";
@@ -442,6 +450,8 @@ export interface TableCell {
     diagonalDown?: TableBorderOpts;
     /** Diagonal border from bottom-left to top-right. */
     diagonalUp?: TableBorderOpts;
+    /** Built-in PowerPoint click action for the cell. */
+    action?: "nextSlide" | "prevSlide" | "firstSlide" | "lastSlide" | "endShow";
   };
 }
 
@@ -1454,9 +1464,12 @@ function buildLineXml(line: LineOpts): string {
     : "";
   const joinMap: Record<string, string> = { round: "<a:round/>", bevel: "<a:bevel/>", miter: "<a:miter/>" };
   const joinXml = line.lineJoin ? joinMap[line.lineJoin] ?? "" : "";
+  const fillXml = line.gradient
+    ? buildGradientFillXml(line.gradient)
+    : `<a:solidFill><a:srgbClr val="${line.color}"/></a:solidFill>`;
   return (
     `<a:ln w="${lw}"${line.compound ? ` cmpd="${line.compound}"` : ""}>` +
-    `<a:solidFill><a:srgbClr val="${line.color}"/></a:solidFill>` +
+    fillXml +
     dashXml + headXml + tailXml + joinXml +
     `</a:ln>`
   );
@@ -1673,6 +1686,7 @@ function buildShapeXml(
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
       if (opts.fontSize) rprAttrs.push(`sz="${Math.round(opts.fontSize * 100)}"`);
       if (opts.bold) rprAttrs.push('b="1"');
+      if (opts.charSpacing != null) rprAttrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
       const children: string[] = [];
       if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
       if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
@@ -1904,9 +1918,10 @@ function buildTableXml(
   const y = emu(opts.y ?? 0);
   const cx = emu(opts.w ?? 8);
   const defaultRowH = emu(typeof opts.rowH === "number" ? opts.rowH : 0.4);
+  const minH = opts.minRowH != null ? emu(opts.minRowH) : 0;
   const rowHeights: number[] = Array.isArray(opts.rowH)
-    ? (opts.rowH as number[]).map((h: number) => emu(h))
-    : Array(rows.length).fill(defaultRowH);
+    ? (opts.rowH as number[]).map((h: number) => Math.max(emu(h), minH))
+    : Array(rows.length).fill(Math.max(defaultRowH, minH));
 
   const numCols = rows[0]?.length ?? 1;
   let colWidths: number[];
@@ -2091,9 +2106,15 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     return `<a:txBody><a:bodyPr${rotAttr}/><a:lstStyle/>${parasXml}</a:txBody>`;
   }
 
-  // Handle cell-level href for plain string text
+  // Handle cell-level href or action for plain string text
   let hlinkXml = "";
-  if (opts.href && slide) {
+  if (opts.action) {
+    const actionMap: Record<string, string> = {
+      nextSlide: "nextslide", prevSlide: "previousslide",
+      firstSlide: "firstslide", lastSlide: "lastslide", endShow: "endshow",
+    };
+    hlinkXml = `<a:hlinkClick r:id="" action="ppaction://hlinkshowjump?jump=${actionMap[opts.action]}"/>`;
+  } else if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);
     hlinkXml = `<a:hlinkClick r:id="${rId}"/>`;
   }
@@ -2408,10 +2429,13 @@ function buildShapeAnimTimingXml(
     const spid = String(anim.shapeId);
 
     // Build the inner animation effect based on type
+    const isExit = anim.opts.exit ?? false;
+    const visVal = isExit ? "hidden" : "visible";
+    const transDir = isExit ? "out" : "in";
     let effectXml: string;
     switch (anim.opts.type) {
       case "appear": {
-        // Simple visibility set (instant appear)
+        // Simple visibility set (instant appear/disappear)
         const bhvrId = id();
         effectXml =
           `<p:set><p:cBhvr>` +
@@ -2419,11 +2443,10 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>`;
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>`;
         break;
       }
       case "fade": {
-        // Fade in via animEffect
         const setId = id(), aeId = id();
         effectXml =
           `<p:set><p:cBhvr>` +
@@ -2431,8 +2454,8 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
-          `<p:animEffect transition="in" filter="fade">` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animEffect transition="${transDir}" filter="fade">` +
           `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
@@ -2452,8 +2475,8 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
-          `<p:animEffect transition="in" filter="wipe(${dirMap[dir]})">` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animEffect transition="${transDir}" filter="wipe(${dirMap[dir]})">` +
           `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
@@ -2473,8 +2496,8 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
-          `<p:animEffect transition="in" filter="wipe(${dirMap[dir]})">` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animEffect transition="${transDir}" filter="wipe(${dirMap[dir]})">` +
           `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
@@ -2489,8 +2512,8 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-          `</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>` +
-          `<p:animEffect transition="in" filter="fade">` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animEffect transition="${transDir}" filter="fade">` +
           `<p:cBhvr><p:cTn id="${aeId}" dur="${dur}">` +
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
@@ -2499,15 +2522,36 @@ function buildShapeAnimTimingXml(
       }
     }
 
+    const trigger = anim.opts.trigger ?? "onClick";
     const parId = id(), innerParId = id();
-    clickPars.push(
-      `<p:par><p:cTn id="${parId}" fill="hold">` +
-      `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
-      `<p:childTnLst><p:par><p:cTn id="${innerParId}" fill="hold">` +
+    const innerPar =
+      `<p:par><p:cTn id="${innerParId}" fill="hold">` +
       `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
       `<p:childTnLst>${effectXml}</p:childTnLst>` +
-      `</p:cTn></p:par></p:childTnLst></p:cTn></p:par>`,
-    );
+      `</p:cTn></p:par>`;
+
+    if (trigger === "withPrevious" && clickPars.length > 0) {
+      // Append to the previous click step's childTnLst
+      const prev = clickPars[clickPars.length - 1];
+      clickPars[clickPars.length - 1] = prev.replace(
+        `</p:childTnLst></p:cTn></p:par>`,
+        `${innerPar}</p:childTnLst></p:cTn></p:par>`,
+      );
+    } else if (trigger === "afterPrevious" && clickPars.length > 0) {
+      // Same as withPrevious structurally (runs after previous finishes within same click)
+      const prev = clickPars[clickPars.length - 1];
+      clickPars[clickPars.length - 1] = prev.replace(
+        `</p:childTnLst></p:cTn></p:par>`,
+        `${innerPar}</p:childTnLst></p:cTn></p:par>`,
+      );
+    } else {
+      // onClick (or first animation)
+      clickPars.push(
+        `<p:par><p:cTn id="${parId}" fill="hold">` +
+        `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
+        `<p:childTnLst>${innerPar}</p:childTnLst></p:cTn></p:par>`,
+      );
+    }
   }
 
   const rootId = id(), seqId = id();

@@ -150,6 +150,12 @@
 - [x] **Text box hyperlink** — `href` on AddTextOpts → `<a:hlinkClick>` on text shape `<p:cNvPr>`.
 - [x] **Shape text margin** — `textMargin` on AddShapeOpts → `lIns/tIns/rIns/bIns` on shape text `<a:bodyPr>`.
 - [x] **Group animation** — `animation` setter on GroupShape for entrance animations on entire groups.
+- [x] **Shape line gradient** — `gradient` on LineOpts → `<a:gradFill>` inside `<a:ln>` replaces solid fill.
+- [x] **Shape text character spacing** — `charSpacing` on AddShapeOpts → `spc` on `<a:rPr>` in shape text.
+- [x] **Table cell click action** — `action` on TableCell options → `ppaction://hlinkshowjump` for navigation.
+- [x] **Animation sequencing** — `trigger: "afterPrevious" | "withPrevious"` on ShapeAnimationOpts merges into previous click step.
+- [x] **Shape exit animations** — `exit: true` on ShapeAnimationOpts → `transition="out"` and `visibility: hidden`.
+- [x] **Table minimum row height** — `minRowH` on AddTableOpts clamps row heights to a minimum bound.
 
 ## Open
 
@@ -179,24 +185,31 @@
 - [ ] **Text fit with line count** — `maxLines` on AddTextOpts to limit text to N lines with overflow ellipsis.
 - [ ] **Shape arrow keys navigation** — `tabOrder` on shapes for keyboard navigation order.
 - [ ] **Slide master footer placeholders** — wire `<p:ph type="ftr"/>`, `<p:ph type="sldNum"/>`, `<p:ph type="dt"/>` on slide masters for native footer rendering.
-- [ ] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
+- [x] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
 - [ ] **Slide background gradient mesh** — multi-point gradient fills on slide backgrounds.
 - [ ] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:anim>` targeting `r` attribute.
 - [x] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
-- [ ] **Shape exit animations** — `exitAnimation` on shapes for disappear/fadeOut/flyOut effects.
-- [ ] **Animation sequencing** — `afterPrevious`/`withPrevious` trigger modes for automatic animation chains.
+- [x] **Shape exit animations** — `exit: true` on ShapeAnimationOpts for disappear/fadeOut effects.
+- [x] **Animation sequencing** — `trigger: "afterPrevious"/"withPrevious"` on ShapeAnimationOpts.
 - [ ] **Table cell background image** — `bgImage` on TableCell options for image fills in cells.
 - [ ] **Presentation password protection** — `pres.protect({ password })` for basic file encryption.
 - [x] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
 - [x] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.
 - [x] **Image tooltip** — `tooltip` on AddImageOpts for hover text on images.
 - [x] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
-- [ ] **Table cell click action** — `action` on TableCell options for built-in PowerPoint navigation actions.
+- [x] **Table cell click action** — `action` on TableCell options for built-in PowerPoint navigation actions.
 - [x] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts to auto-size text within shapes.
 - [x] **Group animation** — `animation` on GroupShape for entrance animations on entire groups.
 - [x] **Text box hyperlink** — `href` on AddTextOpts to make the entire text box clickable.
 - [x] **Shape text margin** — `textMargin` on AddShapeOpts for custom padding around text inside shapes.
 - [ ] **Image aspect ratio lock** — `aspectRatio: "contain" | "cover"` on AddImageOpts for smart image sizing.
-- [ ] **Shape line gradient** — gradient fills on shape lines via `<a:gradFill>` inside `<a:ln>`.
-- [ ] **Text character spacing** — `charSpacing` on AddShapeOpts for letter-spacing in shape text.
+- [x] **Shape line gradient** — gradient fills on shape lines via `<a:gradFill>` inside `<a:ln>`.
+- [x] **Text character spacing** — `charSpacing` on AddShapeOpts for letter-spacing in shape text.
 - [ ] **Table cell rotation with direction** — `textDirection: "btLr" | "vert"` on TableCell for complex text flows.
+- [ ] **Shape text italic** — `italic` on AddShapeOpts for italic text in shapes.
+- [ ] **Shape text underline** — `underline` on AddShapeOpts for underlined text in shapes.
+- [ ] **Table auto-height** — compute total table height from content and row count.
+- [ ] **Connector labels with background** — `labelFill` on ConnectorProps for label background box.
+- [ ] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
+- [ ] **Slide background video** — `bgVideo` on slide for looping background video.
+- [ ] **Animation delay chaining** — auto-calculate delays for staggered animation sequences.

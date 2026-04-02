@@ -2526,4 +2526,98 @@ describe("OOXML", () => {
       expect(xml).toContain("<p:animEffect");
     });
   });
+
+  describe("Shape line gradient", () => {
+    it("uses gradFill instead of solidFill on line", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        line: {
+          color: "000000", width: 2,
+          gradient: { type: "linear", angle: 90, stops: [{ position: 0, color: "FF0000" }, { position: 100, color: "0000FF" }] },
+        },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("0000FF");
+    });
+  });
+
+  describe("Shape text character spacing", () => {
+    it("adds spc attribute on shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 3, h: 2,
+        fill: { color: "EEEEEE" },
+        text: "Spaced",
+        charSpacing: 3,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('spc="300"'); // 3 * 100
+    });
+  });
+
+  describe("Table cell click action", () => {
+    it("adds ppaction hlinkshowjump for nextSlide", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Next", options: { action: "nextSlide" } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("ppaction://hlinkshowjump");
+      expect(xml).toContain("nextslide");
+    });
+  });
+
+  describe("Animation sequencing (withPrevious)", () => {
+    it("withPrevious does not create a new click step", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, animation: { type: "fade", trigger: "onClick" } });
+      slide.addShape("ellipse", { x: 3, y: 0, w: 2, h: 1, animation: { type: "fade", trigger: "withPrevious" } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:timing>");
+      // Both should be in a single main sequence child (one click step)
+      const mainSeqMatch = xml.match(/<p:cTn[^>]*nodeType="mainSeq"[^>]*>/);
+      expect(mainSeqMatch).toBeTruthy();
+    });
+  });
+
+  describe("Exit animation", () => {
+    it("sets visibility to hidden for exit appear", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Bye", { x: 0, y: 0, w: 3, animation: { type: "appear", exit: true } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('val="hidden"');
+    });
+
+    it("uses transition out for exit fade", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 3, h: 2, animation: { type: "fade", exit: true } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('transition="out"');
+    });
+  });
+
+  describe("Table minimum row height", () => {
+    it("clamps row height to minRowH", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["A"], ["B"]],
+        { x: 0, y: 0, w: 4, rowH: 0.2, minRowH: 0.5 },
+      );
+      const xml = slide._toXml(1);
+      // minRowH 0.5 = 457200 EMU, rowH 0.2 = 182880 EMU → should use 457200
+      expect(xml).toContain('h="457200"');
+      expect(xml).not.toContain('h="182880"');
+    });
+  });
 });

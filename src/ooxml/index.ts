@@ -326,6 +326,12 @@ export interface AddShapeOpts {
   textGradient?: GradientFill;
   /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
   textMargin?: number | [number, number, number, number];
+  /** Text outline/stroke on shape text. */
+  textOutline?: { color: string; width?: number };
+  /** Drop shadow on shape text. True for default, or { color, blur, offset, angle }. */
+  textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
+  /** Rotation angle for text inside the shape (degrees). Applied to bodyPr rot attribute. */
+  textRotation?: number;
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -372,6 +378,8 @@ export interface AddImageOpts {
   data?: string;
   objectName?: string;
   rounding?: boolean;
+  /** Custom rounding radius for rounded corners (0–1 as fraction of shorter dimension). Implies rounding=true. */
+  roundingRadius?: number;
   sizing?: { type: string; w: number; h: number };
   /** Alt text for accessibility (screen readers). */
   altText?: string;
@@ -433,6 +441,8 @@ export interface AddTableOpts {
   };
   /** Minimum row height in inches. Row heights below this are clamped up. */
   minRowH?: number;
+  /** Uniform border color for all cell borders (hex, no #). */
+  borderColor?: string;
 }
 
 export type TransitionType = "fade" | "push" | "wipe" | "cover" | "split" | "cut";
@@ -496,6 +506,8 @@ export interface TableCell {
     strike?: boolean;
     /** Hover tooltip text for the cell. */
     tooltip?: string;
+    /** Gradient fill on cell text characters (replaces solid color). */
+    textGradient?: GradientFill;
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
   };
@@ -1740,9 +1752,10 @@ function buildShapeXml(
       }
     }
     const fitXml = opts.autoFit ? `<a:spAutoFit/>` : "";
+    const textRotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
     const bodyPr = fitXml
-      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}>${fitXml}</a:bodyPr>`
-      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}/>`;
+      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}>${fitXml}</a:bodyPr>`
+      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}${marginAttrs}${textRotAttr}/>`;
 
     if (typeof opts.text === "string") {
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
@@ -1769,6 +1782,22 @@ function buildShapeXml(
       }
       if (opts.highlight) children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
       if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+      if (opts.textShadow) {
+        const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
+        const shColor = sh.color ?? "000000";
+        const shBlur = Math.round((sh.blur ?? 3) * 12700);
+        const shDist = Math.round((sh.offset ?? 2) * 12700);
+        const shDir = Math.round((sh.angle ?? 315) * 60000);
+        children.push(
+          `<a:effectLst><a:outerShdw blurRad="${shBlur}" dist="${shDist}" dir="${shDir}" algn="bl" rotWithShape="0">` +
+          `<a:srgbClr val="${shColor}"><a:alpha val="40000"/></a:srgbClr>` +
+          `</a:outerShdw></a:effectLst>`
+        );
+      }
+      if (opts.textOutline) {
+        const lw = ptEmu(opts.textOutline.width ?? 1);
+        children.push(`<a:ln w="${lw}"><a:solidFill><a:srgbClr val="${opts.textOutline.color}"/></a:solidFill></a:ln>`);
+      }
       const rpr = children.length > 0
         ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
         : `<a:rPr ${rprAttrs.join(" ")}/>`;
@@ -1916,8 +1945,11 @@ function buildPictureXml(
 
   // Geometry — roundRect for rounding, rect otherwise
   let geom: string;
-  if (opts.rounding) {
-    geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 5000"/></a:avLst></a:prstGeom>`;
+  if (opts.rounding || opts.roundingRadius != null) {
+    const shorter = Math.min(opts.w ?? 1, Math.max(opts.h ?? 1, 0.001));
+    const radius = opts.roundingRadius ?? 0.05; // default ~5% of shorter dimension
+    const adj = Math.round((radius / shorter) * 100000);
+    geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
   } else {
     geom = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
   }
@@ -2107,9 +2139,12 @@ function buildTableXml(
 
       const tcPrChildren: string[] = [];
 
-      // Borders
+      // Borders — explicit per-cell or uniform table-level borderColor
       if (co.border) {
         tcPrChildren.push(buildCellBordersXml(co.border));
+      } else if (opts.borderColor) {
+        const bc: TableBorderOpts = { color: opts.borderColor, pt: 1, type: "solid" };
+        tcPrChildren.push(buildCellBordersXml([bc, bc, bc, bc]));
       }
       // Diagonal borders
       if (co.diagonalDown) {
@@ -2243,7 +2278,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
     `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike} dirty="0">` +
-    `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>` +
+    (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     hlinkXml +
     `</a:rPr>` +

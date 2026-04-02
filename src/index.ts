@@ -192,7 +192,7 @@ export class Deck {
       to: props.to,
       type: props.type ?? "straight",
       color: props.color ?? this.theme.config.colors.textMuted,
-      width: props.width ?? 1,
+      width: props.width ?? (props.weight ? { thin: 0.5, medium: 1.5, thick: 3 }[props.weight] : 1),
       head: props.head ?? "arrow",
       tail: props.tail ?? "none",
       label: props.label,

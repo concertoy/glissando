@@ -327,6 +327,8 @@ export interface ConnectorProps {
   labelColor?: string;
   /** Label text alignment. Default "ctr". */
   labelAlign?: "left" | "center" | "right";
+  /** Named weight preset: thin=0.5pt, medium=1.5pt, thick=3pt. Overridden by explicit `width`. */
+  weight?: "thin" | "medium" | "thick";
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */

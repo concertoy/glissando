@@ -185,6 +185,13 @@
 - [x] **Table cell tooltip** — `tooltip` on TableCell options → `<a:hlinkHover>` on cell text `<a:rPr>`.
 - [x] **Connector label alignment** — `labelAlign` on ConnectorDef/ConnectorProps → `algn` on label `<a:pPr>`.
 - [x] **Slide background opacity** — `opacity` on slide.background → `<a:alpha>` on solid fill color.
+- [x] **Shape text outline** — `textOutline` on AddShapeOpts → `<a:ln>` in shape text `<a:rPr>` for stroked text.
+- [x] **Shape text shadow** — `textShadow` on AddShapeOpts → `<a:outerShdw>` for drop shadow on shape text.
+- [x] **Shape text rotation** — `textRotation` on AddShapeOpts → `rot` on shape text `<a:bodyPr>`.
+- [x] **Table border color theme** — `borderColor` on AddTableOpts → uniform borders on all cells.
+- [x] **Table cell gradient text** — `textGradient` on TableCell → `<a:gradFill>` in cell text `<a:rPr>`.
+- [x] **Image rounded corners** — `roundingRadius` on AddImageOpts → custom `adj` value on roundRect geometry.
+- [x] **Connector weight presets** — `weight: "thin" | "medium" | "thick"` on ConnectorProps → resolves to 0.5/1.5/3pt.
 
 ## Open
 
@@ -267,18 +274,18 @@
 - [x] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
 - [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
 - [x] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.
-- [ ] **Table cell gradient text** — `gradient` on TableCell options for gradient-filled text in cells.
+- [x] **Table cell gradient text** — `textGradient` on TableCell options for gradient-filled text in cells.
 - [ ] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
 - [x] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
 - [x] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
 - [ ] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
 - [ ] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
 - [x] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.
-- [ ] **Shape text outline** — `textOutline` on AddShapeOpts for stroked text in shapes via `<a:ln>` in rPr.
+- [x] **Shape text outline** — `textOutline` on AddShapeOpts for stroked text in shapes via `<a:ln>` in rPr.
 - [ ] **Table cell vertical align** — verify `valign` on TableCell works with all new features.
 - [ ] **Connector curved direction** — `curveDir: "up" | "down"` on ConnectorDef for controlling curve direction.
-- [ ] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
-- [ ] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.
-- [ ] **Image rounded corners** — `rounding` radius on AddImageOpts for custom corner rounding amount.
-- [ ] **Shape text rotation** — `textRotation` on AddShapeOpts for rotated text inside shapes.
-- [ ] **Connector weight presets** — `weight: "thin" | "medium" | "thick"` on ConnectorProps for common line weights.
+- [x] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
+- [x] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.
+- [x] **Image rounded corners** — `roundingRadius` on AddImageOpts for custom corner rounding amount.
+- [x] **Shape text rotation** — `textRotation` on AddShapeOpts for rotated text inside shapes.
+- [x] **Connector weight presets** — `weight: "thin" | "medium" | "thick"` on ConnectorProps for common line weights.

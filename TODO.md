@@ -144,6 +144,9 @@
 - [x] **Image animation** — `animation` on AddImageOpts for entrance animations (appear, fade, fly, wipe, zoom).
 - [x] **Shape tooltip on text** — `tooltip` on AddTextOpts → `<a:hlinkHover>` on `<p:cNvPr>` for hover text on text boxes.
 - [x] **Slide notes export** — `deck.exportNotes()` extracts all speaker notes as markdown.
+- [x] **Image tooltip** — `tooltip` on AddImageOpts → `<a:hlinkHover>` on image `<p:cNvPr>`.
+- [x] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
+- [x] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts → `<a:spAutoFit/>` for auto-shrinking shape text.
 
 ## Open
 
@@ -183,7 +186,11 @@
 - [ ] **Presentation password protection** — `pres.protect({ password })` for basic file encryption.
 - [x] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
 - [x] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.
-- [ ] **Image tooltip** — `tooltip` on AddImageOpts for hover text on images.
-- [ ] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
+- [x] **Image tooltip** — `tooltip` on AddImageOpts for hover text on images.
+- [x] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
 - [ ] **Table cell click action** — `action` on TableCell options for built-in PowerPoint navigation actions.
-- [ ] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts to auto-size text within shapes.
+- [x] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts to auto-size text within shapes.
+- [ ] **Group animation** — `animation` on GroupShape for entrance animations on entire groups.
+- [ ] **Text box hyperlink** — `href` on AddTextOpts to make the entire text box clickable (not just individual runs).
+- [ ] **Shape text margin** — `textMargin` on AddShapeOpts for custom padding around text inside shapes.
+- [ ] **Image aspect ratio lock** — `aspectRatio: "contain" | "cover"` on AddImageOpts for smart image sizing.

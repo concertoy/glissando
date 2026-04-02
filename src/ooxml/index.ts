@@ -286,6 +286,8 @@ export interface AddShapeOpts {
   tooltip?: string;
   /** Text wrapping mode for shape text. */
   wrap?: "none" | "square";
+  /** Auto-shrink text to fit within the shape. */
+  autoFit?: boolean;
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -319,6 +321,8 @@ export interface AddFreeformOpts {
   flipH?: boolean;
   flipV?: boolean;
   opacity?: number;
+  /** Entrance animation preset. */
+  animation?: ShapeAnimationOpts;
 }
 
 export interface AddImageOpts {
@@ -357,6 +361,8 @@ export interface AddImageOpts {
   recolor?: [string, string];
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
+  /** Hover tooltip text on the image. */
+  tooltip?: string;
 }
 
 export interface AddTableOpts {
@@ -931,6 +937,7 @@ export class Slide {
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `Freeform_${id}`;
     this._elements.push(buildFreeformXml(id, name, o));
+    if (o.animation) this._shapeAnimations.push({ shapeId: id, opts: o.animation });
   }
 
   addTable(rows: TableCell[][], opts: AddTableOpts): void {
@@ -1635,7 +1642,10 @@ function buildShapeXml(
     const wrapMode = opts.wrap ?? "square";
     const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
       + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
-    const bodyPr = `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}/>`;
+    const fitXml = opts.autoFit ? `<a:spAutoFit/>` : "";
+    const bodyPr = fitXml
+      ? `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}>${fitXml}</a:bodyPr>`
+      : `<a:bodyPr wrap="${wrapMode}" anchor="${anchor}"${colAttrs}/>`;
 
     if (typeof opts.text === "string") {
       const rprAttrs = ['lang="en-US"', 'dirty="0"'];
@@ -1788,9 +1798,14 @@ function buildPictureXml(
   return (
     `<p:pic>` +
     `<p:nvPicPr>` +
-    (opts._hlinkRId
-      ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`
-      : `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>`) +
+    (() => {
+      const inner: string[] = [];
+      if (opts._hlinkRId) inner.push(`<a:hlinkClick r:id="${opts._hlinkRId}"/>`);
+      if (opts.tooltip) inner.push(`<a:hlinkHover r:id="" tooltip="${escXml(opts.tooltip)}"/>`);
+      return inner.length > 0
+        ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}>${inner.join("")}</p:cNvPr>`
+        : `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>`;
+    })() +
     `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
     `<p:nvPr/>` +
     `</p:nvPicPr>` +

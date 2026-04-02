@@ -2422,4 +2422,51 @@ describe("OOXML", () => {
       expect(xml).toContain("More info");
     });
   });
+
+  describe("Image tooltip", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    it("adds hlinkHover to image cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 1, y: 1, w: 2, h: 2, tooltip: "Image info" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("hlinkHover");
+      expect(xml).toContain("Image info");
+    });
+  });
+
+  describe("Freeform animation", () => {
+    it("generates timing for animated freeform", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addFreeform({
+        x: 0, y: 0, w: 2, h: 2,
+        path: [
+          { type: "moveTo", x: 0, y: 0 },
+          { type: "lineTo", x: 2, y: 0 },
+          { type: "lineTo", x: 2, y: 2 },
+          { type: "close" },
+        ],
+        animation: { type: "fade" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:timing>");
+      expect(xml).toContain("<p:animEffect");
+    });
+  });
+
+  describe("Shape text auto-fit", () => {
+    it("adds spAutoFit to shape bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 3, h: 2,
+        fill: { color: "EEEEEE" },
+        text: "Auto-fitting text",
+        autoFit: true,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:spAutoFit/>");
+    });
+  });
 });

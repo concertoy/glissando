@@ -3649,4 +3649,89 @@ describe("OOXML", () => {
       expect(xml).toContain('pos="1828800"');
     });
   });
+
+  describe("animation scale", () => {
+    it("generates animScale element", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "scale", scalePercent: 200 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("p:animScale");
+      // 200 * 1000 = 200000
+      expect(xml).toContain('x="200000"');
+      expect(xml).toContain('y="200000"');
+    });
+  });
+
+  describe("animation colorChange", () => {
+    it("generates animClr element", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "colorChange", fromColor: "FF0000", toColor: "0000FF" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("p:animClr");
+      expect(xml).toContain('val="FF0000"');
+      expect(xml).toContain('val="0000FF"');
+    });
+  });
+
+  describe("table cell caps", () => {
+    it("adds cap attribute to cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "HEADER", options: { caps: "all" } }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('cap="all"');
+    });
+
+    it("supports small caps", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "SmallCaps", options: { caps: "small" } }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('cap="small"');
+    });
+  });
+
+  describe("shape text indent and marginLeft", () => {
+    it("adds indent attribute to pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Indented",
+        indent: 0.5,
+      });
+      const xml = slide._toXml(1);
+      // 0.5 inches = 457200 EMU
+      expect(xml).toContain('indent="457200"');
+    });
+
+    it("adds marL attribute to pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Left margin",
+        marginLeft: 1.0,
+      });
+      const xml = slide._toXml(1);
+      // 1.0 inches = 914400 EMU
+      expect(xml).toContain('marL="914400"');
+    });
+  });
 });

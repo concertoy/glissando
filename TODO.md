@@ -209,6 +209,11 @@
 - [x] **Table cell text shadow** — `textShadow` on TableCell → `<a:outerShdw>` on cell text `<a:rPr>`.
 - [x] **Table cell text outline** — `textOutline` on TableCell → `<a:ln>` on cell text `<a:rPr>`.
 - [x] **Shape text tab stops** — `tabStops` on AddShapeOpts → `<a:tabLst>` in paragraph properties.
+- [x] **Animation scale** — `scale` animation type with `scalePercent` → `<p:animScale>` for grow/shrink effects.
+- [x] **Animation color change** — `colorChange` animation type with `fromColor`/`toColor` → `<p:animClr>` for color transitions.
+- [x] **Table cell caps** — `caps: "all" | "small"` on TableCell → `cap` attribute on cell text `<a:rPr>`.
+- [x] **Shape text indent** — `indent` on AddShapeOpts → `indent` attribute on `<a:pPr>` for first-line indent.
+- [x] **Shape text margin left** — `marginLeft` on AddShapeOpts → `marL` attribute on `<a:pPr>` for paragraph left margin.
 
 ## Open
 
@@ -275,7 +280,7 @@
 - [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
 - [x] **Slide background opacity** — `opacity` on slide.background for semi-transparent fills over master.
 - [x] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
-- [ ] **Image SVG support** — accept `.svg` files in addImage, convert to EMF or inline SVG.
+- [ ] ~~**Image SVG support**~~ — removed; sync addImage API incompatible with async sharp conversion.
 - [x] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
 - [x] **Shape text highlight** — `highlight` on AddShapeOpts for background highlight color on shape text runs.
 - [x] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.

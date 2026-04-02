@@ -221,7 +221,7 @@ export interface AddTextOpts {
 
 export interface ShapeAnimationOpts {
   /** Animation type. */
-  type: "appear" | "fade" | "fly" | "wipe" | "zoom" | "spin" | "path";
+  type: "appear" | "fade" | "fly" | "wipe" | "zoom" | "spin" | "path" | "scale" | "colorChange";
   /** Trigger: "onClick" (default) or "afterPrevious" or "withPrevious". */
   trigger?: "onClick" | "afterPrevious" | "withPrevious";
   /** Duration in milliseconds (default 500). */
@@ -242,6 +242,12 @@ export interface ShapeAnimationOpts {
   repeat?: number | "indefinite";
   /** Play the animation in reverse after each forward play. */
   autoReverse?: boolean;
+  /** Scale percentage for type: "scale" (default 150 = grow to 150%). */
+  scalePercent?: number;
+  /** Target color hex for type: "colorChange" (fill color transition). */
+  toColor?: string;
+  /** Start color hex for type: "colorChange" (defaults to shape fill). */
+  fromColor?: string;
 }
 
 export interface AddShapeOpts {
@@ -344,6 +350,10 @@ export interface AddShapeOpts {
   bullets?: boolean | BulletOpts;
   /** Tab stop positions in inches for column-aligned text. */
   tabStops?: number[];
+  /** First-line indent in inches (negative for hanging indent). */
+  indent?: number;
+  /** Left margin for shape text paragraphs in inches. */
+  marginLeft?: number;
   /** Disable word wrapping: false = no wrap (text extends beyond shape). Default true (square wrap). */
   wordWrap?: boolean;
   /** Override vertical alignment for text independent of shape valign. */
@@ -528,6 +538,8 @@ export interface TableCell {
     textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
     /** Text outline/stroke on cell text. */
     textOutline?: { color: string; width?: number };
+    /** Text capitalization: "all" for ALL CAPS, "small" for Small Caps. */
+    caps?: "all" | "small";
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
   };
@@ -1878,9 +1890,11 @@ function buildShapeXml(
         tabListXml = `<a:tabLst>${tabs}</a:tabLst>`;
       }
       const pPrInner = pPrChildren.join("") + bulletXml + tabListXml;
+      const indentAttr = opts.indent != null ? ` indent="${emu(opts.indent)}"` : "";
+      const marLAttr = opts.marginLeft != null ? ` marL="${emu(opts.marginLeft)}"` : "";
       const pPr = pPrInner
-        ? `<a:pPr algn="${algn}">${pPrInner}</a:pPr>`
-        : `<a:pPr algn="${algn}"/>`;
+        ? `<a:pPr algn="${algn}"${indentAttr}${marLAttr}>${pPrInner}</a:pPr>`
+        : (indentAttr || marLAttr ? `<a:pPr algn="${algn}"${indentAttr}${marLAttr}/>` : `<a:pPr algn="${algn}"/>`);
       // Split by newlines into paragraphs when bullets enabled
       if (opts.bullets && opts.text.includes("\n")) {
         const lines = opts.text.split("\n");
@@ -2311,6 +2325,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const italic = opts.italic ? ' i="1"' : "";
   const underline = opts.underline ? ' u="sng"' : "";
   const strike = opts.strike ? ' strike="sngStrike"' : "";
+  const capsAttr = opts.caps ? ` cap="${opts.caps === "small" ? "small" : "all"}"` : "";
   const align = opts.align ?? "l";
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
@@ -2370,7 +2385,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
-    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     (() => {
@@ -2837,6 +2852,49 @@ function buildShapeAnimTimingXml(
           `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
           `</p:cBhvr></p:animMotion>`;
+        break;
+      }
+      case "scale": {
+        // Scale animation via <p:animScale>
+        const setId = id(), scaleId = id();
+        const pct = (anim.opts.scalePercent ?? 150) * 1000; // percentage in 1000ths
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animScale>` +
+          `<p:cBhvr><p:cTn id="${scaleId}" dur="${dur}" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `</p:cBhvr>` +
+          `<p:by x="${pct}" y="${pct}"/>` +
+          `</p:animScale>`;
+        break;
+      }
+      case "colorChange": {
+        // Color transition via <p:animClr>
+        const setId = id(), clrId = id();
+        const fromClr = anim.opts.fromColor ?? "000000";
+        const toClr = anim.opts.toColor ?? "FF0000";
+        effectXml =
+          `<p:set><p:cBhvr>` +
+          `<p:cTn id="${setId}" dur="1" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr><p:to><p:strVal val="${visVal}"/></p:to></p:set>` +
+          `<p:animClr clrSpc="rgb">` +
+          `<p:cBhvr><p:cTn id="${clrId}" dur="${dur}" fill="hold">` +
+          `<p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>` +
+          `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>` +
+          `<p:attrNameLst><p:attrName>fillcolor</p:attrName></p:attrNameLst>` +
+          `</p:cBhvr>` +
+          `<p:from><a:srgbClr val="${fromClr}"/></p:from>` +
+          `<p:to><a:srgbClr val="${toClr}"/></p:to>` +
+          `</p:animClr>`;
         break;
       }
     }

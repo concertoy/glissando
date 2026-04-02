@@ -31,6 +31,9 @@ import type {
   ImageComponentProps,
   EquationProps,
   EmojiProps,
+  ProgressBarProps,
+  TimelineProps,
+  QRCodeProps,
   EmojiDef,
   AnimationDef,
   PendingWork,
@@ -38,6 +41,7 @@ import type {
 import { highlightCode } from "../../highlight.js";
 import { lucideIcon } from "../../icons.js";
 import { renderEquation } from "../../equation.js";
+import { renderQRCode } from "../../qrcode.js";
 import { renderEmoji, extractLeadingEmoji } from "../../emoji.js";
 import { expandTextWithMath } from "../../inline-math.js";
 
@@ -957,5 +961,225 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     return { x: props.x, y: props.y, w, h };
   }
 
-  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, image, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji };
+  // --- Progress bar — horizontal step indicator ---
+  function progressBar(slide: Slide, props: ProgressBarProps): Rect {
+    const h = props.h ?? 0.5;
+    const n = props.steps.length;
+    if (n === 0) return { x: props.x, y: props.y, w: props.w, h };
+
+    const activeColor = props.activeColor ?? c.accent;
+    const inactiveColor = props.inactiveColor ?? c.textMuted;
+    const completedColor = props.completedColor ?? activeColor;
+    const labelSize = props.fontSize ?? s.caption;
+    const dotR = 0.12; // dot radius in inches
+    const dotD = dotR * 2;
+
+    // Distribute step centers evenly across width
+    const padX = dotR + 0.05;
+    const innerW = props.w - padX * 2;
+    const stepSpacing = n > 1 ? innerW / (n - 1) : 0;
+
+    for (let i = 0; i < n; i++) {
+      const cx = props.x + padX + i * stepSpacing;
+      const cy = props.y + h * 0.35;
+
+      // Connecting line to next step
+      if (i < n - 1) {
+        const nx = props.x + padX + (i + 1) * stepSpacing;
+        const lineColor = i < props.current ? completedColor : inactiveColor;
+        slide.addShape("rect", {
+          x: cx + dotR, y: cy - 0.015, w: nx - cx - dotD, h: 0.03,
+          fill: { color: lineColor },
+          line: { color: lineColor, width: 0.1 },
+        });
+      }
+
+      // Step dot
+      const isActive = i === props.current;
+      const isCompleted = i < props.current;
+      const dotColor = isActive ? activeColor : isCompleted ? completedColor : inactiveColor;
+      slide.addShape("ellipse", {
+        x: cx - dotR, y: cy - dotR, w: dotD, h: dotD,
+        fill: { color: dotColor },
+        line: { color: dotColor, width: 0.5 },
+      });
+
+      // Checkmark for completed steps
+      if (isCompleted) {
+        slide.addText("\u2713", {
+          x: cx - dotR, y: cy - dotR, w: dotD, h: dotD,
+          fontSize: 8, fontFace: f.sans, color: "FFFFFF",
+          bold: true, align: "center", valign: "middle",
+        });
+      }
+
+      // Active step: white inner number or dot
+      if (isActive) {
+        slide.addText(`${i + 1}`, {
+          x: cx - dotR, y: cy - dotR, w: dotD, h: dotD,
+          fontSize: 8, fontFace: f.sans, color: "FFFFFF",
+          bold: true, align: "center", valign: "middle",
+        });
+      }
+
+      // Label below dot
+      slide.addText(props.steps[i], {
+        x: cx - stepSpacing * 0.45,
+        y: cy + dotR + 0.04,
+        w: n > 1 ? stepSpacing * 0.9 : props.w,
+        h: 0.25,
+        fontSize: labelSize, fontFace: f.sans,
+        color: isActive ? activeColor : isCompleted ? completedColor : inactiveColor,
+        bold: isActive,
+        align: "center", valign: "top",
+      });
+    }
+
+    return { x: props.x, y: props.y, w: props.w, h };
+  }
+
+  // --- Timeline — horizontal or vertical event timeline ---
+  function timeline(slide: Slide, props: TimelineProps): Rect {
+    const h = props.h ?? 3;
+    const n = props.events.length;
+    if (n === 0) return { x: props.x, y: props.y, w: props.w, h };
+
+    const accentColor = props.activeColor ?? c.accent;
+    const lineColor = props.lineColor ?? c.textMuted;
+    const isVertical = props.direction === "vertical";
+
+    if (isVertical) {
+      const dotR = 0.08;
+      const dotD = dotR * 2;
+      const lineX = props.x + 0.15;
+      const padY = dotR + 0.1;
+      const innerH = h - padY * 2;
+      const stepSpacing = n > 1 ? innerH / (n - 1) : 0;
+
+      // Vertical line
+      if (n > 1) {
+        slide.addShape("rect", {
+          x: lineX - 0.01, y: props.y + padY,
+          w: 0.02, h: innerH,
+          fill: { color: lineColor },
+          line: { color: lineColor, width: 0.1 },
+        });
+      }
+
+      for (let i = 0; i < n; i++) {
+        const cy = props.y + padY + i * stepSpacing;
+        // Dot
+        slide.addShape("ellipse", {
+          x: lineX - dotR, y: cy - dotR, w: dotD, h: dotD,
+          fill: { color: accentColor },
+          line: { color: accentColor, width: 0.5 },
+        });
+        // Date label
+        slide.addText(props.events[i].date, {
+          x: lineX + dotR + 0.15, y: cy - 0.12,
+          w: props.w - 0.5, h: 0.22,
+          fontSize: s.small, fontFace: f.sans, color: accentColor,
+          bold: true, valign: "middle",
+        });
+        // Title + description
+        slide.addText(props.events[i].title, {
+          x: lineX + dotR + 0.15, y: cy + 0.1,
+          w: props.w - 0.5, h: 0.22,
+          fontSize: s.caption, fontFace: f.sans, color: c.text,
+          bold: true, valign: "top",
+        });
+        if (props.events[i].description) {
+          slide.addText(props.events[i].description!, {
+            x: lineX + dotR + 0.15, y: cy + 0.3,
+            w: props.w - 0.5, h: 0.2,
+            fontSize: s.caption, fontFace: f.sans, color: c.textSecondary,
+            valign: "top",
+          });
+        }
+      }
+    } else {
+      // Horizontal timeline
+      const dotR = 0.08;
+      const dotD = dotR * 2;
+      const lineY = props.y + h * 0.35;
+      const padX = dotR + 0.2;
+      const innerW = props.w - padX * 2;
+      const stepSpacing = n > 1 ? innerW / (n - 1) : 0;
+
+      // Horizontal line
+      if (n > 1) {
+        slide.addShape("rect", {
+          x: props.x + padX, y: lineY - 0.01,
+          w: innerW, h: 0.02,
+          fill: { color: lineColor },
+          line: { color: lineColor, width: 0.1 },
+        });
+      }
+
+      for (let i = 0; i < n; i++) {
+        const cx = props.x + padX + i * stepSpacing;
+        // Dot
+        slide.addShape("ellipse", {
+          x: cx - dotR, y: lineY - dotR, w: dotD, h: dotD,
+          fill: { color: accentColor },
+          line: { color: accentColor, width: 0.5 },
+        });
+        // Date above
+        slide.addText(props.events[i].date, {
+          x: cx - stepSpacing * 0.45,
+          y: lineY - dotR - 0.3,
+          w: n > 1 ? stepSpacing * 0.9 : props.w,
+          h: 0.25,
+          fontSize: s.caption, fontFace: f.sans, color: accentColor,
+          bold: true, align: "center", valign: "bottom",
+        });
+        // Title below
+        slide.addText(props.events[i].title, {
+          x: cx - stepSpacing * 0.45,
+          y: lineY + dotR + 0.05,
+          w: n > 1 ? stepSpacing * 0.9 : props.w,
+          h: 0.22,
+          fontSize: s.caption, fontFace: f.sans, color: c.text,
+          bold: true, align: "center", valign: "top",
+        });
+        if (props.events[i].description) {
+          slide.addText(props.events[i].description!, {
+            x: cx - stepSpacing * 0.45,
+            y: lineY + dotR + 0.25,
+            w: n > 1 ? stepSpacing * 0.9 : props.w,
+            h: 0.3,
+            fontSize: s.caption - 1, fontFace: f.sans, color: c.textSecondary,
+            align: "center", valign: "top",
+          });
+        }
+      }
+    }
+
+    return { x: props.x, y: props.y, w: props.w, h };
+  }
+
+  // --- QR code — renders a QR code image with optional caption ---
+  async function qrCode(slide: Slide, props: QRCodeProps): Promise<Rect> {
+    const qrH = props.h ?? props.w;
+    const qrColor = props.color ?? c.text;
+    const data = await renderQRCode(props.url, 512, qrColor, props.bgColor ?? "FFFFFF");
+    slide.addImage({
+      data,
+      x: props.x, y: props.y, w: props.w, h: qrH,
+    });
+    let totalH = qrH;
+    if (props.caption) {
+      const capH = 0.3;
+      slide.addText(props.caption, {
+        x: props.x, y: props.y + qrH + 0.05,
+        w: props.w, h: capH,
+        fontSize: s.caption, fontFace: f.sans, color: c.textMuted,
+        align: "center", valign: "top",
+      });
+      totalH += 0.05 + capH;
+    }
+    return { x: props.x, y: props.y, w: props.w, h: totalH };
+  }
+
+  return { accentBar, heading, bodyText, bulletList, numberedList, codeBlock, quoteBox, table, image, caption, calloutBlock, textBlock, diagramBox, arrow, hookArrow, container, equation, emoji, progressBar, timeline, qrCode };
 };

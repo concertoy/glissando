@@ -72,6 +72,16 @@
 
 - [x] **Shape text** — `text` on AddShapeOpts with `fontSize`, `fontFace`, `color`, `align`, `valign`, `bold`. Supports `string | TextRun[]`.
 
+- [x] **Progress bar component** — `progressBar(slide, { steps, current, ... })` horizontal step indicator with dots, connecting lines, labels, and active/completed states.
+- [x] **QR code component** — `qrCode(slide, { url, ... })` generates QR codes as PNG via `qrcode` + `sharp`, with optional caption and custom colors.
+- [x] **Shape group nesting** — `slide.addGroup()` and `GroupShape.addGroup()` for nested `<p:grpSp>` hierarchies. Groups support `addText`, `addShape`, `addImage`, and nested `addGroup`.
+
+- [x] **Slide background patterns** — `patternFill` on `slide.background` → `<a:pattFill>` in `<p:bg>`.
+- [x] **Text transform / WordArt** — `textTransform` on AddTextOpts → `<a:prstTxWarp>` for arch, wave, deflate, etc.
+- [x] **Watermark** — `slide.addWatermark(text, { opacity?, color?, rotate? })` for semi-transparent overlays.
+- [x] **Text run opacity** — `opacity` on TextRunOpts → `<a:alpha>` on text color for per-run transparency.
+- [x] **Timeline component** — `timeline(slide, { events, direction?, ... })` horizontal/vertical event timeline with dots, dates, titles.
+
 ## Open
 
 ### High impact
@@ -84,6 +94,8 @@
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
-- [ ] **Shape group nesting** — allow nested group shapes for complex diagram hierarchies.
-- [ ] **Progress bar component** — reusable progress/step indicator for multi-slide sequences.
-- [ ] **QR code component** — generate QR codes as SVG → PNG for links in slides.
+- [ ] **Shape connectors by name** — `slide.connect("boxA", "boxB", { type: "elbow" })` using objectName for simpler diagram wiring.
+- [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
+- [ ] **Table auto-column widths** — calculate column widths based on content length when `colW` is not specified.
+- [ ] **Linked slides (hyperlink to slide)** — internal hyperlinks that jump to a specific slide by index.
+- [ ] **Text subscript/superscript in bodyText** — extend inline syntax to support `^{super}` and `_{sub}` in component text.

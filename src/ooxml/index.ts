@@ -67,6 +67,8 @@ export interface TextRunOpts {
   textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
   /** Gradient fill on text characters (replaces solid color). */
   gradient?: GradientFill;
+  /** Text opacity 0–1 (1 = fully opaque). */
+  opacity?: number;
 }
 
 export interface BulletOpts {
@@ -172,6 +174,8 @@ export interface AddTextOpts {
   flipH?: boolean;
   /** Vertical flip. */
   flipV?: boolean;
+  /** WordArt text transform preset (e.g. "textArchUp", "textWave1", "textDeflate"). */
+  textTransform?: string;
 }
 
 export interface AddShapeOpts {
@@ -421,9 +425,10 @@ export class Presentation {
         if (!slide._nameToId.has(def.objectName)) continue;
         // Find the element XML and patch emoji bullets
         for (let i = 0; i < slide._elements.length; i++) {
-          if (!slide._elements[i].includes(`name="${def.objectName}"`)) continue;
+          const elXml = slide._elements[i].toString();
+          if (!elXml.includes(`name="${def.objectName}"`)) continue;
           slide._elements[i] = patchEmojiBulletsInXml(
-            slide._elements[i], def, slide,
+            elXml, def, slide,
           );
         }
         break;
@@ -487,14 +492,95 @@ export class Presentation {
   }
 }
 
+// ─── Group shape ───────────────────────────────────────────────────
+
+/**
+ * A group shape that can contain text, shapes, images, and nested groups.
+ * Acts like a mini-Slide for collecting elements, then serializes to `<p:grpSp>`.
+ */
+export class GroupShape {
+  /** @internal */ _grpId: number;
+  private _x: number;
+  private _y: number;
+  private _w: number;
+  private _h: number;
+  private _children: Array<string | GroupShape> = [];
+  private _slide: Slide;
+  private _name: string;
+
+  constructor(x: number, y: number, w: number, h: number, slide: Slide) {
+    this._x = x;
+    this._y = y;
+    this._w = w;
+    this._h = h;
+    this._slide = slide;
+    this._grpId = slide._allocId();
+    this._name = `Group_${this._grpId}`;
+  }
+
+  addText(content: string | TextRun[], opts?: AddTextOpts): void {
+    const o: Record<string, any> = opts ?? {};
+    const id = this._slide._allocId(o.objectName);
+    const name = o.objectName ?? `TextBox_${id}`;
+    this._children.push(buildTextShapeXml(id, name, content, o, this._slide));
+  }
+
+  addShape(type: string, opts: AddShapeOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._slide._allocId(o.objectName);
+    const name = o.objectName ?? `Shape_${id}`;
+    this._children.push(buildShapeXml(id, name, type, o));
+  }
+
+  addImage(opts: AddImageOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._slide._allocId(o.objectName);
+    const name = o.objectName ?? `Image_${id}`;
+    this._slide._mediaCounter++;
+    const resolved = resolveImageData(o);
+    const fileName = `img_s${this._slide._slideIndex + 1}_${this._slide._mediaCounter}.${resolved.ext}`;
+    const rId = `rImg${this._slide._mediaCounter}`;
+    this._slide._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
+    this._children.push(buildPictureXml(id, name, rId, o));
+  }
+
+  /** Create a nested group shape. */
+  addGroup(opts: { x: number; y: number; w: number; h: number; objectName?: string }): GroupShape {
+    const nested = new GroupShape(opts.x, opts.y, opts.w, opts.h, this._slide);
+    if (opts.objectName) this._slide._nameToId.set(opts.objectName, nested._grpId);
+    this._children.push(nested);
+    return nested;
+  }
+
+  toString(): string {
+    const gx = emu(this._x), gy = emu(this._y);
+    const gcx = emu(this._w), gcy = emu(this._h);
+    return (
+      `<p:grpSp>` +
+      `<p:nvGrpSpPr>` +
+      `<p:cNvPr id="${this._grpId}" name="${this._name}"/>` +
+      `<p:cNvGrpSpPr><a:grpSpLocks noChangeAspect="0"/></p:cNvGrpSpPr>` +
+      `<p:nvPr/>` +
+      `</p:nvGrpSpPr>` +
+      `<p:grpSpPr><a:xfrm>` +
+      `<a:off x="${gx}" y="${gy}"/><a:ext cx="${gcx}" cy="${gcy}"/>` +
+      `<a:chOff x="${gx}" y="${gy}"/><a:chExt cx="${gcx}" cy="${gcy}"/>` +
+      `</a:xfrm></p:grpSpPr>` +
+      this._children.map(c => c.toString()).join("") +
+      `</p:grpSp>`
+    );
+  }
+}
+
 // ─── Slide ──────────────────────────────────────────────────────────
 
 export class Slide {
   /** @internal */ _slideIndex: number;
   /** @internal */ _bg: string = "FFFFFF";
   /** @internal */ _bgGradient?: GradientFill;
+  /** @internal */ _bgPattern?: PatternFill;
   /** @internal */ _bgImageRId?: string;
-  /** @internal */ _elements: string[] = [];
+  /** @internal */ _elements: Array<string | { toString(): string }> = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
   /** @internal */ _images: Array<{ rId: string; fileName: string; data: Buffer; contentType: string }> = [];
@@ -514,8 +600,9 @@ export class Slide {
     const s = new Slide(newIndex);
     s._bg = this._bg;
     s._bgGradient = this._bgGradient ? { ...this._bgGradient, stops: this._bgGradient.stops.map(st => ({ ...st })) } : undefined;
+    s._bgPattern = this._bgPattern ? { ...this._bgPattern } : undefined;
     s._bgImageRId = this._bgImageRId;
-    s._elements = [...this._elements];
+    s._elements = this._elements.map(e => typeof e === "string" ? e : e.toString());
     s._nextId = this._nextId;
     s._nameToId = new Map(this._nameToId);
     s._images = this._images.map(img => ({ ...img }));
@@ -528,9 +615,10 @@ export class Slide {
     return s;
   }
 
-  set background(bg: { color: string; gradient?: GradientFill; image?: string }) {
+  set background(bg: { color: string; gradient?: GradientFill; patternFill?: PatternFill; image?: string }) {
     this._bg = bg.color;
     this._bgGradient = bg.gradient;
+    this._bgPattern = bg.patternFill;
     if (bg.image) {
       const resolved = resolveImageData({ data: bg.image });
       this._mediaCounter++;
@@ -595,8 +683,38 @@ export class Slide {
     this._elements.push(buildTableXml(id, rows, o));
   }
 
+  /** Add a semi-transparent watermark text across the slide center. */
+  addWatermark(text: string, opts?: { color?: string; fontSize?: number; opacity?: number; rotate?: number }): void {
+    this.addText([{
+      text,
+      options: {
+        fontSize: opts?.fontSize ?? 48,
+        color: opts?.color ?? "000000",
+        bold: true,
+        opacity: opts?.opacity ?? 0.08,
+      },
+    }], {
+      x: 0, y: 0,
+      w: 10, h: 5.625,
+      align: "center",
+      valign: "middle",
+      rotate: opts?.rotate ?? -30,
+    });
+  }
+
   addNotes(text: string | TextRun[]): void {
     this._notes = text;
+  }
+
+  /**
+   * Create a group shape. Returns a GroupShape that supports the same
+   * addText/addShape/addImage/addGroup methods. Nested groups are supported.
+   */
+  addGroup(opts: { x: number; y: number; w: number; h: number; objectName?: string }): GroupShape {
+    const grp = new GroupShape(opts.x, opts.y, opts.w, opts.h, this);
+    if (opts.objectName) this._nameToId.set(opts.objectName, grp._grpId);
+    this._elements.push(grp);
+    return grp;
   }
 
   /** Build the full <p:sld> XML. @internal */
@@ -606,6 +724,8 @@ export class Slide {
       bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"/><a:stretch><a:fillRect/></a:stretch></a:blipFill>`;
     } else if (this._bgGradient) {
       bgFill = buildGradientFillXml(this._bgGradient);
+    } else if (this._bgPattern) {
+      bgFill = buildPatternFillXml(this._bgPattern);
     } else {
       bgFill = `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
     }
@@ -797,7 +917,7 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
     colAttr +
     vertAttr +
     (opts.charSpacing != null ? ` spcFirstLastPara="0"` : "") +
-    `>${fitXml}</a:bodyPr>`;
+    `>${fitXml}${opts.textTransform ? `<a:prstTxWarp prst="${opts.textTransform}"><a:avLst/></a:prstTxWarp>` : ""}</a:bodyPr>`;
 
   // Build paragraphs
   const paragraphs = buildParagraphsXml(content, opts, slide);
@@ -930,7 +1050,8 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   if (opts.gradient) {
     children.push(buildGradientFillXml(opts.gradient));
   } else if (opts.color) {
-    children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
+    const alphaXml = opts.opacity != null ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>` : "";
+    children.push(`<a:solidFill><a:srgbClr val="${opts.color}">${alphaXml}</a:srgbClr></a:solidFill>`);
   }
   if (opts.fontFace) {
     children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);

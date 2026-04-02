@@ -267,6 +267,9 @@ Components can be used directly for custom slides via `deck.components`:
 - `container(slide, { label?, x, y, w, h, border?, fill? })` — dashed-border grouping box returning `ShapeRef`
 - `equation(slide, { latex, x, y, w, h?, color?, label? })` — rendered LaTeX equation (async)
 - `emoji(slide, { name, x, y, w?, h? })` — themed SVG emoji image (async)
+- `progressBar(slide, { steps, current, x, y, w, h? })` — horizontal step indicator with dots and labels
+- `timeline(slide, { events, x, y, w, h?, direction? })` — horizontal/vertical event timeline with milestones
+- `qrCode(slide, { url, x, y, w, h?, caption? })` — QR code image from URL/text (async)
 
 All components return a `Rect` (`{ x, y, w, h }`) representing their actual bounding box, enabling vertical stacking and layout chaining.
 
@@ -454,6 +457,21 @@ const { heading, codeBlock, calloutBlock } = deck.components;
 heading(slide, { text: "Custom Layout", x: 0.8, y: 0.5, w: 11 });
 codeBlock(slide, { code: "print('hi')", x: 0.8, y: 1.5, w: 5, language: "python" });
 await calloutBlock(slide, { variant: "info", x: 6.5, y: 1.5, w: 5, body: "Note here" });
+```
+
+## Shape Groups (Nesting)
+
+Use `slide.addGroup()` to create grouped shapes that move together when dragged. Supports nesting:
+
+```ts
+const slide = deck.blank();
+const grp = slide.addGroup({ x: 1, y: 1, w: 6, h: 3 });
+grp.addShape("rect", { x: 1, y: 1, w: 2, h: 1, fill: { color: "FF0000" } });
+grp.addText("Label", { x: 1, y: 2, w: 2, h: 0.5, fontSize: 12 });
+
+// Nested groups
+const inner = grp.addGroup({ x: 4, y: 1, w: 2, h: 2 });
+inner.addShape("ellipse", { x: 4.5, y: 1.5, w: 1, h: 1, fill: { color: "0000FF" } });
 ```
 
 ## Coding Style & Conventions

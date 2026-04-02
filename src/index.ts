@@ -42,7 +42,7 @@ import {
 } from "./layout.js";
 
 export type { Theme, ShapeRef, ConnectionPoint, Rect, FontPreset } from "./types.js";
-export { Presentation, Slide } from "./ooxml/index.js";
+export { Presentation, Slide, GroupShape } from "./ooxml/index.js";
 export type { TextRun, TextRunOpts, BulletOpts, AddTextOpts, AddShapeOpts, AddImageOpts, AddTableOpts, TableCell, TableBorderOpts, TransitionOpts, TransitionType, GradientFill, GradientStop, PatternFill, FillOpts, LineOpts, LineEndType, ShadowOpts } from "./ooxml/index.js";
 export { contentArea, contentAreaBelow, columns, rows, below, inset } from "./layout.js";
 export { expandTextWithMath } from "./inline-math.js";

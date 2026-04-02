@@ -391,6 +391,45 @@ export interface EquationProps {
   label?: string;       // optional label/caption below the equation
 }
 
+export interface QRCodeProps {
+  url: string;             // text/URL to encode
+  x: number;
+  y: number;
+  w: number;
+  h?: number;              // default: same as w (square)
+  color?: string;          // foreground hex WITHOUT # (default: theme text)
+  bgColor?: string;        // background hex WITHOUT # (default: "FFFFFF")
+  caption?: string;        // optional label below the QR code
+}
+
+export interface TimelineProps {
+  events: Array<{
+    date: string;          // date/label for the milestone
+    title: string;         // event title
+    description?: string;  // optional detail text
+  }>;
+  x: number;
+  y: number;
+  w: number;
+  h?: number;              // default ~3"
+  activeColor?: string;    // hex WITHOUT #, default: theme accent
+  lineColor?: string;      // hex WITHOUT #, default: theme textMuted
+  direction?: "horizontal" | "vertical"; // default: horizontal
+}
+
+export interface ProgressBarProps {
+  steps: string[];         // labels for each step
+  current: number;         // 0-based index of the active step
+  x: number;
+  y: number;
+  w: number;
+  h?: number;              // default ~0.5"
+  activeColor?: string;    // hex WITHOUT #, default: theme accent
+  inactiveColor?: string;  // hex WITHOUT #, default: theme textMuted
+  completedColor?: string; // hex WITHOUT #, default: same as activeColor
+  fontSize?: number;       // label font size (default: theme caption)
+}
+
 // ---------------------------------------------------------------------------
 // Components — functions that render elements onto a slide
 // ---------------------------------------------------------------------------
@@ -414,6 +453,9 @@ export interface ThemeComponents {
   image: (slide: Slide, props: ImageComponentProps) => Rect;
   equation: (slide: Slide, props: EquationProps) => Promise<Rect>;
   emoji?: (slide: Slide, props: EmojiProps) => Promise<Rect>;
+  progressBar: (slide: Slide, props: ProgressBarProps) => Rect;
+  timeline: (slide: Slide, props: TimelineProps) => Rect;
+  qrCode: (slide: Slide, props: QRCodeProps) => Promise<Rect>;
 }
 
 // ---------------------------------------------------------------------------

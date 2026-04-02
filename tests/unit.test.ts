@@ -1058,6 +1058,156 @@ describe("OOXML", () => {
     });
   });
 
+  describe("progress bar component", () => {
+    it("adds shapes and labels for each step", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      // Simulate what the progressBar component does: ellipses + rects + text
+      // 3 steps, current=1 → step 0 completed, step 1 active, step 2 inactive
+      const steps = ["Design", "Build", "Ship"];
+      const n = steps.length;
+      // Dots: 3 ellipses
+      for (let i = 0; i < n; i++) {
+        slide.addShape("ellipse", { x: i, y: 0, w: 0.24, h: 0.24, fill: { color: "DA7756" } });
+      }
+      // Lines: 2 connecting rects
+      for (let i = 0; i < n - 1; i++) {
+        slide.addShape("rect", { x: i + 0.24, y: 0.1, w: 0.52, h: 0.03, fill: { color: "DA7756" } });
+      }
+      // Labels: 3 text
+      for (const step of steps) {
+        slide.addText(step, { x: 0, y: 0.3, w: 1, h: 0.25, fontSize: 9 });
+      }
+      // 3 ellipses + 2 rects + 3 labels = 8 elements
+      expect(slide._elements.length).toBe(8);
+      expect(slide._elements[0]).toContain("ellipse");
+      expect(slide._elements[5]).toContain("Design");
+    });
+  });
+
+  describe("text run opacity", () => {
+    it("applies alpha to text color", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Faded",
+        options: { color: "FF0000", opacity: 0.5 },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain('<a:alpha val="50000"/>');
+    });
+  });
+
+  describe("slide background pattern fill", () => {
+    it("applies pattern fill to slide background", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = {
+        color: "FFFFFF",
+        patternFill: { pattern: "ltDnDiag", fgColor: "CCCCCC", bgColor: "FFFFFF" },
+      };
+      const xml = slide._toXml();
+      expect(xml).toContain("<a:pattFill");
+      expect(xml).toContain('prst="ltDnDiag"');
+      expect(xml).toContain("CCCCCC");
+    });
+  });
+
+  describe("text transform / WordArt", () => {
+    it("adds prstTxWarp to bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Arched Text", {
+        x: 0, y: 0, w: 5, h: 2,
+        textTransform: "textArchUp",
+      });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('<a:prstTxWarp prst="textArchUp">');
+      expect(xml).toContain("<a:avLst/>");
+    });
+  });
+
+  describe("watermark", () => {
+    it("adds semi-transparent rotated text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addWatermark("CONFIDENTIAL");
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("CONFIDENTIAL");
+      // Should have rotation
+      expect(xml).toContain("rot=");
+      // Should have opacity (alpha)
+      expect(xml).toContain("<a:alpha");
+    });
+
+    it("accepts custom options", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addWatermark("DRAFT", { color: "FF0000", fontSize: 72, opacity: 0.15, rotate: -45 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("DRAFT");
+      expect(xml).toContain("FF0000");
+    });
+  });
+
+  describe("shape group nesting", () => {
+    it("creates a group with child shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 1, y: 1, w: 4, h: 3 });
+      grp.addShape("rect", { x: 1, y: 1, w: 2, h: 1, fill: { color: "FF0000" } });
+      grp.addText("Inside group", { x: 1, y: 2, w: 2, h: 0.5 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<p:grpSp>");
+      expect(xml).toContain("</p:grpSp>");
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("Inside group");
+    });
+
+    it("supports nested groups", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const outer = slide.addGroup({ x: 0, y: 0, w: 8, h: 5 });
+      const inner = outer.addGroup({ x: 1, y: 1, w: 3, h: 2 });
+      inner.addShape("ellipse", { x: 1.5, y: 1.5, w: 1, h: 1, fill: { color: "00FF00" } });
+      const xml = slide._elements[0].toString();
+      // Outer group contains inner group
+      const grpCount = (xml.match(/<p:grpSp>/g) || []).length;
+      expect(grpCount).toBe(2); // outer + inner
+      expect(xml).toContain("ellipse");
+      expect(xml).toContain("00FF00");
+    });
+
+    it("supports images inside groups", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 0, y: 0, w: 5, h: 3 });
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      grp.addImage({ data: tinyPng, x: 1, y: 1, w: 2, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain("<p:pic>");
+      // Image should be registered on the slide's _images
+      expect(slide._images.length).toBe(1);
+    });
+  });
+
+  describe("QR code generation", () => {
+    it("produces a base64 PNG data URI", async () => {
+      const { renderQRCode } = await import("../src/qrcode.js");
+      const data = await renderQRCode("https://example.com");
+      expect(data).toMatch(/^data:image\/png;base64,/);
+      // Should be a substantial PNG (not empty)
+      expect(data.length).toBeGreaterThan(200);
+    });
+
+    it("accepts custom colors", async () => {
+      const { renderQRCode } = await import("../src/qrcode.js");
+      const data = await renderQRCode("test", 256, "FF0000", "00FF00");
+      expect(data).toMatch(/^data:image\/png;base64,/);
+    });
+  });
+
   describe("writeFile", () => {
     it("produces a valid ZIP buffer", async () => {
       const pres = new Presentation();

@@ -65,6 +65,8 @@ export interface TextRunOpts {
   charSpacing?: number;
   /** Drop shadow on text run. True for default, or { color, blur, offset, angle }. */
   textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
+  /** Gradient fill on text characters (replaces solid color). */
+  gradient?: GradientFill;
 }
 
 export interface BulletOpts {
@@ -92,6 +94,15 @@ export interface GradientFill {
   /** Angle in degrees (0 = left→right, 90 = top→bottom). Only for linear. */
   angle?: number;
   stops: GradientStop[];
+}
+
+export interface PatternFill {
+  /** OOXML pattern preset (e.g. "ltDnDiag", "dkUpDiag", "horzBrick", "cross", "pct10"). */
+  pattern: string;
+  /** Foreground color (hex). */
+  fgColor: string;
+  /** Background color (hex). */
+  bgColor: string;
 }
 
 export interface LineOpts {
@@ -128,6 +139,7 @@ export interface AddTextOpts {
   shape?: string;
   fill?: FillOpts;
   gradient?: GradientFill;
+  patternFill?: PatternFill;
   line?: LineOpts;
   shadow?: ShadowOpts;
   rectRadius?: number;
@@ -163,6 +175,7 @@ export interface AddShapeOpts {
   h?: number;
   fill?: FillOpts;
   gradient?: GradientFill;
+  patternFill?: PatternFill;
   line?: LineOpts;
   shadow?: ShadowOpts;
   rectRadius?: number;
@@ -631,6 +644,8 @@ function buildTextShapeXml(
   let fillXml: string;
   if (isTextBox) {
     fillXml = `<a:noFill/>`;
+  } else if (opts.patternFill) {
+    fillXml = buildPatternFillXml(opts.patternFill);
   } else if (opts.gradient) {
     fillXml = buildGradientFillXml(opts.gradient);
   } else if (opts.fill) {
@@ -847,7 +862,9 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   attrs.push(`dirty="0"`);
 
   const children: string[] = [];
-  if (opts.color) {
+  if (opts.gradient) {
+    children.push(buildGradientFillXml(opts.gradient));
+  } else if (opts.color) {
     children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
   }
   if (opts.fontFace) {
@@ -877,6 +894,17 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
     return `<a:rPr ${attrs.join(" ")}>${children.join("")}</a:rPr>`;
   }
   return `<a:rPr ${attrs.join(" ")}/>`;
+}
+
+// ─── Pattern fill helper ────────────────────────────────────────────
+
+function buildPatternFillXml(pf: PatternFill): string {
+  return (
+    `<a:pattFill prst="${pf.pattern}">` +
+    `<a:fgClr><a:srgbClr val="${pf.fgColor}"/></a:fgClr>` +
+    `<a:bgClr><a:srgbClr val="${pf.bgColor}"/></a:bgClr>` +
+    `</a:pattFill>`
+  );
 }
 
 // ─── Shadow helper ──────────────────────────────────────────────────
@@ -951,6 +979,8 @@ function buildShapeXml(
   let fill: string;
   if (type === "line") {
     fill = `<a:noFill/>`;
+  } else if (opts.patternFill) {
+    fill = buildPatternFillXml(opts.patternFill);
   } else if (opts.gradient) {
     fill = buildGradientFillXml(opts.gradient);
   } else if (opts.fill) {

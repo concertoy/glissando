@@ -815,6 +815,45 @@ describe("OOXML", () => {
     });
   });
 
+  describe("pattern fills", () => {
+    it("renders pattern fill on shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 5, h: 3,
+        patternFill: { pattern: "ltDnDiag", fgColor: "FF0000", bgColor: "FFFFFF" },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:pattFill prst="ltDnDiag">');
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("FFFFFF");
+    });
+  });
+
+  describe("gradient text runs", () => {
+    it("applies gradient fill to text characters", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "gradient", options: {
+          gradient: {
+            type: "linear",
+            angle: 0,
+            stops: [
+              { position: 0, color: "FF0000" },
+              { position: 100, color: "0000FF" },
+            ],
+          },
+        } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("FF0000");
+      // Should not have solidFill
+      expect(xml).not.toContain("<a:solidFill>");
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

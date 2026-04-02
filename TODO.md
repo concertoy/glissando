@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 79 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 81 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -54,6 +54,9 @@
 - [x] **Shape adjust values** — `adjustments` on AddShapeOpts for custom geometry tuning via `<a:gd>` in `<a:avLst>`.
 - [x] **Table border styles** — typed `TableBorderOpts` replacing `any[]` for cell borders.
 
+- [x] **Gradient on text runs** — `gradient` on TextRunOpts replaces solid color with `<a:gradFill>` in `<a:rPr>`.
+- [x] **Pattern fills** — `patternFill` on AddShapeOpts/AddTextOpts → `<a:pattFill>` with OOXML pattern presets.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -62,6 +65,6 @@
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
-- [ ] **Gradient on text runs** — gradient fill on individual text characters via `<a:gradFill>` in `<a:rPr>`.
-- [ ] **Pattern fills** — hatching/pattern fills on shapes via `<a:pattFill>`.
 - [ ] **SmartArt** — basic SmartArt generation for org charts and process flows.
+- [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
+- [ ] **Slide notes formatting** — rich text (bold, italic) in speaker notes instead of plain text.

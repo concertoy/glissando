@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 58 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 62 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -34,6 +34,8 @@
 - [x] **Custom bullet characters** — `bulletChar` on BulletListProps + `char` on BulletOpts for direct Unicode bullets.
 
 - [x] **Image cropping** — `crop` on AddImageOpts → `<a:srcRect>` for percentage-based edge cropping.
+- [x] **Text shadow** — `textShadow` on TextRunOpts → `<a:outerShdw>` with configurable color, blur, offset, angle.
+- [x] **Vertical text** — `vertical` on AddTextOpts → `vert` attribute on `<a:bodyPr>` for top-to-bottom text.
 
 ## Open
 
@@ -42,7 +44,7 @@
 - [ ] **Video/audio embedding** — embed media files in slides via OOXML media parts.
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
-- [ ] **Text shadow** — `textShadow` on TextRunOpts for drop shadow on individual text runs via `<a:effectLst>`.
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
 - [ ] **Image border/shadow** — `border` and `shadow` on AddImageOpts for framed image styling.
-- [ ] **Vertical text** — `vertical` on AddTextOpts for top-to-bottom text via `<a:bodyPr vert="vert270">`.
+- [ ] **Image rotation** — `rotate` on AddImageOpts for rotated images via `rot` on `<a:xfrm>`.
+- [ ] **Table cell merge** — `colspan`/`rowspan` on TableCell for merged table cells via `gridSpan`/`vMerge`.

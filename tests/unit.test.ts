@@ -537,6 +537,48 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text shadow", () => {
+    it("adds outerShdw effect to text run", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "shadowed", options: { textShadow: true } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain("<a:outerShdw");
+      expect(xml).toContain("<a:effectLst>");
+    });
+
+    it("uses custom shadow options", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "custom", options: { textShadow: { color: "FF0000", blur: 5, offset: 3, angle: 180 } } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain(`dir="${180 * 60000}"`);
+    });
+  });
+
+  describe("vertical text", () => {
+    it("adds vert attribute to bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Vertical", { x: 0, y: 0, w: 1, h: 5, vertical: "vert" });
+      const xml = slide._elements[0];
+      expect(xml).toContain('vert="vert"');
+    });
+
+    it("supports vert270 direction", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Bottom-up", { x: 0, y: 0, w: 1, h: 5, vertical: "vert270" });
+      const xml = slide._elements[0];
+      expect(xml).toContain('vert="vert270"');
+    });
+  });
+
   describe("image cropping", () => {
     it("adds srcRect for crop percentages", () => {
       const pres = new Presentation();

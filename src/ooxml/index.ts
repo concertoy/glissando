@@ -63,6 +63,8 @@ export interface TextRunOpts {
   /** Strikethrough text. */
   strike?: boolean;
   charSpacing?: number;
+  /** Drop shadow on text run. True for default, or { color, blur, offset, angle }. */
+  textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
 }
 
 export interface BulletOpts {
@@ -144,6 +146,8 @@ export interface AddTextOpts {
   columnSpacing?: number;
   /** Shape opacity 0–1 (affects fill, not text). */
   opacity?: number;
+  /** Vertical text direction. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
+  vertical?: "vert" | "vert270";
 }
 
 export interface AddShapeOpts {
@@ -664,9 +668,11 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
   const colAttr = opts.columns && opts.columns > 1
     ? ` numCol="${opts.columns}" spcCol="${emu(opts.columnSpacing ?? 0.3)}"`
     : "";
+  const vertAttr = opts.vertical ? ` vert="${opts.vertical}"` : "";
   const bodyPr =
     `<a:bodyPr wrap="square" lIns="${lIns}" tIns="${tIns}" rIns="${rIns}" bIns="${bIns}" rtlCol="0" anchor="${anchor}"` +
     colAttr +
+    vertAttr +
     (opts.charSpacing != null ? ` spcFirstLastPara="0"` : "") +
     `>${fitXml}</a:bodyPr>`;
 
@@ -806,6 +812,18 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   }
   if (opts.highlight) {
     children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
+  }
+  if (opts.textShadow) {
+    const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
+    const color = sh.color ?? "000000";
+    const blur = Math.round((sh.blur ?? 3) * 12700); // pt to EMU
+    const dist = Math.round((sh.offset ?? 2) * 12700);
+    const dir = Math.round((sh.angle ?? 315) * 60000);
+    children.push(
+      `<a:effectLst><a:outerShdw blurRad="${blur}" dist="${dist}" dir="${dir}" algn="bl" rotWithShape="0">` +
+      `<a:srgbClr val="${color}"><a:alpha val="40000"/></a:srgbClr>` +
+      `</a:outerShdw></a:effectLst>`
+    );
   }
   if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);

@@ -362,6 +362,8 @@ export interface AddShapeOpts {
   textValign?: "top" | "middle" | "bottom";
   /** Vertical text direction in shape. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
   vertical?: "vert" | "vert270";
+  /** Glow effect on shape text. */
+  textGlow?: { color: string; radius?: number; opacity?: number };
   /** WordArt text transform preset for shape text (e.g. "textArchUp", "textWave1"). */
   textTransform?: string;
   /** Entrance animation preset. */
@@ -451,6 +453,8 @@ export interface AddImageOpts {
   hue?: number;
   /** Saturation adjustment (-1 to 1, 0=normal, -1=desaturate, 1=oversaturate). */
   saturation?: number;
+  /** Replace all colors in image with a single color (monochrome). Hex string. */
+  colorReplace?: string;
   /** Horizontal flip. */
   flipH?: boolean;
   /** Vertical flip. */
@@ -576,6 +580,8 @@ export interface TableCell {
     nowrap?: boolean;
     /** Pattern fill for cell background. */
     patternFill?: PatternFill;
+    /** Fill opacity 0–1 (only applies to solid fill). */
+    fillOpacity?: number;
   };
 }
 
@@ -1906,17 +1912,28 @@ function buildShapeXml(
       }
       if (opts.highlight) children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
       if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
-      if (opts.textShadow) {
-        const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
-        const shColor = sh.color ?? "000000";
-        const shBlur = Math.round((sh.blur ?? 3) * 12700);
-        const shDist = Math.round((sh.offset ?? 2) * 12700);
-        const shDir = Math.round((sh.angle ?? 315) * 60000);
-        children.push(
-          `<a:effectLst><a:outerShdw blurRad="${shBlur}" dist="${shDist}" dir="${shDir}" algn="bl" rotWithShape="0">` +
-          `<a:srgbClr val="${shColor}"><a:alpha val="40000"/></a:srgbClr>` +
-          `</a:outerShdw></a:effectLst>`
-        );
+      {
+        const effectParts: string[] = [];
+        if (opts.textGlow) {
+          const gr = Math.round((opts.textGlow.radius ?? 4) * 12700);
+          const ga = Math.round((opts.textGlow.opacity ?? 0.6) * 100000);
+          effectParts.push(`<a:glow rad="${gr}"><a:srgbClr val="${opts.textGlow.color}"><a:alpha val="${ga}"/></a:srgbClr></a:glow>`);
+        }
+        if (opts.textShadow) {
+          const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
+          const shColor = sh.color ?? "000000";
+          const shBlur = Math.round((sh.blur ?? 3) * 12700);
+          const shDist = Math.round((sh.offset ?? 2) * 12700);
+          const shDir = Math.round((sh.angle ?? 315) * 60000);
+          effectParts.push(
+            `<a:outerShdw blurRad="${shBlur}" dist="${shDist}" dir="${shDir}" algn="bl" rotWithShape="0">` +
+            `<a:srgbClr val="${shColor}"><a:alpha val="40000"/></a:srgbClr>` +
+            `</a:outerShdw>`
+          );
+        }
+        if (effectParts.length > 0) {
+          children.push(`<a:effectLst>${effectParts.join("")}</a:effectLst>`);
+        }
       }
       if (opts.textOutline) {
         const lw = ptEmu(opts.textOutline.width ?? 1);
@@ -2143,6 +2160,9 @@ function buildPictureXml(
       if (opts.recolor) {
         effects.push(`<a:duotone><a:srgbClr val="${opts.recolor[0]}"/><a:srgbClr val="${opts.recolor[1]}"/></a:duotone>`);
       }
+      if (opts.colorReplace) {
+        effects.push(`<a:clrRepl><a:srgbClr val="${opts.colorReplace}"/></a:clrRepl>`);
+      }
       if (opts.tint != null && opts.tint > 0) {
         effects.push(`<a:tint amt="${Math.round(opts.tint * 1000)}"/>`);
       }
@@ -2343,7 +2363,10 @@ function buildTableXml(
       } else if (co.gradient) {
         tcPrChildren.push(buildGradientFillXml(co.gradient));
       } else if (co.fill) {
-        tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}"/></a:solidFill>`);
+        const alphaXml = co.fillOpacity != null && co.fillOpacity < 1
+          ? `<a:alpha val="${Math.round(co.fillOpacity * 100000)}"/>`
+          : "";
+        tcPrChildren.push(`<a:solidFill><a:srgbClr val="${co.fill.color}">${alphaXml}</a:srgbClr></a:solidFill>`);
       }
 
       // Merge attributes

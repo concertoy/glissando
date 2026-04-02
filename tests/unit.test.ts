@@ -3998,4 +3998,49 @@ describe("OOXML", () => {
       expect(xml).toContain('val="FF0000"');
     });
   });
+
+  describe("table cell fill opacity", () => {
+    it("adds alpha to solid fill color", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Semi", options: { fill: { color: "FF0000" }, fillOpacity: 0.5 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:alpha val="50000"/>');
+    });
+  });
+
+  describe("shape text glow", () => {
+    it("adds glow in effectLst on shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Glowing",
+        textGlow: { color: "FFD700", radius: 6, opacity: 0.8 },
+      });
+      const xml = slide._toXml(1);
+      // 6 * 12700 = 76200
+      expect(xml).toContain('<a:glow rad="76200">');
+      expect(xml).toContain('val="FFD700"');
+      // 0.8 * 100000 = 80000
+      expect(xml).toContain('<a:alpha val="80000"/>');
+    });
+  });
+
+  describe("image color replace", () => {
+    it("adds clrRepl to image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        colorReplace: "0000FF",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:clrRepl><a:srgbClr val="0000FF"/></a:clrRepl>');
+    });
+  });
 });

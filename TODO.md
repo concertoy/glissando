@@ -229,6 +229,9 @@
 - [x] **Group shape rotation** — `rotate` setter on GroupShape → `rot` attribute on group `<a:xfrm>`.
 - [x] **Table cell nowrap** — `nowrap: true` on TableCell → `wrap="none"` on cell text `<a:bodyPr>`.
 - [x] **Table cell pattern fill** — `patternFill` on TableCell → `<a:pattFill>` in `<a:tcPr>`.
+- [x] **Table cell fill opacity** — `fillOpacity` on TableCell → `<a:alpha>` on solid fill color.
+- [x] **Shape text glow** — `textGlow` on AddShapeOpts → `<a:glow>` in shape text `<a:effectLst>`.
+- [x] **Image color replace** — `colorReplace` on AddImageOpts → `<a:clrRepl>` on blip for monochrome recoloring.
 
 ## Open
 

@@ -237,6 +237,9 @@
 - [x] **Shape text reflection** — `textReflection` on AddShapeOpts → `<a:reflection>` in shape text `<a:effectLst>`.
 - [x] **Table cell text reflection** — `textReflection` on TableCell → `<a:reflection>` in cell text `<a:effectLst>`.
 - [x] **Shape text inner shadow** — `textInnerShadow` on AddShapeOpts → `<a:innerShdw>` in shape text `<a:effectLst>`.
+- [x] **Table cell inner shadow** — `textInnerShadow` on TableCell → `<a:innerShdw>` in cell text `<a:effectLst>`.
+- [x] **Shape text soft edge** — `textSoftEdge` on AddShapeOpts → `<a:softEdge>` in shape text `<a:effectLst>`.
+- [x] **Image alpha ceiling** — `alphaCeiling` on AddImageOpts → `<a:alphaCeiling/>` on blip.
 
 ## Open
 

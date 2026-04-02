@@ -368,6 +368,8 @@ export interface AddShapeOpts {
   textReflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   /** Inner shadow effect on shape text. */
   textInnerShadow?: { color?: string; blur?: number; offset?: number; angle?: number };
+  /** Soft edge (feathered) effect radius in points for shape text. */
+  textSoftEdge?: number;
   /** WordArt text transform preset for shape text (e.g. "textArchUp", "textWave1"). */
   textTransform?: string;
   /** Entrance animation preset. */
@@ -461,6 +463,8 @@ export interface AddImageOpts {
   colorReplace?: string;
   /** Convert to pure black and white at given threshold (0–100). */
   biLevel?: number;
+  /** Clamp all alpha values to fully opaque (`<a:alphaCeiling/>`). */
+  alphaCeiling?: boolean;
   /** Horizontal flip. */
   flipH?: boolean;
   /** Vertical flip. */
@@ -592,6 +596,8 @@ export interface TableCell {
     textGlow?: { color: string; radius?: number; opacity?: number };
     /** Reflection effect on cell text. */
     textReflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+    /** Inner shadow on cell text. */
+    textInnerShadow?: { color?: string; blur?: number; offset?: number; angle?: number };
   };
 }
 
@@ -1961,6 +1967,9 @@ function buildShapeXml(
             `</a:innerShdw>`
           );
         }
+        if (opts.textSoftEdge) {
+          effectParts.push(`<a:softEdge rad="${Math.round(opts.textSoftEdge * 12700)}"/>`);
+        }
         if (effectParts.length > 0) {
           children.push(`<a:effectLst>${effectParts.join("")}</a:effectLst>`);
         }
@@ -2195,6 +2204,9 @@ function buildPictureXml(
       }
       if (opts.biLevel != null) {
         effects.push(`<a:biLevel thresh="${Math.round(opts.biLevel * 1000)}"/>`);
+      }
+      if (opts.alphaCeiling) {
+        effects.push(`<a:alphaCeiling/>`);
       }
       if (opts.tint != null && opts.tint > 0) {
         effects.push(`<a:tint amt="${Math.round(opts.tint * 1000)}"/>`);
@@ -2545,6 +2557,18 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
         const rEnd = Math.round((r.endOpacity ?? 0) * 100000);
         const rDist = Math.round((r.distance ?? 0) * 12700);
         effectParts.push(`<a:reflection blurRad="${rBlur}" stA="${rStart}" endA="${rEnd}" dist="${rDist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`);
+      }
+      if (opts.textInnerShadow) {
+        const is = opts.textInnerShadow;
+        const isColor = is.color ?? "000000";
+        const isBlur = Math.round((is.blur ?? 3) * 12700);
+        const isDist = Math.round((is.offset ?? 2) * 12700);
+        const isDir = Math.round((is.angle ?? 225) * 60000);
+        effectParts.push(
+          `<a:innerShdw blurRad="${isBlur}" dist="${isDist}" dir="${isDir}">` +
+          `<a:srgbClr val="${isColor}"><a:alpha val="50000"/></a:srgbClr>` +
+          `</a:innerShdw>`
+        );
       }
       if (effectParts.length > 0) extras += `<a:effectLst>${effectParts.join("")}</a:effectLst>`;
       if (opts.textOutline) {

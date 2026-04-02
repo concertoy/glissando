@@ -4119,4 +4119,47 @@ describe("OOXML", () => {
       expect(xml).toContain('val="333333"');
     });
   });
+
+  describe("table cell inner shadow", () => {
+    it("adds innerShdw to cell text effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Inset", options: { textInnerShadow: { color: "444444", blur: 3 } } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:innerShdw");
+      expect(xml).toContain('val="444444"');
+    });
+  });
+
+  describe("shape text soft edge", () => {
+    it("adds softEdge to shape text effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Soft",
+        textSoftEdge: 3,
+      });
+      const xml = slide._toXml(1);
+      // 3 * 12700 = 38100
+      expect(xml).toContain('<a:softEdge rad="38100"/>');
+    });
+  });
+
+  describe("image alphaCeiling", () => {
+    it("adds alphaCeiling to image blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        alphaCeiling: true,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:alphaCeiling/>");
+    });
+  });
 });

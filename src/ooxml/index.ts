@@ -97,7 +97,7 @@ export interface GradientFill {
 export interface LineOpts {
   color: string;
   width?: number;
-  dashType?: "dash" | "solid";
+  dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
 }
 
 export interface ShadowOpts {
@@ -201,7 +201,8 @@ export interface AddTableOpts {
   x?: number;
   y?: number;
   w?: number;
-  rowH?: number;
+  /** Row height — single number for uniform, or array for per-row heights (inches). */
+  rowH?: number | number[];
   colW?: number[];
   margin?: number | number[];
 }
@@ -217,7 +218,7 @@ export interface TransitionOpts {
 }
 
 export interface TableCell {
-  text: string;
+  text: string | TextRun[];
   options?: {
     fontSize?: number;
     fontFace?: string;
@@ -631,9 +632,13 @@ function buildTextShapeXml(
   let lineXml = "";
   if (opts.line) {
     const lw = ptEmu(opts.line.width ?? 1);
+    const dashXml = opts.line.dashType && opts.line.dashType !== "solid"
+      ? `<a:prstDash val="${opts.line.dashType}"/>`
+      : "";
     lineXml =
       `<a:ln w="${lw}">` +
       `<a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>` +
+      dashXml +
       `</a:ln>`;
   }
 
@@ -946,8 +951,8 @@ function buildShapeXml(
   let line = "";
   if (opts.line) {
     const lw = ptEmu(opts.line.width ?? 1);
-    const dashXml = opts.line.dashType === "dash"
-      ? `<a:prstDash val="dash"/>`
+    const dashXml = opts.line.dashType && opts.line.dashType !== "solid"
+      ? `<a:prstDash val="${opts.line.dashType}"/>`
       : "";
     const headXml = opts.lineHead && opts.lineHead !== "none"
       ? `<a:headEnd type="${opts.lineHead}"/>`
@@ -1018,7 +1023,7 @@ function buildPictureXml(
     `<a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
     `</a:xfrm>` +
     geom +
-    (opts.line ? `<a:ln w="${ptEmu(opts.line.width ?? 1)}"><a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill></a:ln>` : "") +
+    (opts.line ? `<a:ln w="${ptEmu(opts.line.width ?? 1)}"><a:solidFill><a:srgbClr val="${opts.line.color}"/></a:solidFill>${opts.line.dashType && opts.line.dashType !== "solid" ? `<a:prstDash val="${opts.line.dashType}"/>` : ""}</a:ln>` : "") +
     (opts.shadow ? buildShadowXml(opts.shadow) : "") +
     `</p:spPr>` +
     `</p:pic>`
@@ -1058,7 +1063,10 @@ function buildTableXml(
   const x = emu(opts.x ?? 0);
   const y = emu(opts.y ?? 0);
   const cx = emu(opts.w ?? 8);
-  const rowH = emu(opts.rowH ?? 0.4);
+  const defaultRowH = emu(typeof opts.rowH === "number" ? opts.rowH : 0.4);
+  const rowHeights: number[] = Array.isArray(opts.rowH)
+    ? (opts.rowH as number[]).map((h: number) => emu(h))
+    : Array(rows.length).fill(defaultRowH);
 
   const numCols = rows[0]?.length ?? 1;
   const colWidths: number[] = opts.colW
@@ -1075,11 +1083,11 @@ function buildTableXml(
     }
   }
 
-  const totalH = rows.length * (opts.rowH ? emu(opts.rowH) : rowH);
+  const totalH = rowHeights.reduce((sum, h) => sum + h, 0);
 
   const gridCols = colWidths.map((w) => `<a:gridCol w="${w}"/>`).join("");
 
-  const rowXmls = rows.map((row) => {
+  const rowXmls = rows.map((row, rowIdx) => {
     const cells = row.map((cell: any) => {
       const cellObj = typeof cell === "string" ? { text: cell } : cell;
       const co = cellObj.options ?? {};
@@ -1122,7 +1130,7 @@ function buildTableXml(
       );
     }).join("");
 
-    return `<a:tr h="${rowH}">${cells}</a:tr>`;
+    return `<a:tr h="${rowHeights[rowIdx] ?? defaultRowH}">${cells}</a:tr>`;
   }).join("");
 
   return (
@@ -1146,7 +1154,7 @@ function buildTableXml(
   );
 }
 
-function buildCellTextXml(text: string, opts: Record<string, any>): string {
+function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): string {
   const fontSize = opts.fontSize ?? 12;
   const fontFace = opts.fontFace ?? "Helvetica Neue";
   const color = opts.color ?? "333333";
@@ -1161,6 +1169,25 @@ function buildCellTextXml(text: string, opts: Record<string, any>): string {
   }
   if (opts.paraSpaceAfter != null) {
     pPrChildren.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
+  }
+
+  // Rich text: multiple runs with individual formatting
+  if (Array.isArray(text)) {
+    const runsXml = text.map((run) => {
+      const ro = run.options ?? {};
+      const rProps = buildRunProps({ fontSize, fontFace, color, ...ro });
+      return `<a:r>${rProps}<a:t>${escXml(run.text)}</a:t></a:r>`;
+    }).join("");
+    return (
+      `<a:txBody>` +
+      `<a:bodyPr/>` +
+      `<a:lstStyle/>` +
+      `<a:p>` +
+      `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
+      runsXml +
+      `</a:p>` +
+      `</a:txBody>`
+    );
   }
 
   return (

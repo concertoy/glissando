@@ -678,6 +678,65 @@ describe("OOXML", () => {
     });
   });
 
+  describe("table row heights", () => {
+    it("supports per-row height array", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Row 1" }],
+        [{ text: "Row 2" }],
+      ], { x: 0, y: 0, w: 8, rowH: [0.5, 1.0] });
+      const xml = slide._elements[0];
+      // First row should be 0.5 inches = 457200 EMU
+      expect(xml).toContain('h="457200"');
+      // Second row should be 1.0 inches = 914400 EMU
+      expect(xml).toContain('h="914400"');
+    });
+  });
+
+  describe("rich text in tables", () => {
+    it("supports TextRun[] in table cells", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: [
+          { text: "bold", options: { bold: true } },
+          { text: " normal" },
+        ] }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('b="1"');
+      expect(xml).toContain("bold");
+      expect(xml).toContain("normal");
+    });
+  });
+
+  describe("dashed lines", () => {
+    it("adds dash style to shape lines", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 0, y: 0, w: 5, h: 3,
+        line: { color: "000000", width: 2, dashType: "lgDash" },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:prstDash val="lgDash"/>');
+    });
+
+    it("adds dash style to text shape lines", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Dashed border", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FFFFFF" },
+        line: { color: "FF0000", dashType: "dot" },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:prstDash val="dot"/>');
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

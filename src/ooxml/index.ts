@@ -572,6 +572,10 @@ export interface TableCell {
     superscript?: boolean;
     /** Subscript text in cell. */
     subscript?: boolean;
+    /** Disable word wrapping in cell (text extends beyond cell boundary). */
+    nowrap?: boolean;
+    /** Pattern fill for cell background. */
+    patternFill?: PatternFill;
   };
 }
 
@@ -2334,6 +2338,8 @@ function buildTableXml(
         const rId = `rTblImg${slide._mediaCounter}`;
         slide._images.push({ rId, fileName, data: imgInfo.data, contentType: imgInfo.contentType });
         tcPrChildren.push(`<a:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></a:blipFill>`);
+      } else if (co.patternFill) {
+        tcPrChildren.push(buildPatternFillXml(co.patternFill));
       } else if (co.gradient) {
         tcPrChildren.push(buildGradientFillXml(co.gradient));
       } else if (co.fill) {
@@ -2428,7 +2434,8 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     }).join("");
 
     const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
-    return `<a:txBody><a:bodyPr${rotAttr}/><a:lstStyle/>${parasXml}</a:txBody>`;
+    const wrapAttr = opts.nowrap ? ' wrap="none"' : "";
+    return `<a:txBody><a:bodyPr${rotAttr}${wrapAttr}/><a:lstStyle/>${parasXml}</a:txBody>`;
   }
 
   // Handle cell-level href or action for plain string text
@@ -2448,9 +2455,10 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   }
 
   const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
+  const wrapAttr = opts.nowrap ? ' wrap="none"' : "";
   return (
     `<a:txBody>` +
-    `<a:bodyPr${rotAttr}/>` +
+    `<a:bodyPr${rotAttr}${wrapAttr}/>` +
     `<a:lstStyle/>` +
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}"${cellIndentAttr}${cellMarLAttr}>${pPrChildren.join("")}</a:pPr>` +

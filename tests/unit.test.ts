@@ -3971,4 +3971,31 @@ describe("OOXML", () => {
       expect(xml).toContain('rot="2700000"');
     });
   });
+
+  describe("table cell nowrap", () => {
+    it("adds wrap=none to cell bodyPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "No wrapping here", options: { nowrap: true } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('wrap="none"');
+    });
+  });
+
+  describe("table cell pattern fill", () => {
+    it("adds pattFill to cell tcPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Patterned", options: { patternFill: { pattern: "ltDnDiag", fgColor: "FF0000", bgColor: "FFFFFF" } } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:pattFill prst="ltDnDiag">');
+      expect(xml).toContain('val="FF0000"');
+    });
+  });
 });

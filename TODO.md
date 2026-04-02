@@ -227,6 +227,8 @@
 - [x] **Table cell superscript/subscript** — `superscript`/`subscript` on TableCell → `baseline` attribute on cell text `<a:rPr>`.
 - [x] **Image tint** — `tint` on AddImageOpts → `<a:tint>` on blip for tint adjustment.
 - [x] **Group shape rotation** — `rotate` setter on GroupShape → `rot` attribute on group `<a:xfrm>`.
+- [x] **Table cell nowrap** — `nowrap: true` on TableCell → `wrap="none"` on cell text `<a:bodyPr>`.
+- [x] **Table cell pattern fill** — `patternFill` on TableCell → `<a:pattFill>` in `<a:tcPr>`.
 
 ## Open
 
@@ -325,7 +327,7 @@
 - [x] **Group shape rotation** — `rotate` on GroupShape for rotating entire groups.
 - [ ] **Shape text font size auto** — `fontSizeAuto: true` on AddShapeOpts to auto-calculate font size from shape height.
 - [ ] **Slide master logo** — `pres.setLogo(data, position)` to overlay a logo on all slides.
-- [ ] **Table cell nowrap** — `nowrap: true` on TableCell to prevent word wrap in narrow cells.
+- [x] **Table cell nowrap** — `nowrap: true` on TableCell to prevent word wrap in narrow cells.
 - [ ] **Shape text URL auto-detect** — auto-hyperlink `http://...` in shape text.
 - [ ] **Connector elbow routing** — `elbowRoute: "auto"` on ConnectorDef for intelligent elbow connector routing around obstacles.
 - [x] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.

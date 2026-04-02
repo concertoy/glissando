@@ -202,6 +202,8 @@ export class Deck {
       labelSize: props.labelSize,
       labelColor: props.labelColor,
       labelAlign: props.labelAlign,
+      curvature: props.curvature,
+      curveDir: props.curveDir,
     });
     return this;
   }
@@ -225,6 +227,8 @@ export class Deck {
     labelSize?: number;
     labelColor?: string;
     labelAlign?: "left" | "center" | "right";
+    curvature?: number;
+    curveDir?: "left" | "right";
   }): this {
     const sideIdx: Record<string, number> = { top: 0, right: 1, bottom: 2, left: 3 };
     const fromIdx = sideIdx[opts?.fromSide ?? "right"];
@@ -246,6 +250,8 @@ export class Deck {
       labelSize: opts?.labelSize,
       labelColor: opts?.labelColor,
       labelAlign: opts?.labelAlign,
+      curvature: opts?.curvature,
+      curveDir: opts?.curveDir,
     });
   }
 

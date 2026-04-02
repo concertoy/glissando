@@ -329,6 +329,10 @@ export interface ConnectorProps {
   labelAlign?: "left" | "center" | "right";
   /** Named weight preset: thin=0.5pt, medium=1.5pt, thick=3pt. Overridden by explicit `width`. */
   weight?: "thin" | "medium" | "thick";
+  /** Curvature amount in inches for curved connectors (default 0.7). Higher = more pronounced curve. */
+  curvature?: number;
+  /** Curve direction: "right" (default) or "left". Controls which side the arc bows toward. */
+  curveDir?: "left" | "right";
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */
@@ -353,6 +357,10 @@ export interface ConnectorDef {
   labelColor?: string;
   /** Label text alignment. Default "ctr". */
   labelAlign?: "left" | "center" | "right";
+  /** Curvature amount in inches for curved connectors (default 0.7). */
+  curvature?: number;
+  /** Curve direction: "right" (default) or "left". */
+  curveDir?: "left" | "right";
 }
 
 export interface ArrowProps {

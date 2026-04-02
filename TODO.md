@@ -192,6 +192,11 @@
 - [x] **Table cell gradient text** — `textGradient` on TableCell → `<a:gradFill>` in cell text `<a:rPr>`.
 - [x] **Image rounded corners** — `roundingRadius` on AddImageOpts → custom `adj` value on roundRect geometry.
 - [x] **Connector weight presets** — `weight: "thin" | "medium" | "thick"` on ConnectorProps → resolves to 0.5/1.5/3pt.
+- [x] **Shape text bullet lists** — `bullets: true` on AddShapeOpts → `<a:buChar>` or `<a:buAutoNum>` with newline-split paragraphs.
+- [x] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts → `wrap="none"` on `<a:bodyPr>`.
+- [x] **Shape text vertical align override** — `textValign` on AddShapeOpts → separate anchor from shape valign.
+- [x] **Connector curved control point** — `curvature` on ConnectorDef/ConnectorProps → adjustable arc bow amount in inches.
+- [x] **Connector curved direction** — `curveDir: "left" | "right"` on ConnectorDef/ConnectorProps → controls which side the arc bows toward.
 
 ## Open
 
@@ -249,12 +254,12 @@
 - [x] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
 - [ ] **Slide background video** — `bgVideo` on slide for looping background video.
 - [x] **Animation delay chaining** — `stagger` on ShapeAnimationOpts auto-calculates delays.
-- [ ] **Shape text vertical align override** — `textValign` on AddShapeOpts separate from shape valign for fine control.
+- [x] **Shape text vertical align override** — `textValign` on AddShapeOpts separate from shape valign for fine control.
 - [x] **Table cell background image** — `bgImage` on TableCell options for image fills via `<a:blipFill>` in `<a:tcPr>`.
 - [x] **Shape text line spacing** — `lineSpacing` on AddShapeOpts for controlling line height in shape text.
 - [x] **Image opacity** — `opacity` on AddImageOpts → `<a:alphaModFix>` on blip fill for transparent images.
 - [ ] **Table column span auto-width** — auto-adjust column widths when cells have colspan > 1.
-- [ ] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
+- [x] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
 - [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
 - [x] **Slide background opacity** — `opacity` on slide.background for semi-transparent fills over master.
 - [x] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
@@ -275,15 +280,15 @@
 - [x] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.
 - [x] **Shape text caps** — `caps: "all" | "small"` on AddShapeOpts for all-caps or small-caps in shape text.
 - [x] **Table cell gradient text** — `textGradient` on TableCell options for gradient-filled text in cells.
-- [ ] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
+- [x] **Connector curved control point** — `curvature` on ConnectorDef for adjustable bezier curve tightness.
 - [x] **Shape text opacity** — `textOpacity` on AddShapeOpts for transparent text in shapes.
 - [x] **Table cell tooltip** — `tooltip` on TableCell for hover text on table cells.
 - [ ] **Slide background blur** — `bgBlur` on slide.background for blurred background images.
-- [ ] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
+- [x] **Shape text word wrap** — `wordWrap: false` on AddShapeOpts to disable word wrapping in shape text.
 - [x] **Connector label alignment** — `labelAlign` on ConnectorDef for left/center/right label positioning.
 - [x] **Shape text outline** — `textOutline` on AddShapeOpts for stroked text in shapes via `<a:ln>` in rPr.
 - [ ] **Table cell vertical align** — verify `valign` on TableCell works with all new features.
-- [ ] **Connector curved direction** — `curveDir: "up" | "down"` on ConnectorDef for controlling curve direction.
+- [x] **Connector curved direction** — `curveDir: "left" | "right"` on ConnectorDef for controlling curve direction.
 - [x] **Shape text shadow** — `textShadow` on AddShapeOpts for drop shadow on shape text.
 - [x] **Table border color theme** — `borderColor` on AddTableOpts for uniform border color on entire table.
 - [x] **Image rounded corners** — `roundingRadius` on AddImageOpts for custom corner rounding amount.

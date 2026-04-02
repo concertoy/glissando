@@ -3265,11 +3265,130 @@ describe("OOXML", () => {
 
   describe("connector weight presets", () => {
     it("resolves thin/medium/thick to pt values", () => {
-      // Test through Deck class indirectly - just verify the weight map
       const weightMap: Record<string, number> = { thin: 0.5, medium: 1.5, thick: 3 };
       expect(weightMap.thin).toBe(0.5);
       expect(weightMap.medium).toBe(1.5);
       expect(weightMap.thick).toBe(3);
+    });
+  });
+
+  describe("shape text bullet lists", () => {
+    it("adds buChar to paragraphs when bullets: true", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "First\nSecond\nThird",
+        bullets: true,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("a:buChar");
+      // Should have 3 paragraphs
+      const pCount = (xml.match(/<a:p>/g) || []).length;
+      expect(pCount).toBe(3);
+    });
+
+    it("supports numbered bullets via BulletOpts", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Alpha\nBeta",
+        bullets: { type: "number", numberType: "alphaLcPeriod" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("a:buAutoNum");
+      expect(xml).toContain('type="alphaLcPeriod"');
+    });
+  });
+
+  describe("shape wordWrap control", () => {
+    it("sets wrap=none when wordWrap is false", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 4, h: 2,
+        text: "No wrap",
+        wordWrap: false,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('wrap="none"');
+    });
+
+    it("defaults to wrap=square", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 4, h: 2,
+        text: "Default wrap",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('wrap="square"');
+    });
+  });
+
+  describe("shape text vertical align override", () => {
+    it("uses textValign over valign for text anchor", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 4, h: 2,
+        text: "Top text",
+        valign: "middle",
+        textValign: "top",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('anchor="t"');
+    });
+  });
+
+  describe("connector curvature", () => {
+    it("uses custom curvature in curved connector path", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 2, h: 1, objectName: "a" });
+      slide.addShape("rect", { x: 1, y: 4, w: 2, h: 1, objectName: "b" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 3, y: 1.5, idx: 1, _shapeName: "a" },
+          to: { x: 3, y: 4.5, idx: 3, _shapeName: "b" },
+          type: "curved",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          curvature: 1.2,
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      expect(xml).toContain("cubicBezTo");
+    });
+  });
+
+  describe("connector curveDir left", () => {
+    it("flips curve path for left direction", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 2, h: 1, objectName: "c" });
+      slide.addShape("rect", { x: 1, y: 4, w: 2, h: 1, objectName: "d" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 3, y: 1.5, idx: 1, _shapeName: "c" },
+          to: { x: 3, y: 4.5, idx: 3, _shapeName: "d" },
+          type: "curved",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          curveDir: "left",
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      expect(xml).toContain("cubicBezTo");
     });
   });
 });

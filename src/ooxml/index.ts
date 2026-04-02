@@ -332,6 +332,12 @@ export interface AddShapeOpts {
   textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
   /** Rotation angle for text inside the shape (degrees). Applied to bodyPr rot attribute. */
   textRotation?: number;
+  /** Enable bullet markers on each line of shape text (when text is string with \n). */
+  bullets?: boolean | BulletOpts;
+  /** Disable word wrapping: false = no wrap (text extends beyond shape). Default true (square wrap). */
+  wordWrap?: boolean;
+  /** Override vertical alignment for text independent of shape valign. */
+  textValign?: "top" | "middle" | "bottom";
   /** Entrance animation preset. */
   animation?: ShapeAnimationOpts;
 }
@@ -1737,9 +1743,10 @@ function buildShapeXml(
   if (opts.text) {
     const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
     const vAlignMap: Record<string, string> = { top: "t", middle: "ctr", bottom: "b", t: "t", b: "b", ctr: "ctr" };
-    const anchor = vAlignMap[opts.valign ?? "middle"] ?? "ctr";
+    const textVAlign = opts.textValign ? vAlignMap[opts.textValign] : undefined;
+    const anchor = textVAlign ?? vAlignMap[opts.valign ?? "middle"] ?? "ctr";
     const algn = alignMap[opts.align ?? "center"] ?? "ctr";
-    const wrapMode = opts.wrap ?? "square";
+    const wrapMode = opts.wordWrap === false ? "none" : (opts.wrap ?? "square");
     const colAttrs = (opts.columns && opts.columns > 1 ? ` numCol="${opts.columns}"` : "")
       + (opts.columnSpacing != null ? ` spcCol="${emu(opts.columnSpacing)}"` : "");
     let marginAttrs = "";
@@ -1805,10 +1812,33 @@ function buildShapeXml(
       if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
       if (opts.paraSpaceBefore != null) pPrChildren.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
       if (opts.paraSpaceAfter != null) pPrChildren.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
-      const pPr = pPrChildren.length > 0
-        ? `<a:pPr algn="${algn}">${pPrChildren.join("")}</a:pPr>`
+      // Bullet markers
+      let bulletXml = "";
+      if (opts.bullets) {
+        const bo = typeof opts.bullets === "object" ? opts.bullets : {};
+        if (bo.type === "number") {
+          const numType = bo.numberType ?? "arabicPeriod";
+          const startAt = bo.startAt ?? 1;
+          bulletXml = `<a:buAutoNum type="${numType}" startAt="${startAt}"/>`;
+        } else {
+          const ch = bo.char ?? "\u2022";
+          bulletXml = `<a:buChar char="${escXml(ch)}"/>`;
+        }
+      }
+      const pPrInner = pPrChildren.join("") + bulletXml;
+      const pPr = pPrInner
+        ? `<a:pPr algn="${algn}">${pPrInner}</a:pPr>`
         : `<a:pPr algn="${algn}"/>`;
-      txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p>${pPr}<a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+      // Split by newlines into paragraphs when bullets enabled
+      if (opts.bullets && opts.text.includes("\n")) {
+        const lines = opts.text.split("\n");
+        const parasXml = lines.map((ln: string) =>
+          `<a:p>${pPr}<a:r>${rpr}<a:t>${escXml(ln)}</a:t></a:r></a:p>`
+        ).join("");
+        txBody = `<p:txBody>${bodyPr}<a:lstStyle/>${parasXml}</p:txBody>`;
+      } else {
+        txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p>${pPr}<a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
+      }
     } else {
       const pPrChildren: string[] = [];
       if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
@@ -2376,12 +2406,20 @@ function buildCurvedArcXml(
   fromX: number, fromY: number, toX: number, toY: number,
   id: number, lineW: number, headType: string,
 ): string {
-  const arcBow = Math.round(0.7 * EMU);
-  const arcOffX = Math.round(Math.max(fromX, toX));
+  const curvatureInches = conn.curvature ?? 0.7;
+  const arcBow = Math.round(curvatureInches * EMU);
+  const goLeft = conn.curveDir === "left";
+  const arcOffX = goLeft
+    ? Math.round(Math.max(fromX, toX) - arcBow)
+    : Math.round(Math.max(fromX, toX));
   const arcOffY = Math.round(Math.min(fromY, toY));
   const arcCx = arcBow;
   const arcCy = Math.round(Math.abs(toY - fromY));
-  const cpBow = arcBow;
+  // For right bow: start at x=0, control points at x=arcBow, end at x=0
+  // For left bow: start at x=arcCx, control points at x=0, end at x=arcCx
+  const pathStartX = goLeft ? arcCx : 0;
+  const pathEndX = goLeft ? arcCx : 0;
+  const cpBowX = goLeft ? 0 : arcBow;
   const cp1y = Math.round(arcCy * 0.75);
   const cp2y = Math.round(arcCy * 0.25);
   const goingUp = fromY > toY;
@@ -2401,11 +2439,11 @@ function buildCurvedArcXml(
     `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/>` +
     `<a:rect l="0" t="0" r="${arcCx}" b="${arcCy}"/>` +
     `<a:pathLst><a:path w="${arcCx}" h="${arcCy}">` +
-    `<a:moveTo><a:pt x="0" y="${pathStartY}"/></a:moveTo>` +
+    `<a:moveTo><a:pt x="${pathStartX}" y="${pathStartY}"/></a:moveTo>` +
     `<a:cubicBezTo>` +
-    `<a:pt x="${cpBow}" y="${cpA_y}"/>` +
-    `<a:pt x="${cpBow}" y="${cpB_y}"/>` +
-    `<a:pt x="0" y="${pathEndY}"/>` +
+    `<a:pt x="${cpBowX}" y="${cpA_y}"/>` +
+    `<a:pt x="${cpBowX}" y="${cpB_y}"/>` +
+    `<a:pt x="${pathEndX}" y="${pathEndY}"/>` +
     `</a:cubicBezTo>` +
     `</a:path></a:pathLst></a:custGeom>` +
     `<a:noFill/>` +
@@ -2431,7 +2469,12 @@ function buildConnectorLabelXml(
 
   let labelX: number, labelY: number;
   if (conn.type === "curved") {
-    labelX = Math.max(fromX, toX) + emu(0.6);
+    const curvInches = conn.curvature ?? 0.7;
+    if (conn.curveDir === "left") {
+      labelX = Math.max(fromX, toX) - emu(curvInches) - emu(1.2);
+    } else {
+      labelX = Math.max(fromX, toX) + emu(curvInches * 0.85);
+    }
     labelY = (fromY + toY) / 2 - emu(0.15);
   } else {
     labelX = (fromX + toX) / 2;

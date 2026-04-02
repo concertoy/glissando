@@ -301,6 +301,24 @@ export class Deck {
     return renderEmoji(name, this.theme.config.emojiSet, size);
   }
 
+  /** Export all speaker notes as markdown (one section per slide). */
+  exportNotes(): string {
+    const lines: string[] = [];
+    for (let i = 0; i < this.pres._slides.length; i++) {
+      const slide = this.pres._slides[i];
+      const notes = slide._notes;
+      if (!notes) continue;
+      lines.push(`## Slide ${i + 1}`);
+      if (typeof notes === "string") {
+        lines.push(notes);
+      } else {
+        lines.push(notes.map(r => r.text).join(""));
+      }
+      lines.push("");
+    }
+    return lines.join("\n");
+  }
+
   /** Configure slide numbering, static footer text, and citation style. */
   footer(config: FooterConfig): this {
     this._footerConfig = config;

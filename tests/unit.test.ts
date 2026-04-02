@@ -2399,4 +2399,27 @@ describe("OOXML", () => {
       }
     });
   });
+
+  describe("Image animation", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    it("generates timing XML for image with fade animation", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 1, y: 1, w: 3, h: 2, animation: { type: "fade" } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:timing>");
+      expect(xml).toContain("<p:animEffect");
+    });
+  });
+
+  describe("Text box tooltip", () => {
+    it("adds hlinkHover to text shape cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Hover me", { x: 1, y: 1, w: 4, tooltip: "More info" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("hlinkHover");
+      expect(xml).toContain("More info");
+    });
+  });
 });

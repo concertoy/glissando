@@ -209,6 +209,8 @@ export interface AddTextOpts {
   extrusion?: { depth?: number; color?: string };
   /** Inner shadow effect. */
   innerShadow?: { color?: string; blur?: number; offset?: number; angle?: number; opacity?: number };
+  /** Hover tooltip text on the text box. */
+  tooltip?: string;
   /** Entrance animation preset. Plays on click or after delay. */
   animation?: ShapeAnimationOpts;
 }
@@ -353,6 +355,8 @@ export interface AddImageOpts {
   blur?: number;
   /** Duotone recolor: [shadowColor, highlightColor] as hex strings. */
   recolor?: [string, string];
+  /** Entrance animation preset. */
+  animation?: ShapeAnimationOpts;
 }
 
 export interface AddTableOpts {
@@ -919,6 +923,7 @@ export class Slide {
     const rId = `rImg${this._mediaCounter}`;
     this._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
     this._elements.push(buildPictureXml(id, name, rId, o));
+    if (o.animation) this._shapeAnimations.push({ shapeId: id, opts: o.animation });
   }
 
   addFreeform(opts: AddFreeformOpts): void {
@@ -1140,9 +1145,14 @@ function buildTextShapeXml(
   // Non-visual properties
   const txBoxAttr = isTextBox ? ' txBox="1"' : "";
   const descrAttr = opts.altText ? ` descr="${escXml(opts.altText)}"` : "";
+  const cNvPrChildren: string[] = [];
+  if (opts.tooltip) cNvPrChildren.push(`<a:hlinkHover r:id="" tooltip="${escXml(opts.tooltip)}"/>`);
+  const cNvPr = cNvPrChildren.length > 0
+    ? `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}>${cNvPrChildren.join("")}</p:cNvPr>`
+    : `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>`;
   const nvSpPr =
     `<p:nvSpPr>` +
-    `<p:cNvPr id="${id}" name="${escXml(name)}"${descrAttr}/>` +
+    cNvPr +
     `<p:cNvSpPr${txBoxAttr}/>` +
     `<p:nvPr/>` +
     `</p:nvSpPr>`;

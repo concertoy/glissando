@@ -141,6 +141,9 @@
 - [x] **Shape animation presets** — `animation: { type, trigger, duration, delay, direction }` on AddTextOpts/AddShapeOpts → `<p:timing>` with appear, fade, fly, wipe, zoom effects.
 - [x] **Table header row styling** — `headerStyle` on AddTableOpts for separate header font/color/fill without manual cell options.
 - [x] **Shape preset shadows** — `shapePresets.shadows.subtle()`, `.soft()`, `.medium()`, `.dramatic()`, `.contact()` named ShadowOpts presets.
+- [x] **Image animation** — `animation` on AddImageOpts for entrance animations (appear, fade, fly, wipe, zoom).
+- [x] **Shape tooltip on text** — `tooltip` on AddTextOpts → `<a:hlinkHover>` on `<p:cNvPr>` for hover text on text boxes.
+- [x] **Slide notes export** — `deck.exportNotes()` extracts all speaker notes as markdown.
 
 ## Open
 
@@ -173,10 +176,14 @@
 - [ ] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
 - [ ] **Slide background gradient mesh** — multi-point gradient fills on slide backgrounds.
 - [ ] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:anim>` targeting `r` attribute.
-- [ ] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
+- [x] **Image animation** — `animation` on AddImageOpts for entrance animations on images.
 - [ ] **Shape exit animations** — `exitAnimation` on shapes for disappear/fadeOut/flyOut effects.
 - [ ] **Animation sequencing** — `afterPrevious`/`withPrevious` trigger modes for automatic animation chains.
 - [ ] **Table cell background image** — `bgImage` on TableCell options for image fills in cells.
 - [ ] **Presentation password protection** — `pres.protect({ password })` for basic file encryption.
-- [ ] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
-- [ ] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.
+- [x] **Slide notes export** — `deck.exportNotes()` to extract all speaker notes as markdown.
+- [x] **Shape tooltip on text** — `tooltip` on AddTextOpts for hover text on text boxes.
+- [ ] **Image tooltip** — `tooltip` on AddImageOpts for hover text on images.
+- [ ] **Freeform animation** — `animation` on AddFreeformOpts for entrance animations on custom paths.
+- [ ] **Table cell click action** — `action` on TableCell options for built-in PowerPoint navigation actions.
+- [ ] **Shape text auto-fit** — `autoFit: true` on AddShapeOpts to auto-size text within shapes.

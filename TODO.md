@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 67 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 69 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -41,6 +41,9 @@
 
 - [x] **Table cell merge** — `colspan`/`rowspan` on TableCell → `gridSpan`/`rowSpan` + `hMerge`/`vMerge` on `<a:tc>`.
 
+- [x] **Shape flipping** — `flipH`/`flipV` on AddTextOpts → flip attributes on `<a:xfrm>`.
+- [x] **Slide background image** — `image` field on `slide.background` → `<a:blipFill>` in `<p:bg>`.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -49,7 +52,7 @@
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
-- [ ] **Shape flipping** — `flipH`/`flipV` on AddTextOpts for mirrored text shapes.
-- [ ] **Slide background image** — extend `slide.background` to accept an image path/data URI.
 - [ ] **Table row height** — per-row height control via `rowH` array on AddTableOpts.
 - [ ] **Rich text in tables** — support TextRun[] in TableCell.text for mixed formatting within cells.
+- [ ] **Dashed lines** — expose `dashType` on line shapes (dot, dash, dashDot, longDash).
+- [ ] **Arrow shape types** — chevron, notchedArrow, pentagon arrow presets for diagram use.

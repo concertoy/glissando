@@ -628,6 +628,30 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text shape flipping", () => {
+    it("adds flipH and flipV to text shape xfrm", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Flipped", { x: 0, y: 0, w: 5, h: 1, flipH: true, flipV: true });
+      const xml = slide._elements[0];
+      expect(xml).toContain('flipH="1"');
+      expect(xml).toContain('flipV="1"');
+    });
+  });
+
+  describe("slide background image", () => {
+    it("uses blipFill for background image", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.background = { color: "000000", image: tinyPng };
+      const xml = slide._toXml();
+      expect(xml).toContain("<a:blipFill>");
+      expect(xml).toContain("r:embed=");
+      expect(xml).not.toContain("<a:solidFill>");
+    });
+  });
+
   describe("table cell merge", () => {
     it("adds gridSpan for colspan", () => {
       const pres = new Presentation();

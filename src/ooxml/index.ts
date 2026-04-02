@@ -150,6 +150,10 @@ export interface AddTextOpts {
   opacity?: number;
   /** Vertical text direction. "vert" = top-to-bottom, "vert270" = bottom-to-top. */
   vertical?: "vert" | "vert270";
+  /** Horizontal flip. */
+  flipH?: boolean;
+  /** Vertical flip. */
+  flipV?: boolean;
 }
 
 export interface AddShapeOpts {
@@ -409,6 +413,7 @@ export class Slide {
   /** @internal */ _slideIndex: number;
   /** @internal */ _bg: string = "FFFFFF";
   /** @internal */ _bgGradient?: GradientFill;
+  /** @internal */ _bgImageRId?: string;
   /** @internal */ _elements: string[] = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
@@ -424,9 +429,17 @@ export class Slide {
     this._slideIndex = index;
   }
 
-  set background(bg: { color: string; gradient?: GradientFill }) {
+  set background(bg: { color: string; gradient?: GradientFill; image?: string }) {
     this._bg = bg.color;
     this._bgGradient = bg.gradient;
+    if (bg.image) {
+      const resolved = resolveImageData({ data: bg.image });
+      this._mediaCounter++;
+      const fileName = `img_bg_s${this._slideIndex + 1}.${resolved.ext}`;
+      const rId = `rBgImg1`;
+      this._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
+      this._bgImageRId = rId;
+    }
   }
   get background(): { color: string; gradient?: GradientFill } {
     return { color: this._bg, gradient: this._bgGradient };
@@ -489,9 +502,14 @@ export class Slide {
 
   /** Build the full <p:sld> XML. @internal */
   _toXml(): string {
-    const bgFill = this._bgGradient
-      ? buildGradientFillXml(this._bgGradient)
-      : `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
+    let bgFill: string;
+    if (this._bgImageRId) {
+      bgFill = `<a:blipFill><a:blip r:embed="${this._bgImageRId}"/><a:stretch><a:fillRect/></a:stretch></a:blipFill>`;
+    } else if (this._bgGradient) {
+      bgFill = buildGradientFillXml(this._bgGradient);
+    } else {
+      bgFill = `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
+    }
     const bgXml =
       `<p:bg><p:bgPr>` +
       bgFill +
@@ -577,8 +595,10 @@ function buildTextShapeXml(
 
   // Transform
   const rot = opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : "";
+  const flipH = opts.flipH ? ` flipH="1"` : "";
+  const flipV = opts.flipV ? ` flipV="1"` : "";
   const xfrmXml =
-    `<a:xfrm${rot}>` +
+    `<a:xfrm${flipH}${flipV}${rot}>` +
     `<a:off x="${x}" y="${y}"/>` +
     `<a:ext cx="${cx}" cy="${cy}"/>` +
     `</a:xfrm>`;

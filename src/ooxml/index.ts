@@ -58,6 +58,11 @@ export interface TextRunOpts {
   valign?: string;
   align?: string;
   href?: string;
+  /** Background highlight color on this text run (hex, no #). */
+  highlight?: string;
+  /** Strikethrough text. */
+  strike?: boolean;
+  charSpacing?: number;
 }
 
 export interface BulletOpts {
@@ -128,6 +133,8 @@ export interface AddTextOpts {
   indentLevel?: number;
   /** Alt text for accessibility (screen readers). */
   altText?: string;
+  /** Rotation in degrees (clockwise). */
+  rotate?: number;
 }
 
 export interface AddShapeOpts {
@@ -374,6 +381,7 @@ export class Presentation {
 export class Slide {
   /** @internal */ _slideIndex: number;
   /** @internal */ _bg: string = "FFFFFF";
+  /** @internal */ _bgGradient?: GradientFill;
   /** @internal */ _elements: string[] = [];
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
@@ -389,8 +397,13 @@ export class Slide {
     this._slideIndex = index;
   }
 
-  set background(bg: { color: string }) { this._bg = bg.color; }
-  get background(): { color: string } { return { color: this._bg }; }
+  set background(bg: { color: string; gradient?: GradientFill }) {
+    this._bg = bg.color;
+    this._bgGradient = bg.gradient;
+  }
+  get background(): { color: string; gradient?: GradientFill } {
+    return { color: this._bg, gradient: this._bgGradient };
+  }
 
   /** Set a transition effect for this slide. */
   set transition(opts: TransitionOpts) { this._transition = opts; }
@@ -449,9 +462,12 @@ export class Slide {
 
   /** Build the full <p:sld> XML. @internal */
   _toXml(): string {
+    const bgFill = this._bgGradient
+      ? buildGradientFillXml(this._bgGradient)
+      : `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>`;
     const bgXml =
       `<p:bg><p:bgPr>` +
-      `<a:solidFill><a:srgbClr val="${this._bg}"/></a:solidFill>` +
+      bgFill +
       `<a:effectLst/>` +
       `</p:bgPr></p:bg>`;
 
@@ -533,8 +549,9 @@ function buildTextShapeXml(
   const isTextBox = !opts.shape && !opts.fill;
 
   // Transform
+  const rot = opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : "";
   const xfrmXml =
-    `<a:xfrm>` +
+    `<a:xfrm${rot}>` +
     `<a:off x="${x}" y="${y}"/>` +
     `<a:ext cx="${cx}" cy="${cy}"/>` +
     `</a:xfrm>`;
@@ -758,6 +775,7 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   if (opts.bold) attrs.push(`b="1"`);
   if (opts.italic) attrs.push(`i="1"`);
   if (opts.underline) attrs.push(`u="sng"`);
+  if (opts.strike) attrs.push(`strike="sngStrike"`);
   if (opts.subscript) attrs.push(`baseline="-40000"`);
   if (opts.superscript) attrs.push(`baseline="30000"`);
   if (opts.charSpacing != null) attrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
@@ -769,6 +787,9 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   }
   if (opts.fontFace) {
     children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+  }
+  if (opts.highlight) {
+    children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
   }
   if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);

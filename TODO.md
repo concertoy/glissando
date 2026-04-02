@@ -24,6 +24,11 @@
 - [x] **Slide transitions** — fade, push, wipe, cover, split, cut via `<p:transition>`.
 - [x] **Accessibility** — `altText` on AddTextOpts, AddImageOpts → `descr` attribute on `<p:cNvPr>`.
 - [x] **Gradient fills** — linear/radial gradients on shapes and text via `<a:gradFill>`.
+- [x] **Gradient backgrounds** — `slide.background` accepts `gradient` field for linear/radial gradient fills.
+- [x] **Text highlighting** — `highlight` on TextRunOpts → `<a:highlight>` for background color on text runs.
+
+- [x] **Strikethrough text** — `strike` on TextRunOpts → `strike="sngStrike"` attribute on `<a:rPr>`.
+- [x] **Shape/text rotation** — `rotate` on AddTextOpts (already on AddShapeOpts) → `rot` attribute on `<a:xfrm>`.
 
 ## Open
 
@@ -31,5 +36,7 @@
 - [ ] **Chart component** — bar/line/pie charts via OOXML chart parts, or fallback to rendered SVG images.
 - [ ] **Video/audio embedding** — embed media files in slides via OOXML media parts.
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
-- [ ] **Gradient backgrounds** — extend `slide.background` to accept gradient fills, not just solid colors.
-- [ ] **Text highlighting** — background color on individual text runs via `<a:highlight>`.
+- [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
+- [ ] **Text columns** — multi-column text layout within a single text box via `<a:bodyPr numCol="N">`.
+- [ ] **Shape opacity** — `opacity` on AddTextOpts for semi-transparent text containers.
+- [ ] **Custom bullet characters** — expose `bulletChar` on BulletListProps for custom Unicode bullet characters.

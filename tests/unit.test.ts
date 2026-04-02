@@ -409,6 +409,88 @@ describe("OOXML", () => {
     });
   });
 
+  describe("gradient backgrounds", () => {
+    it("uses solid fill by default", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FF0000" };
+      const xml = slide._toXml();
+      expect(xml).toContain('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>');
+    });
+
+    it("uses gradient fill when gradient is provided", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = {
+        color: "000000",
+        gradient: {
+          type: "linear",
+          angle: 45,
+          stops: [
+            { position: 0, color: "FF0000" },
+            { position: 100, color: "0000FF" },
+          ],
+        },
+      };
+      const xml = slide._toXml();
+      expect(xml).toContain("<a:gradFill>");
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("0000FF");
+      expect(xml).not.toContain("<a:solidFill>");
+    });
+  });
+
+  describe("text highlighting", () => {
+    it("adds highlight to text run", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "highlighted", options: { highlight: "FFFF00" } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:highlight><a:srgbClr val="FFFF00"/></a:highlight>');
+    });
+
+    it("does not add highlight when not specified", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("no highlight", { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).not.toContain("<a:highlight>");
+    });
+  });
+
+  describe("strikethrough", () => {
+    it("adds strikethrough to text run", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "deleted", options: { strike: true } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('strike="sngStrike"');
+    });
+  });
+
+  describe("rotation", () => {
+    it("rotates text shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("rotated", { x: 0, y: 0, w: 5, h: 1, rotate: 45 });
+      const xml = slide._elements[0];
+      // 45 degrees * 60000 = 2700000
+      expect(xml).toContain('rot="2700000"');
+    });
+
+    it("rotates shapes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 5, h: 3, rotate: 90 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('rot="5400000"');
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

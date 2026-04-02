@@ -3554,4 +3554,99 @@ describe("OOXML", () => {
       expect(xml).toContain("a:gridCol");
     });
   });
+
+  describe("animation repeat", () => {
+    it("adds repeatCount to cTn", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "spin", repeat: 3 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('repeatCount="3000"');
+    });
+
+    it("supports indefinite repeat", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "FF0000" },
+        animation: { type: "fade", repeat: "indefinite" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('repeatCount="indefinite"');
+    });
+  });
+
+  describe("animation autoReverse", () => {
+    it("adds autoRev attribute to cTn", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 2, h: 2,
+        fill: { color: "0000FF" },
+        animation: { type: "zoom", autoReverse: true },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('autoRev="1"');
+    });
+  });
+
+  describe("table cell text shadow", () => {
+    it("adds outerShdw to plain cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Shadowed", options: { textShadow: true } }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("a:outerShdw");
+    });
+
+    it("supports custom shadow options on cells", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Custom", options: { textShadow: { color: "FF0000", blur: 5 } } }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('val="FF0000"');
+    });
+  });
+
+  describe("table cell text outline", () => {
+    it("adds a:ln to plain cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Outlined", options: { textOutline: { color: "00FF00", width: 2 } } }]],
+        { x: 0.5, y: 0.5, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:ln w="25400">');
+      expect(xml).toContain('val="00FF00"');
+    });
+  });
+
+  describe("shape text tab stops", () => {
+    it("adds tabLst to pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 8, h: 2,
+        text: "Col1\tCol2\tCol3",
+        tabStops: [2.0, 4.0, 6.0],
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("a:tabLst");
+      expect(xml).toContain("a:tab");
+      // 2.0 inches = 2 * 914400 = 1828800
+      expect(xml).toContain('pos="1828800"');
+    });
+  });
 });

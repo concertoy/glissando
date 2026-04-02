@@ -238,6 +238,10 @@ export interface ShapeAnimationOpts {
   spinAngle?: number;
   /** Motion path in SVG path format (e.g. "M 0 0 L 0.5 0.5"). Used with type: "path". Coordinates are fractions of slide size. */
   motionPath?: string;
+  /** Repeat count: number of times to repeat (e.g. 3), or "indefinite" for infinite looping. */
+  repeat?: number | "indefinite";
+  /** Play the animation in reverse after each forward play. */
+  autoReverse?: boolean;
 }
 
 export interface AddShapeOpts {
@@ -338,6 +342,8 @@ export interface AddShapeOpts {
   textRotation?: number;
   /** Enable bullet markers on each line of shape text (when text is string with \n). */
   bullets?: boolean | BulletOpts;
+  /** Tab stop positions in inches for column-aligned text. */
+  tabStops?: number[];
   /** Disable word wrapping: false = no wrap (text extends beyond shape). Default true (square wrap). */
   wordWrap?: boolean;
   /** Override vertical alignment for text independent of shape valign. */
@@ -518,6 +524,10 @@ export interface TableCell {
     tooltip?: string;
     /** Gradient fill on cell text characters (replaces solid color). */
     textGradient?: GradientFill;
+    /** Drop shadow on cell text. True for default, or custom { color, blur, offset, angle }. */
+    textShadow?: boolean | { color?: string; blur?: number; offset?: number; angle?: number };
+    /** Text outline/stroke on cell text. */
+    textOutline?: { color: string; width?: number };
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
   };
@@ -1861,7 +1871,13 @@ function buildShapeXml(
           bulletXml = `<a:buChar char="${escXml(ch)}"/>`;
         }
       }
-      const pPrInner = pPrChildren.join("") + bulletXml;
+      // Tab stops
+      let tabListXml = "";
+      if (opts.tabStops && opts.tabStops.length > 0) {
+        const tabs = opts.tabStops.map((pos: number) => `<a:tab pos="${emu(pos)}" algn="l"/>`).join("");
+        tabListXml = `<a:tabLst>${tabs}</a:tabLst>`;
+      }
+      const pPrInner = pPrChildren.join("") + bulletXml + tabListXml;
       const pPr = pPrInner
         ? `<a:pPr algn="${algn}">${pPrInner}</a:pPr>`
         : `<a:pPr algn="${algn}"/>`;
@@ -2357,6 +2373,22 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
+    (() => {
+      let extras = "";
+      if (opts.textShadow) {
+        const sh = typeof opts.textShadow === "object" ? opts.textShadow : {};
+        const sc = sh.color ?? "000000";
+        const sb = Math.round((sh.blur ?? 3) * 12700);
+        const sd = Math.round((sh.offset ?? 2) * 12700);
+        const sa = Math.round((sh.angle ?? 315) * 60000);
+        extras += `<a:effectLst><a:outerShdw blurRad="${sb}" dist="${sd}" dir="${sa}" algn="bl" rotWithShape="0"><a:srgbClr val="${sc}"><a:alpha val="40000"/></a:srgbClr></a:outerShdw></a:effectLst>`;
+      }
+      if (opts.textOutline) {
+        const lw = ptEmu(opts.textOutline.width ?? 1);
+        extras += `<a:ln w="${lw}"><a:solidFill><a:srgbClr val="${opts.textOutline.color}"/></a:solidFill></a:ln>`;
+      }
+      return extras;
+    })() +
     hlinkXml +
     `</a:rPr>` +
     `<a:t>${escXml(text)}</a:t>` +
@@ -2811,8 +2843,12 @@ function buildShapeAnimTimingXml(
 
     const trigger = anim.opts.trigger ?? "onClick";
     const parId = id(), innerParId = id();
+    const repeatAttr = anim.opts.repeat != null
+      ? ` repeatCount="${anim.opts.repeat === "indefinite" ? "indefinite" : anim.opts.repeat * 1000}"`
+      : "";
+    const autoRevAttr = anim.opts.autoReverse ? ' autoRev="1"' : "";
     const innerPar =
-      `<p:par><p:cTn id="${innerParId}" fill="hold">` +
+      `<p:par><p:cTn id="${innerParId}" fill="hold"${repeatAttr}${autoRevAttr}>` +
       `<p:stCondLst><p:cond delay="0"/></p:stCondLst>` +
       `<p:childTnLst>${effectXml}</p:childTnLst>` +
       `</p:cTn></p:par>`;

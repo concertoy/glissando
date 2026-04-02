@@ -204,6 +204,11 @@
 - [x] **Font embedding** — `pres.embedFont(name, path)` / `pres.embedFontData(name, data)` → `ppt/fonts/*.fntdata` with OOXML relationships.
 - [x] **Slide thumbnail** — `pres.setThumbnail(data)` → `docProps/thumbnail.jpeg` in the PPTX package.
 - [x] **Table column span auto-width** — `autoColW` now distributes colspan text evenly across spanned columns.
+- [x] **Animation repeat** — `repeat` on ShapeAnimationOpts (number or "indefinite") → `repeatCount` on `<p:cTn>`.
+- [x] **Animation auto-reverse** — `autoReverse: true` on ShapeAnimationOpts → `autoRev="1"` on `<p:cTn>`.
+- [x] **Table cell text shadow** — `textShadow` on TableCell → `<a:outerShdw>` on cell text `<a:rPr>`.
+- [x] **Table cell text outline** — `textOutline` on TableCell → `<a:ln>` on cell text `<a:rPr>`.
+- [x] **Shape text tab stops** — `tabStops` on AddShapeOpts → `<a:tabLst>` in paragraph properties.
 
 ## Open
 

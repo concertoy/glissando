@@ -854,6 +854,38 @@ describe("OOXML", () => {
     });
   });
 
+  describe("slide duplication", () => {
+    it("clones a slide with its elements", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.background = { color: "FF0000" };
+      slide.addText("Hello", { x: 0, y: 0, w: 5, h: 1 });
+      const clone = pres.duplicateSlide(0);
+      expect(pres._slides).toHaveLength(2);
+      expect(clone._bg).toBe("FF0000");
+      expect(clone._elements).toHaveLength(1);
+      expect(clone._elements[0]).toContain("Hello");
+      // Modifying clone should not affect original
+      clone.addText("World", { x: 0, y: 1, w: 5, h: 1 });
+      expect(slide._elements).toHaveLength(1);
+      expect(clone._elements).toHaveLength(2);
+    });
+  });
+
+  describe("rich text notes", () => {
+    it("accepts TextRun[] for notes", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addNotes([
+        { text: "Bold note", options: { bold: true } },
+        { text: " normal", options: { breakLine: true } },
+        { text: "Line 2" },
+      ]);
+      expect(slide._notes).toHaveLength(3);
+      expect(Array.isArray(slide._notes)).toBe(true);
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

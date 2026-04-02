@@ -6,7 +6,7 @@
  */
 
 import JSZip from "jszip";
-import type { Presentation } from "./index.js";
+import type { Presentation, TextRun } from "./index.js";
 
 // ─── EMU helpers (duplicated to avoid circular import) ─────────────
 
@@ -403,8 +403,32 @@ function notesMasterRelsXml(): string {
 
 // ─── ppt/notesSlides ───────────────────────────────────────────────
 
-function notesSlideXml(notes: string, slideNum: number): string {
-  const escaped = escXml(notes);
+function notesSlideXml(notes: string | TextRun[], slideNum: number): string {
+  let notesBodyXml: string;
+  if (typeof notes === "string") {
+    notesBodyXml = `<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>${escXml(notes)}</a:t></a:r></a:p>`;
+  } else {
+    // Rich text notes: split on breakLine into paragraphs
+    const paragraphs: TextRun[][] = [[]];
+    for (const run of notes) {
+      paragraphs[paragraphs.length - 1].push(run);
+      if (run.options?.breakLine) paragraphs.push([]);
+    }
+    if (paragraphs[paragraphs.length - 1].length === 0) paragraphs.pop();
+    notesBodyXml = paragraphs.map((para) => {
+      const runsXml = para.map((run) => {
+        const attrs = ['lang="en-US"', 'dirty="0"'];
+        const ro = run.options ?? {};
+        if (ro.bold) attrs.push('b="1"');
+        if (ro.italic) attrs.push('i="1"');
+        if (ro.underline) attrs.push('u="sng"');
+        if (ro.fontSize) attrs.push(`sz="${Math.round(ro.fontSize * 100)}"`);
+        return `<a:r><a:rPr ${attrs.join(" ")}/><a:t>${escXml(run.text)}</a:t></a:r>`;
+      }).join("");
+      return `<a:p>${runsXml}</a:p>`;
+    }).join("");
+  }
+
   return (
     xmlDecl() +
     `<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"` +
@@ -428,7 +452,7 @@ function notesSlideXml(notes: string, slideNum: number): string {
     `<p:txBody>` +
     `<a:bodyPr/>` +
     `<a:lstStyle/>` +
-    `<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>${escaped}</a:t></a:r></a:p>` +
+    notesBodyXml +
     `</p:txBody>` +
     `</p:sp>` +
     `</p:spTree>` +

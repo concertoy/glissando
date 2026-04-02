@@ -422,8 +422,8 @@ export interface ThemeComponents {
 
 /** Shared optional fields available on every layout method. */
 export interface BaseLayoutProps {
-  /** Speaker notes shown in presenter view (not visible on the slide). */
-  notes?: string;
+  /** Speaker notes shown in presenter view. String for plain text, TextRun[] for rich formatting. */
+  notes?: string | import("./ooxml/index.js").TextRun[];
 }
 
 export interface TitleLayoutProps extends BaseLayoutProps {

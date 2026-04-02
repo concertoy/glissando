@@ -311,6 +311,15 @@ export class Presentation {
     return slide;
   }
 
+  /** Duplicate an existing slide (0-based index). Returns the new slide. */
+  duplicateSlide(index: number): Slide {
+    const source = this._slides[index];
+    if (!source) throw new Error(`No slide at index ${index}`);
+    const clone = source._clone(this._slides.length);
+    this._slides.push(clone);
+    return clone;
+  }
+
   /**
    * Apply deferred extras (connectors, emojis, animations, footers).
    * Must be called before writeFile.
@@ -444,7 +453,7 @@ export class Slide {
   /** @internal */ _nextId: number = 2;
   /** @internal */ _nameToId = new Map<string, number>();
   /** @internal */ _images: Array<{ rId: string; fileName: string; data: Buffer; contentType: string }> = [];
-  /** @internal */ _notes?: string;
+  /** @internal */ _notes?: string | TextRun[];
   /** @internal */ _timing?: string;
   /** @internal */ _mediaCounter = 0;
   /** @internal */ _hyperlinks: Array<{ rId: string; url: string }> = [];
@@ -453,6 +462,25 @@ export class Slide {
 
   constructor(index: number) {
     this._slideIndex = index;
+  }
+
+  /** @internal Clone this slide into a new slide at the given index. */
+  _clone(newIndex: number): Slide {
+    const s = new Slide(newIndex);
+    s._bg = this._bg;
+    s._bgGradient = this._bgGradient ? { ...this._bgGradient, stops: this._bgGradient.stops.map(st => ({ ...st })) } : undefined;
+    s._bgImageRId = this._bgImageRId;
+    s._elements = [...this._elements];
+    s._nextId = this._nextId;
+    s._nameToId = new Map(this._nameToId);
+    s._images = this._images.map(img => ({ ...img }));
+    s._notes = this._notes;
+    s._timing = this._timing;
+    s._mediaCounter = this._mediaCounter;
+    s._hyperlinks = this._hyperlinks.map(h => ({ ...h }));
+    s._hyperlinkCounter = this._hyperlinkCounter;
+    s._transition = this._transition ? { ...this._transition } : undefined;
+    return s;
   }
 
   set background(bg: { color: string; gradient?: GradientFill; image?: string }) {
@@ -522,7 +550,7 @@ export class Slide {
     this._elements.push(buildTableXml(id, rows, o));
   }
 
-  addNotes(text: string): void {
+  addNotes(text: string | TextRun[]): void {
     this._notes = text;
   }
 

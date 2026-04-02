@@ -60,8 +60,8 @@ export function applyPreset(theme: Theme, preset: FontPreset): Theme {
   };
 }
 
-/** Add speaker notes to a slide. Convenience wrapper for blank() slides. */
-export function speakerNote(slide: Slide, text: string): void {
+/** Add speaker notes to a slide. String for plain text, TextRun[] for rich formatting. */
+export function speakerNote(slide: Slide, text: string | import("./ooxml/index.js").TextRun[]): void {
   slide.addNotes(text);
 }
 
@@ -197,6 +197,13 @@ export class Deck {
       label: props.label,
       labelItalic: props.labelItalic ?? true,
     });
+    return this;
+  }
+
+  /** Duplicate an existing slide (1-based index). Returns this for chaining. */
+  duplicate(slideIndex: number): this {
+    this.pres.duplicateSlide(slideIndex - 1);
+    this._slideCount++;
     return this;
   }
 

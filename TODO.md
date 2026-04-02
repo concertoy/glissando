@@ -91,6 +91,7 @@
 - [x] **Text fit with minFontScale** — `fit: { minFontScale: 50 }` on AddTextOpts → `<a:normAutofit fontScale="50000"/>`.
 - [x] **Slide hide** — `slide.hidden = true` → `show="0"` on `<p:sld>` to skip during playback.
 - [x] **Table cell padding per-side** — `margin: [top, right, bottom, left]` on TableCell options for per-side cell padding.
+- [x] **Paragraph indent/hanging** — `indent` and `marginLeft` on TextRunOpts → `indent` and `marL` attributes on `<a:pPr>`.
 
 ## Open
 
@@ -110,4 +111,5 @@
 - [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
 - [ ] **Shape 3D effects** — `bevel`, `extrusion` on AddShapeOpts → `<a:sp3d>` for depth/perspective effects.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
-- [ ] **Paragraph indent/hanging** — `indent` and `marL` on TextRunOpts for hanging/first-line indents.
+- [ ] **Text outline** — `outline` on TextRunOpts for outlined/stroked text characters via `<a:ln>` in `<a:rPr>`.
+- [ ] **Shape glow effect** — `glow` on AddShapeOpts/AddTextOpts → `<a:glow>` in `<a:effectLst>`.

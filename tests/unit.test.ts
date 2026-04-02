@@ -1085,6 +1085,32 @@ describe("OOXML", () => {
     });
   });
 
+  describe("paragraph indent and margin", () => {
+    it("sets first-line indent on paragraph", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Indented first line",
+        options: { indent: 0.5 },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      // 0.5" = 457200 EMU
+      expect(xml).toContain('indent="457200"');
+    });
+
+    it("sets hanging indent (negative)", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Hanging indent",
+        options: { indent: -0.25, marginLeft: 0.5 },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('indent="-228600"');
+      expect(xml).toContain('marL="457200"');
+    });
+  });
+
   describe("slide hidden", () => {
     it("adds show=0 to hidden slides", () => {
       const pres = new Presentation();

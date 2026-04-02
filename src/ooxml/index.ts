@@ -71,6 +71,10 @@ export interface TextRunOpts {
   opacity?: number;
   /** Internal hyperlink to a slide (1-based index). Navigates to that slide on click. */
   slideLink?: number;
+  /** First-line indent in inches (negative for hanging indent). */
+  indent?: number;
+  /** Left margin for the paragraph in inches. */
+  marginLeft?: number;
 }
 
 export interface BulletOpts {
@@ -1024,6 +1028,14 @@ function buildParagraphProps(opts: Record<string, any>): string {
     parts.push(`lvl="${opts.indentLevel}"`);
     parts.push(`indent="0"`);
     parts.push(`marL="${opts.indentLevel * 457200}"`);
+  }
+  // Explicit first-line indent (inches → EMU)
+  if (opts.indent != null && opts.indentLevel == null) {
+    parts.push(`indent="${emu(opts.indent)}"`);
+  }
+  // Explicit left margin (inches → EMU)
+  if (opts.marginLeft != null && opts.indentLevel == null) {
+    parts.push(`marL="${emu(opts.marginLeft)}"`);
   }
 
   const children: string[] = [];

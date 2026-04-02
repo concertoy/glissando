@@ -277,11 +277,67 @@ export function mathToTextRuns(
  * Expand a text string containing $...$ inline math into pptxgenjs TextProps[].
  * Returns null if the text contains no inline math (caller should use plain string).
  */
+/**
+ * Check if text has inline subscript/superscript outside of math delimiters.
+ * Matches ^{...} and _{...} patterns.
+ */
+function hasInlineSubSup(text: string): boolean {
+  return /[\^_]\{[^}]+\}/.test(text);
+}
+
+/**
+ * Expand plain-text ^{super} and _{sub} into text runs.
+ * Does NOT handle $...$ math — just bare ^{} and _{} outside of math.
+ */
+function expandSubSup(text: string, base: BaseTextOpts): TextRun[] | null {
+  if (!hasInlineSubSup(text)) return null;
+
+  const runs: TextRun[] = [];
+  const subFontSize = Math.round(base.fontSize * 0.7);
+  let i = 0;
+  let current = "";
+
+  function flush() {
+    if (current) {
+      runs.push({ text: current, options: { fontSize: base.fontSize, fontFace: base.fontFace, color: base.color } });
+      current = "";
+    }
+  }
+
+  while (i < text.length) {
+    if ((text[i] === "^" || text[i] === "_") && text[i + 1] === "{") {
+      flush();
+      const isSup = text[i] === "^";
+      const [arg, next] = extractArg(text, i + 1);
+      runs.push({
+        text: arg,
+        options: {
+          fontSize: subFontSize,
+          fontFace: base.fontFace,
+          color: base.color,
+          ...(isSup ? { superscript: true } : { subscript: true }),
+        },
+      });
+      i = next;
+    } else {
+      current += text[i];
+      i++;
+    }
+  }
+  flush();
+
+  return runs.length > 0 ? runs : null;
+}
+
 export function expandTextWithMath(
   text: string,
   base: BaseTextOpts,
 ): TextRun[] | null {
-  if (!text.includes("$")) return null;
+  // Check for $...$ math first
+  if (!text.includes("$")) {
+    // Check for bare ^{} and _{} subscript/superscript
+    return expandSubSup(text, base);
+  }
 
   const segments = parseInlineMath(text);
 

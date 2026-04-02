@@ -69,6 +69,8 @@ export interface TextRunOpts {
   gradient?: GradientFill;
   /** Text opacity 0–1 (1 = fully opaque). */
   opacity?: number;
+  /** Internal hyperlink to a slide (1-based index). Navigates to that slide on click. */
+  slideLink?: number;
 }
 
 export interface BulletOpts {
@@ -243,6 +245,8 @@ export interface AddTableOpts {
   /** Row height — single number for uniform, or array for per-row heights (inches). */
   rowH?: number | number[];
   colW?: number[];
+  /** Auto-calculate column widths based on content length (ignored if colW is set). */
+  autoColW?: boolean;
   margin?: number | number[];
 }
 
@@ -610,6 +614,7 @@ export class Slide {
     s._timing = this._timing;
     s._mediaCounter = this._mediaCounter;
     s._hyperlinks = this._hyperlinks.map(h => ({ ...h }));
+    s._slideLinks = this._slideLinks.map(l => ({ ...l }));
     s._hyperlinkCounter = this._hyperlinkCounter;
     s._transition = this._transition ? { ...this._transition } : undefined;
     return s;
@@ -643,11 +648,21 @@ export class Slide {
     return id;
   }
 
+  /** @internal */ _slideLinks: Array<{ rId: string; slideIndex: number }> = [];
+
   /** @internal Register a hyperlink and return its relationship ID. */
   _addHyperlink(url: string): string {
     this._hyperlinkCounter++;
     const rId = `rIdHlink${this._hyperlinkCounter}`;
     this._hyperlinks.push({ rId, url });
+    return rId;
+  }
+
+  /** @internal Register an internal slide link and return its relationship ID. */
+  _addSlideLink(slideIndex: number): string {
+    this._hyperlinkCounter++;
+    const rId = `rIdHlink${this._hyperlinkCounter}`;
+    this._slideLinks.push({ rId, slideIndex });
     return rId;
   }
 
@@ -774,6 +789,11 @@ export class Slide {
     for (const hlink of this._hyperlinks) {
       rels.push(
         `<Relationship Id="${hlink.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escXml(hlink.url)}" TargetMode="External"/>`,
+      );
+    }
+    for (const slink of this._slideLinks) {
+      rels.push(
+        `<Relationship Id="${slink.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slide${slink.slideIndex}.xml"/>`,
       );
     }
     if (hasNotes) {
@@ -1074,6 +1094,9 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);
     children.push(`<a:hlinkClick r:id="${rId}"/>`);
+  } else if (opts.slideLink != null && slide) {
+    const rId = slide._addSlideLink(opts.slideLink);
+    children.push(`<a:hlinkClick r:id="${rId}" action="ppaction://hlinksldjump"/>`);
   }
 
   if (children.length > 0) {
@@ -1340,9 +1363,25 @@ function buildTableXml(
     : Array(rows.length).fill(defaultRowH);
 
   const numCols = rows[0]?.length ?? 1;
-  const colWidths: number[] = opts.colW
-    ? (opts.colW as number[]).map((w: number) => emu(w))
-    : Array(numCols).fill(Math.round(cx / numCols));
+  let colWidths: number[];
+  if (opts.colW) {
+    colWidths = (opts.colW as number[]).map((w: number) => emu(w));
+  } else if (opts.autoColW && rows.length > 0) {
+    // Calculate column widths proportional to max text length in each column
+    const maxLens = Array(numCols).fill(0);
+    for (const row of rows) {
+      for (let col = 0; col < numCols && col < row.length; col++) {
+        const cell = row[col];
+        const text = typeof cell === "string" ? cell : (typeof cell.text === "string" ? cell.text : "");
+        maxLens[col] = Math.max(maxLens[col], text.length);
+      }
+    }
+    // Minimum 1 char width to avoid zero-width columns
+    const totalLen = maxLens.reduce((s, l) => s + Math.max(l, 1), 0);
+    colWidths = maxLens.map((l) => Math.round(cx * Math.max(l, 1) / totalLen));
+  } else {
+    colWidths = Array(numCols).fill(Math.round(cx / numCols));
+  }
 
   // Table margin (cell inset) in EMU
   let cellMargin = ptEmu(4); // default

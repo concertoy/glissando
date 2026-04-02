@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from "vitest";
 import { columns, rows, below, inset, contentArea, contentAreaBelow } from "../src/layout.js";
-import { parseInlineMath, isComplexMath, mathToTextRuns } from "../src/inline-math.js";
+import { parseInlineMath, isComplexMath, mathToTextRuns, expandTextWithMath } from "../src/inline-math.js";
 import { Presentation, Slide } from "../src/ooxml/index.js";
 import type { Rect, ThemeSpacing } from "../src/types.js";
 
@@ -1082,6 +1082,66 @@ describe("OOXML", () => {
       expect(slide._elements.length).toBe(8);
       expect(slide._elements[0]).toContain("ellipse");
       expect(slide._elements[5]).toContain("Design");
+    });
+  });
+
+  describe("internal slide hyperlinks", () => {
+    it("adds slide link relationship and action", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{
+        text: "Go to slide 3",
+        options: { color: "0000FF", slideLink: 3 },
+      }], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0].toString();
+      expect(xml).toContain('action="ppaction://hlinksldjump"');
+      // Should register a slide link relationship
+      expect(slide._slideLinks.length).toBe(1);
+      expect(slide._slideLinks[0].slideIndex).toBe(3);
+      // Rels XML should have slide target
+      const rels = slide._toRelsXml(false);
+      expect(rels).toContain("slide3.xml");
+    });
+  });
+
+  describe("table auto-column widths", () => {
+    it("calculates proportional column widths from content", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Short" }, { text: "This is a much longer cell text" }],
+      ], { x: 0, y: 0, w: 10, autoColW: true });
+      const xml = slide._elements[0].toString();
+      // Should have two gridCol elements with different widths
+      const cols = xml.match(/<a:gridCol w="(\d+)"\/>/g);
+      expect(cols).toHaveLength(2);
+      // Second column should be wider than first
+      const w1 = parseInt(cols![0].match(/w="(\d+)"/)?.[1] ?? "0");
+      const w2 = parseInt(cols![1].match(/w="(\d+)"/)?.[1] ?? "0");
+      expect(w2).toBeGreaterThan(w1);
+    });
+  });
+
+  describe("inline subscript/superscript in text", () => {
+    it("expands ^{text} and _{text} in plain text", () => {
+      const runs = expandTextWithMath("H_{2}O is water", { fontSize: 14, fontFace: "Arial", color: "000000" });
+      expect(runs).not.toBeNull();
+      expect(runs!.length).toBe(3); // "H", subscript "2", "O is water"
+      expect(runs![1].options?.subscript).toBe(true);
+      expect(runs![1].text).toBe("2");
+    });
+
+    it("handles superscript", () => {
+      const runs = expandTextWithMath("x^{2} + y^{3}", { fontSize: 14, fontFace: "Arial", color: "000000" });
+      expect(runs).not.toBeNull();
+      // "x", super "2", " + y", super "3"
+      expect(runs![1].options?.superscript).toBe(true);
+      expect(runs![1].text).toBe("2");
+    });
+
+    it("returns null for plain text without sub/sup", () => {
+      const runs = expandTextWithMath("Just plain text", { fontSize: 14, fontFace: "Arial", color: "000000" });
+      expect(runs).toBeNull();
     });
   });
 

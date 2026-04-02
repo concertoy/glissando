@@ -82,6 +82,10 @@
 - [x] **Text run opacity** — `opacity` on TextRunOpts → `<a:alpha>` on text color for per-run transparency.
 - [x] **Timeline component** — `timeline(slide, { events, direction?, ... })` horizontal/vertical event timeline with dots, dates, titles.
 
+- [x] **Linked slides (hyperlink to slide)** — `slideLink` on TextRunOpts → `<a:hlinkClick action="ppaction://hlinksldjump">` for internal slide navigation.
+- [x] **Table auto-column widths** — `autoColW` on AddTableOpts calculates proportional column widths from cell content length.
+- [x] **Text subscript/superscript in bodyText** — `^{super}` and `_{sub}` syntax in plain text (outside `$...$`) via `expandTextWithMath`.
+
 ## Open
 
 ### High impact
@@ -96,6 +100,7 @@
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
 - [ ] **Shape connectors by name** — `slide.connect("boxA", "boxB", { type: "elbow" })` using objectName for simpler diagram wiring.
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
-- [ ] **Table auto-column widths** — calculate column widths based on content length when `colW` is not specified.
-- [ ] **Linked slides (hyperlink to slide)** — internal hyperlinks that jump to a specific slide by index.
-- [ ] **Text subscript/superscript in bodyText** — extend inline syntax to support `^{super}` and `_{sub}` in component text.
+- [ ] **Table cell vertical text** — `vertical` on TableCell options for rotated header cells.
+- [ ] **Image tiling** — `tile` on AddImageOpts for repeating image patterns in backgrounds.
+- [ ] **Text columns in shapes** — multi-column text inside shapes (already on AddTextOpts, extend to AddShapeOpts).
+- [ ] **Numbered list start index** — `startAt` on NumberedListProps for lists that start at a number other than 1.

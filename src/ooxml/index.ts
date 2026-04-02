@@ -253,6 +253,8 @@ export interface AddShapeOpts {
   columns?: number;
   /** Column spacing in inches (default 0.3). */
   columnSpacing?: number;
+  /** Hyperlink URL — makes the entire shape clickable. */
+  href?: string;
 }
 
 /** A single path segment for freeform shapes. */
@@ -308,6 +310,12 @@ export interface AddImageOpts {
   shadow?: ShadowOpts;
   /** Tile (repeat) the image across the fill area. */
   tile?: { sx?: number; sy?: number; tx?: number; ty?: number; flip?: "none" | "x" | "y" | "xy"; align?: string };
+  /** Grayscale filter (0–1, 0=no effect, 1=fully grayscale). */
+  grayscale?: number;
+  /** Brightness adjustment (-1 to 1, 0=normal). */
+  brightness?: number;
+  /** Contrast adjustment (-1 to 1, 0=normal). */
+  contrast?: number;
 }
 
 export interface AddTableOpts {
@@ -320,6 +328,8 @@ export interface AddTableOpts {
   /** Auto-calculate column widths based on content length (ignored if colW is set). */
   autoColW?: boolean;
   margin?: number | number[];
+  /** Alternating row stripe colors [evenColor, oddColor]. Applied to data rows (not header). */
+  stripe?: [string, string];
 }
 
 export type TransitionType = "fade" | "push" | "wipe" | "cover" | "split" | "cut";
@@ -385,6 +395,12 @@ export interface WriteExtras {
 
 // ─── Presentation ───────────────────────────────────────────────────
 
+export interface PresentationDefaults {
+  fontFace?: string;
+  fontSize?: number;
+  color?: string;
+}
+
 export class Presentation {
   /** @internal */ _slides: Slide[] = [];
   /** @internal */ _width = 10;
@@ -393,6 +409,7 @@ export class Presentation {
   /** @internal */ _bodyFont = "Calibri";
   /** @internal */ _extras: WriteExtras = {};
   /** @internal */ _metadata: { title?: string; author?: string; subject?: string; keywords?: string } = {};
+  /** @internal */ _defaults: PresentationDefaults = {};
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -411,6 +428,11 @@ export class Presentation {
     return { headFontFace: this._headFont, bodyFontFace: this._bodyFont };
   }
 
+  /** Set presentation-level text defaults (font, size, color). Applied when not overridden per-element. */
+  setDefaults(defaults: PresentationDefaults): void {
+    Object.assign(this._defaults, defaults);
+  }
+
   /** Set presentation metadata (title, author, subject, keywords). */
   setMetadata(meta: { title?: string; author?: string; subject?: string; keywords?: string }): void {
     Object.assign(this._metadata, meta);
@@ -418,6 +440,7 @@ export class Presentation {
 
   addSlide(): Slide {
     const slide = new Slide(this._slides.length);
+    slide._defaults = this._defaults;
     this._slides.push(slide);
     return slide;
   }
@@ -678,6 +701,7 @@ export class Slide {
   /** @internal */ _hyperlinkCounter = 0;
   /** @internal */ _transition?: TransitionOpts;
   /** @internal */ _hidden = false;
+  /** @internal */ _defaults: PresentationDefaults = {};
 
   constructor(index: number) {
     this._slideIndex = index;
@@ -763,7 +787,8 @@ export class Slide {
   }
 
   addShape(type: string, opts: AddShapeOpts): void {
-    const o: Record<string, any> = opts;
+    const o: Record<string, any> = { ...opts };
+    if (o.href) o._hlinkRId = this._addHyperlink(o.href);
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `Shape_${id}`;
     this._elements.push(buildShapeXml(id, name, type, o));
@@ -1170,9 +1195,15 @@ function buildParagraphProps(opts: Record<string, any>): string {
 }
 
 function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
+  // Apply presentation-level defaults for unset properties
+  const defs = slide?._defaults;
+  const fontSize = opts.fontSize ?? defs?.fontSize;
+  const fontFace = opts.fontFace ?? defs?.fontFace;
+  const color = (!opts.gradient && !opts.color) ? defs?.color : opts.color;
+
   const attrs: string[] = ['lang="en-US"'];
 
-  if (opts.fontSize) attrs.push(`sz="${sz100(opts.fontSize)}"`);
+  if (fontSize) attrs.push(`sz="${sz100(fontSize)}"`);
   if (opts.bold) attrs.push(`b="1"`);
   if (opts.italic) attrs.push(`i="1"`);
   if (opts.underline) attrs.push(`u="sng"`);
@@ -1187,12 +1218,12 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   const children: string[] = [];
   if (opts.gradient) {
     children.push(buildGradientFillXml(opts.gradient));
-  } else if (opts.color) {
+  } else if (color) {
     const alphaXml = opts.opacity != null ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>` : "";
-    children.push(`<a:solidFill><a:srgbClr val="${opts.color}">${alphaXml}</a:srgbClr></a:solidFill>`);
+    children.push(`<a:solidFill><a:srgbClr val="${color}">${alphaXml}</a:srgbClr></a:solidFill>`);
   }
-  if (opts.fontFace) {
-    children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+  if (fontFace) {
+    children.push(`<a:latin typeface="${escXml(fontFace)}"/>`);
   }
   if (opts.highlight) {
     children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
@@ -1478,7 +1509,9 @@ function buildShapeXml(
   return (
     `<p:sp>` +
     `<p:nvSpPr>` +
-    `<p:cNvPr id="${id}" name="${escXml(name)}"/>` +
+    (opts._hlinkRId
+      ? `<p:cNvPr id="${id}" name="${escXml(name)}"><a:hlinkClick r:id="${opts._hlinkRId}"/></p:cNvPr>`
+      : `<p:cNvPr id="${id}" name="${escXml(name)}"/>`) +
     `<p:cNvSpPr/><p:nvPr/>` +
     `</p:nvSpPr>` +
     `<p:spPr>${xfrm}${geom}${fill}${line}${shadow}${(opts.bevel || opts.extrusion) ? build3dXml(opts.bevel, opts.extrusion) : ""}</p:spPr>` +
@@ -1590,7 +1623,18 @@ function buildPictureXml(
     `<p:nvPr/>` +
     `</p:nvPicPr>` +
     `<p:blipFill>` +
-    `<a:blip r:embed="${rId}"/>` +
+    (() => {
+      const effects: string[] = [];
+      if (opts.grayscale != null && opts.grayscale > 0) effects.push(`<a:grayscl/>`);
+      if (opts.brightness != null || opts.contrast != null) {
+        const bright = Math.round((opts.brightness ?? 0) * 100000);
+        const contrast = Math.round((opts.contrast ?? 0) * 100000);
+        effects.push(`<a:lum bright="${bright}" contrast="${contrast}"/>`);
+      }
+      return effects.length > 0
+        ? `<a:blip r:embed="${rId}">${effects.join("")}</a:blip>`
+        : `<a:blip r:embed="${rId}"/>`;
+    })() +
     (opts.crop
       ? `<a:srcRect t="${Math.round((opts.crop.top ?? 0) * 1000)}" r="${Math.round((opts.crop.right ?? 0) * 1000)}" b="${Math.round((opts.crop.bottom ?? 0) * 1000)}" l="${Math.round((opts.crop.left ?? 0) * 1000)}"/>`
       : "") +
@@ -1683,10 +1727,17 @@ function buildTableXml(
 
   const gridCols = colWidths.map((w) => `<a:gridCol w="${w}"/>`).join("");
 
+  const stripe: [string, string] | undefined = opts.stripe;
+
   const rowXmls = rows.map((row, rowIdx) => {
     const cells = row.map((cell: any) => {
       const cellObj = typeof cell === "string" ? { text: cell } : cell;
-      const co = cellObj.options ?? {};
+      const co = { ...(cellObj.options ?? {}) };
+
+      // Apply stripe fill to data rows (skip header row 0) if no explicit fill
+      if (stripe && rowIdx > 0 && !co.fill && !co.gradient) {
+        co.fill = { color: (rowIdx - 1) % 2 === 0 ? stripe[0] : stripe[1] };
+      }
 
       // Cell text
       const textXml = buildCellTextXml(cellObj.text, co);

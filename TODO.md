@@ -108,6 +108,11 @@
 - [x] **Shape connectors by name** — `deck.connect("boxA", "boxB", { type: "elbow" })` convenience method on Deck with `fromSide`/`toSide` options.
 - [x] **Shape preset effects** — `shapePresets.glossy()`, `.matte()`, `.card()`, `.embossed()`, `.floating()` combining bevel, shadow, gradient, inner shadow.
 
+- [x] **Shape hyperlinks** — `href` on AddShapeOpts → `<a:hlinkClick>` on `<p:cNvPr>` makes entire shape clickable.
+- [x] **Table striping** — `stripe: [evenColor, oddColor]` on AddTableOpts for alternating row background colors (skips header row).
+- [x] **Image filters** — `grayscale`, `brightness`, `contrast` on AddImageOpts → `<a:grayscl>` and `<a:lum>` on blip.
+- [x] **Presentation-level defaults** — `pres.setDefaults({ fontFace, fontSize, color })` applied as fallback in text runs.
+
 ## Open
 
 ### High impact
@@ -122,15 +127,19 @@
 - [ ] **Font embedding** — embed custom fonts in the PPTX for portability.
 - [ ] **Slide master backgrounds** — allow themes to define reusable slide masters with custom backgrounds/logos.
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
-
-### New proposals
-- [ ] **Shape hyperlinks** — `href` on AddShapeOpts so entire shapes (not just text runs) act as clickable links.
 - [ ] **OLE embedding** — `slide.addOleObject()` for embedding Excel/PDF objects as icons or inline frames.
 - [ ] **Slide layout templates** — `pres.addLayout(name, { placeholders })` for custom slide layouts in slideMasters.
-- [ ] **Table striping** — `stripe: true` on AddTableOpts for alternating row background colors.
-- [ ] **Image filters** — `grayscale`, `brightness`, `contrast` on AddImageOpts via `<a:duotone>` / `<a:lum>`.
 - [ ] **Text run hyperlink to slide** — combine `href` and `slideLink` in a single run for tooltip + navigation.
-- [ ] **Presentation-level defaults** — `pres.defaults({ font, fontSize, color })` to set fallback text styling across all slides.
 - [ ] **Shape animation presets** — `appear`, `fadeIn`, `flyIn` on shapes via `<p:timing>` (extend build animations beyond bullets).
+
+### New proposals
 - [ ] **Treemap / heatmap component** — `treemap(slide, { data, ... })` for data visualization using nested colored rects.
 - [ ] **Icon library component** — `icon(slide, { name, ... })` expand beyond Lucide to Material Symbols / Phosphor icons.
+- [ ] **Table header freeze** — `freezeHeader: true` on AddTableOpts to lock first row in PowerPoint table view.
+- [ ] **Shape click actions** — `action` on AddShapeOpts for built-in PowerPoint actions (next slide, previous slide, first/last, end show).
+- [ ] **Image placeholder** — lazy image loading with `placeholder: true` for decks where images are resolved later.
+- [ ] **Text auto-size** — `autoSize: true` on AddTextOpts to auto-shrink text to fit bounding box.
+- [ ] **Slide comments** — `slide.addComment({ text, author })` for review annotations.
+- [ ] **Color theme variables** — `pres.defineColor("accent1", "3366CC")` for reusable named colors across elements.
+- [ ] **Gradient text on shapes** — extend shape text to support gradient fills on text runs within shapes.
+- [ ] **Table sorting indicator** — visual sort arrows on header cells for data table presentations.

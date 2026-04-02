@@ -1818,4 +1818,132 @@ describe("OOXML", () => {
       expect(preset.rectRadius).toBeDefined();
     });
   });
+
+  describe("Shape hyperlinks", () => {
+    it("emits <a:hlinkClick> on shape cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 3, h: 2,
+        fill: { color: "3366CC" },
+        href: "https://example.com",
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:hlinkClick");
+      expect(xml).toContain("rIdHlink");
+    });
+
+    it("does not emit hlinkClick when no href", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 3, h: 2,
+        fill: { color: "CCCCCC" },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("hlinkClick");
+    });
+  });
+
+  describe("Table striping", () => {
+    it("applies alternating row fills", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [
+          [{ text: "Name" }, { text: "Value" }],
+          [{ text: "A" }, { text: "1" }],
+          [{ text: "B" }, { text: "2" }],
+          [{ text: "C" }, { text: "3" }],
+        ],
+        { x: 0, y: 0, w: 8, stripe: ["F0F0F0", "FFFFFF"] },
+      );
+      const xml = slide._toXml(1);
+      // Row 1 (data row 0, even) should get F0F0F0
+      expect(xml).toContain('val="F0F0F0"');
+      // Row 2 (data row 1, odd) should get FFFFFF
+      expect(xml).toContain('val="FFFFFF"');
+    });
+
+    it("does not stripe the header row", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [
+          [{ text: "Header", options: { fill: { color: "333333" } } }],
+          [{ text: "Data" }],
+        ],
+        { x: 0, y: 0, w: 8, stripe: ["EEEEEE", "FFFFFF"] },
+      );
+      const xml = slide._toXml(1);
+      // Header keeps its own fill
+      expect(xml).toContain('val="333333"');
+    });
+  });
+
+  describe("Image filters", () => {
+    it("emits <a:grayscl> when grayscale is set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 3, h: 3,
+        grayscale: 1,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:grayscl/>");
+    });
+
+    it("emits <a:lum> for brightness/contrast", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 3, h: 3,
+        brightness: 0.2,
+        contrast: -0.1,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:lum");
+      expect(xml).toContain('bright="20000"');
+      expect(xml).toContain('contrast="-10000"');
+    });
+
+    it("has no effects when filters not set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "data:image/png;base64,iVBORw0KGgo=",
+        x: 0, y: 0, w: 2, h: 2,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("<a:grayscl");
+      expect(xml).not.toContain("<a:lum");
+    });
+  });
+
+  describe("Presentation-level defaults", () => {
+    it("applies default font/size/color to text runs", () => {
+      const pres = new Presentation();
+      pres.setDefaults({ fontFace: "Georgia", fontSize: 14, color: "FF0000" });
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Hello" }]);
+      const xml = slide._toXml(1);
+      expect(xml).toContain('typeface="Georgia"');
+      expect(xml).toContain(`sz="${14 * 100}"`);
+      expect(xml).toContain('val="FF0000"');
+    });
+
+    it("explicit run opts override defaults", () => {
+      const pres = new Presentation();
+      pres.setDefaults({ fontFace: "Georgia", fontSize: 14, color: "FF0000" });
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Custom", options: { fontFace: "Arial", fontSize: 20, color: "0000FF" } }]);
+      const xml = slide._toXml(1);
+      expect(xml).toContain('typeface="Arial"');
+      expect(xml).toContain(`sz="${20 * 100}"`);
+      expect(xml).toContain('val="0000FF"');
+      expect(xml).not.toContain("Georgia");
+    });
+  });
 });

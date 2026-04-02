@@ -2162,4 +2162,175 @@ describe("OOXML", () => {
       expect(pres._customProps.get("Draft")).toBe(true);
     });
   });
+
+  describe("Text run hyperlink to slide (combined)", () => {
+    it("combines href and slideLink with tooltip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Link", options: { href: "See slide 3", slideLink: 2 } }], { x: 1, y: 1, w: 4 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("ppaction://hlinksldjump");
+      expect(xml).toContain("See slide 3");
+    });
+  });
+
+  describe("Slide advanceAfter (kiosk timing)", () => {
+    it("sets advanceAfter on transition", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.advanceAfter = 5000;
+      expect(slide._transition).toBeDefined();
+      expect(slide._transition!.advanceAfter).toBe(5000);
+    });
+  });
+
+  describe("Table cell text rotation", () => {
+    it("applies rot attribute on bodyPr for plain text cells", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["Header"], [{ text: "Rotated", options: { textRotation: 90 } }]],
+        { x: 1, y: 1, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('rot="5400000"'); // 90 * 60000
+    });
+
+    it("applies rot attribute for rich text cells", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [["Header"], [{ text: [{ text: "Rich" }], options: { textRotation: 45 } }]],
+        { x: 1, y: 1, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('rot="2700000"'); // 45 * 60000
+    });
+  });
+
+  describe("Image blur effect", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    it("adds a:blur element to blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 1, y: 1, w: 2, h: 2, blur: 5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:blur");
+      expect(xml).toContain('rad="63500"'); // 5 * 12700
+    });
+
+    it("does not add blur when not specified", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 1, y: 1, w: 2, h: 2 });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("<a:blur");
+    });
+  });
+
+  describe("Group shape hyperlinks", () => {
+    it("adds hlinkClick to group cNvPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const grp = slide.addGroup({ x: 1, y: 1, w: 4, h: 3 });
+      grp.href = "https://example.com";
+      grp.addText("Inside", { x: 1, y: 1, w: 2, h: 1 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<p:grpSp>");
+      expect(xml).toContain("hlinkClick");
+      expect(slide._hyperlinks.some(h => h.url === "https://example.com")).toBe(true);
+    });
+  });
+
+  describe("Slide section markers", () => {
+    it("stores sections on presentation", () => {
+      const pres = new Presentation();
+      pres.addSection("Introduction");
+      pres.addSlide();
+      pres.addSlide();
+      pres.addSection("Body");
+      pres.addSlide();
+      expect(pres._sections).toHaveLength(2);
+      expect(pres._sections[0].name).toBe("Introduction");
+      expect(pres._sections[0].firstSlideIndex).toBe(0);
+      expect(pres._sections[1].name).toBe("Body");
+      expect(pres._sections[1].firstSlideIndex).toBe(2);
+    });
+  });
+
+  describe("Multi-level numbered lists (numberType)", () => {
+    it("uses alphaLcPeriod numbering", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Item", options: { bullet: { type: "number", numberType: "alphaLcPeriod" } } }], { x: 0, y: 0, w: 5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('type="alphaLcPeriod"');
+    });
+
+    it("defaults to arabicPeriod when numberType not specified", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([{ text: "Item", options: { bullet: { type: "number" } } }], { x: 0, y: 0, w: 5 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('type="arabicPeriod"');
+    });
+  });
+
+  describe("Shape compound lines", () => {
+    it("adds cmpd attribute to line", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 3, h: 2, line: { color: "000000", width: 3, compound: "dbl" } });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('cmpd="dbl"');
+    });
+  });
+
+  describe("Table cell diagonal borders", () => {
+    it("renders lnTlToBr for diagonalDown", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Cell", options: { diagonalDown: { color: "FF0000", pt: 2 } } }]],
+        { x: 0, y: 0, w: 5 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:lnTlToBr");
+      expect(xml).toContain("FF0000");
+    });
+
+    it("renders lnBlToTr for diagonalUp", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Cell", options: { diagonalUp: { color: "0000FF" } } }]],
+        { x: 0, y: 0, w: 5 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:lnBlToTr");
+      expect(xml).toContain("0000FF");
+    });
+  });
+
+  describe("Image recolor (duotone)", () => {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    it("adds duotone element to blip", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 2, h: 2, recolor: ["000000", "FFFFFF"] });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:duotone>");
+      expect(xml).toContain("000000");
+      expect(xml).toContain("FFFFFF");
+    });
+  });
+
+  describe("Presentation-wide slide transitions", () => {
+    it("stores default transition", () => {
+      const pres = new Presentation();
+      pres.setTransition({ type: "fade", duration: 1.5 });
+      expect(pres._defaultTransition).toBeDefined();
+      expect(pres._defaultTransition!.type).toBe("fade");
+    });
+  });
 });

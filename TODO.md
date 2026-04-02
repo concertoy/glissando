@@ -127,6 +127,18 @@
 - [x] **Shape text wrapping** — `wrap: "none" | "square"` on AddShapeOpts → `wrap` attribute on `<a:bodyPr>`.
 - [x] **Presentation custom properties** — `pres.setCustomProperty(name, value)` → `docProps/custom.xml` with string/number/boolean types.
 
+- [x] **Text run hyperlink to slide** — combine `href` and `slideLink` in a single run for tooltip + navigation.
+- [x] **Slide timing** — `advanceAfter` on slide for auto-advance timing (kiosk mode).
+- [x] **Table cell text rotation** — `textRotation` on TableCell options → `rot` on `<a:bodyPr>` for angled header text.
+- [x] **Image blur effect** — `blur` on AddImageOpts → `<a:blur>` on blip for Gaussian blur.
+- [x] **Group shape hyperlinks** — `href` on GroupShape → `<a:hlinkClick>` on `<p:cNvPr>` for clickable grouped elements.
+- [x] **Slide section markers** — `pres.addSection(name)` → `<p14:sectionLst>` in presentation.xml for named slide sections.
+- [x] **Multi-level numbered lists** — `numberType` on BulletOpts (`alphaLcPeriod`, `romanLcPeriod`, etc.) + `indentLevel` for nested outline-style lists.
+- [x] **Shape compound lines** — `compound: "dbl" | "thickThin" | "thinThick" | "tri"` on LineOpts → `cmpd` attribute on `<a:ln>`.
+- [x] **Table cell diagonal borders** — `diagonalDown`/`diagonalUp` on TableCell → `<a:lnTlToBr>`/`<a:lnBlToTr>` in `<a:tcPr>`.
+- [x] **Image recolor** — `recolor: [shadow, highlight]` on AddImageOpts → `<a:duotone>` on blip.
+- [x] **Presentation-wide slide transitions** — `pres.setTransition(opts)` applies default transition to all slides without one.
+
 ## Open
 
 ### High impact
@@ -143,7 +155,6 @@
 - [ ] **Ink annotations** — `slide.addInk()` for freehand drawing paths via `<p:inkPen>`.
 - [ ] **OLE embedding** — `slide.addOleObject()` for embedding Excel/PDF objects as icons or inline frames.
 - [ ] **Slide layout templates** — `pres.addLayout(name, { placeholders })` for custom slide layouts in slideMasters.
-- [ ] **Text run hyperlink to slide** — combine `href` and `slideLink` in a single run for tooltip + navigation.
 - [ ] **Shape animation presets** — `appear`, `fadeIn`, `flyIn` on shapes via `<p:timing>` (extend build animations beyond bullets).
 
 ### New proposals
@@ -153,12 +164,13 @@
 - [ ] **Image placeholder** — lazy image loading with `placeholder: true` for decks where images are resolved later.
 - [ ] **Table sorting indicator** — visual sort arrows on header cells for data table presentations.
 - [ ] **Slide background audio** — `bgAudio` on slide for looping background sound.
-- [ ] **Slide section markers** — `pres.addSection(name)` to group slides into named sections.
 - [ ] **Shape connection points** — custom `cxnPts` on shapes for additional connector attachment positions.
-- [ ] **Table cell text rotation** — `textRotation` on TableCell options for angled header text.
 - [ ] **Text fit with line count** — `maxLines` on AddTextOpts to limit text to N lines with overflow ellipsis.
-- [ ] **Image effects** — `blur`, `sharpen` on AddImageOpts via `<a:blur>` effect on blip.
-- [ ] **Slide timing** — `advanceAfter` on slide for auto-advance timing (kiosk mode).
 - [ ] **Shape arrow keys navigation** — `tabOrder` on shapes for keyboard navigation order.
-- [ ] **Group shape hyperlinks** — `href` on GroupShape for clickable grouped elements.
-- [ ] **Multi-level numbered lists** — nested `a`, `b`, `c` sub-numbering for outline-style lists.
+- [ ] **Slide master footer placeholders** — wire `<p:ph type="ftr"/>`, `<p:ph type="sldNum"/>`, `<p:ph type="dt"/>` on slide masters for native footer rendering.
+- [ ] **Table minimum row height** — `minRowH` on AddTableOpts for dynamic row heights with a minimum bound.
+- [ ] **Shape preset shadows** — named shadow presets (e.g., `shadow: "subtle"`, `shadow: "dramatic"`) for quick styling.
+- [ ] **Slide background gradient mesh** — multi-point gradient fills on slide backgrounds.
+- [ ] **Text auto-shrink** — `shrinkOnOverflow: true` on AddTextOpts → `<a:normAutofit>` with configurable min scale.
+- [ ] **Table header row styling** — `headerStyle` on AddTableOpts for separate header font/color/fill without manual cell options.
+- [ ] **Shape rotation animation** — `spin` animation preset for shape rotation via `<p:anim>` targeting `r` attribute.

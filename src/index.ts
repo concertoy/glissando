@@ -260,6 +260,12 @@ export class Deck {
     return this;
   }
 
+  /** Add a named section. All slides added after this call belong to this section. */
+  addSection(name: string): this {
+    this.pres.addSection(name);
+    return this;
+  }
+
   /** Get the current number of slides. */
   get slideCount(): number {
     return this._slideCount;

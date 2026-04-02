@@ -92,6 +92,8 @@ export interface BulletOpts {
   color?: string;
   /** Start number for numbered lists (default 1). Only applies when type is "number". */
   startAt?: number;
+  /** Numbering scheme for numbered lists. Default: "arabicPeriod" (1. 2. 3.). */
+  numberType?: "arabicPeriod" | "arabicParenR" | "alphaLcPeriod" | "alphaUcPeriod" | "romanLcPeriod" | "romanUcPeriod";
 }
 
 // ─── Slide method option types ──────────────────────────────────────
@@ -133,6 +135,8 @@ export interface LineOpts {
   tailEnd?: LineEndType;
   /** Line join style at corners. */
   lineJoin?: "round" | "bevel" | "miter";
+  /** Compound line type (double, thick-thin, etc.). */
+  compound?: "dbl" | "thickThin" | "thinThick" | "tri";
 }
 
 export interface ShadowOpts {
@@ -328,6 +332,10 @@ export interface AddImageOpts {
   contrast?: number;
   /** Hyperlink URL — makes the image clickable. */
   href?: string;
+  /** Blur radius in points (e.g. 5). Applied via `<a:blur>` on blip. */
+  blur?: number;
+  /** Duotone recolor: [shadowColor, highlightColor] as hex strings. */
+  recolor?: [string, string];
 }
 
 export interface AddTableOpts {
@@ -389,6 +397,12 @@ export interface TableCell {
     margin?: number | [number, number, number, number];
     /** Hyperlink URL for the entire cell text. */
     href?: string;
+    /** Text rotation angle in degrees inside the cell (applied to bodyPr). */
+    textRotation?: number;
+    /** Diagonal border from top-left to bottom-right. */
+    diagonalDown?: TableBorderOpts;
+    /** Diagonal border from bottom-left to top-right. */
+    diagonalUp?: TableBorderOpts;
   };
 }
 
@@ -426,6 +440,7 @@ export class Presentation {
   /** @internal */ _defaults: PresentationDefaults = {};
   /** @internal */ _colorVars = new Map<string, string>();
   /** @internal */ _customProps = new Map<string, string | number | boolean>();
+  /** @internal */ _sections: Array<{ name: string; firstSlideIndex: number }> = [];
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -458,6 +473,17 @@ export class Presentation {
   setCustomProperty(name: string, value: string | number | boolean): void {
     this._customProps.set(name, value);
   }
+
+  /** Add a named section starting at the next slide added. */
+  addSection(name: string): void {
+    this._sections.push({ name, firstSlideIndex: this._slides.length });
+  }
+
+  /** Set a default slide transition for all slides that don't have their own. */
+  setTransition(opts: TransitionOpts): void {
+    this._defaultTransition = opts;
+  }
+  /** @internal */ _defaultTransition?: TransitionOpts;
 
   /** Set presentation-level text defaults (font, size, color). Applied when not overridden per-element. */
   setDefaults(defaults: PresentationDefaults): void {
@@ -512,6 +538,13 @@ export class Presentation {
   }
 
   async writeFile(opts: { fileName: string }): Promise<void> {
+    // Apply default transition to slides that don't have one
+    if (this._defaultTransition) {
+      for (const slide of this._slides) {
+        if (!slide._transition) slide._transition = { ...this._defaultTransition };
+      }
+    }
+
     // Apply deferred processing to slides
     this._applyConnectors();
     this._applyEmojiBullets();
@@ -693,13 +726,25 @@ export class GroupShape {
     return nested;
   }
 
+  /** Set a hyperlink on the entire group shape. */
+  set href(url: string) {
+    this._href = url;
+  }
+  private _href?: string;
+
   toString(): string {
     const gx = emu(this._x), gy = emu(this._y);
     const gcx = emu(this._w), gcy = emu(this._h);
+    const cNvPrContent = this._href
+      ? `<a:hlinkClick r:id="${this._slide._addHyperlink(this._href)}"/>`
+      : "";
+    const cNvPr = cNvPrContent
+      ? `<p:cNvPr id="${this._grpId}" name="${this._name}">${cNvPrContent}</p:cNvPr>`
+      : `<p:cNvPr id="${this._grpId}" name="${this._name}"/>`;
     return (
       `<p:grpSp>` +
       `<p:nvGrpSpPr>` +
-      `<p:cNvPr id="${this._grpId}" name="${this._name}"/>` +
+      cNvPr +
       `<p:cNvGrpSpPr><a:grpSpLocks noChangeAspect="0"/></p:cNvGrpSpPr>` +
       `<p:nvPr/>` +
       `</p:nvGrpSpPr>` +
@@ -785,6 +830,15 @@ export class Slide {
   /** Hide this slide during presentation playback. */
   set hidden(val: boolean) { this._hidden = val; }
   get hidden(): boolean { return this._hidden; }
+
+  /** Auto-advance after N milliseconds (kiosk mode). Sets a no-effect transition with advanceAfter. */
+  set advanceAfter(ms: number) {
+    if (!this._transition) {
+      this._transition = { type: "fade", duration: 1, advanceAfter: ms };
+    } else {
+      this._transition.advanceAfter = ms;
+    }
+  }
 
   /** @internal */
   _allocId(name?: string): number {
@@ -1227,8 +1281,9 @@ function buildParagraphProps(opts: Record<string, any>): string {
 
     if (bOpts.type === "number") {
       children.push(`<a:buFont typeface="Arial"/>`);
+      const numType = bOpts.numberType ?? "arabicPeriod";
       const startAttr = bOpts.startAt != null && bOpts.startAt !== 1 ? ` startAt="${bOpts.startAt}"` : "";
-      children.push(`<a:buAutoNum type="arabicPeriod"${startAttr}/>`);
+      children.push(`<a:buAutoNum type="${numType}"${startAttr}/>`);
     } else {
       // Default: bullet character
       const char = bOpts.char ?? (bOpts.code ? String.fromCodePoint(parseInt(bOpts.code, 16)) : "\u2022");
@@ -1293,7 +1348,11 @@ function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
     const lw = ptEmu(opts.outline.width ?? 1);
     children.push(`<a:ln w="${lw}"><a:solidFill><a:srgbClr val="${opts.outline.color}"/></a:solidFill></a:ln>`);
   }
-  if (opts.href && slide) {
+  if (opts.href && opts.slideLink != null && slide) {
+    // Both: slideLink for navigation, href as tooltip
+    const rId = slide._addSlideLink(opts.slideLink);
+    children.push(`<a:hlinkClick r:id="${rId}" action="ppaction://hlinksldjump" tooltip="${escXml(opts.href)}"/>`);
+  } else if (opts.href && slide) {
     const rId = slide._addHyperlink(opts.href);
     children.push(`<a:hlinkClick r:id="${rId}"/>`);
   } else if (opts.slideLink != null && slide) {
@@ -1334,7 +1393,7 @@ function buildLineXml(line: LineOpts): string {
   const joinMap: Record<string, string> = { round: "<a:round/>", bevel: "<a:bevel/>", miter: "<a:miter/>" };
   const joinXml = line.lineJoin ? joinMap[line.lineJoin] ?? "" : "";
   return (
-    `<a:ln w="${lw}">` +
+    `<a:ln w="${lw}"${line.compound ? ` cmpd="${line.compound}"` : ""}>` +
     `<a:solidFill><a:srgbClr val="${line.color}"/></a:solidFill>` +
     dashXml + headXml + tailXml + joinXml +
     `</a:ln>`
@@ -1702,6 +1761,12 @@ function buildPictureXml(
         const contrast = Math.round((opts.contrast ?? 0) * 100000);
         effects.push(`<a:lum bright="${bright}" contrast="${contrast}"/>`);
       }
+      if (opts.blur != null && opts.blur > 0) {
+        effects.push(`<a:blur rad="${Math.round(opts.blur * 12700)}"/>`);
+      }
+      if (opts.recolor) {
+        effects.push(`<a:duotone><a:srgbClr val="${opts.recolor[0]}"/><a:srgbClr val="${opts.recolor[1]}"/></a:duotone>`);
+      }
       return effects.length > 0
         ? `<a:blip r:embed="${rId}">${effects.join("")}</a:blip>`
         : `<a:blip r:embed="${rId}"/>`;
@@ -1840,6 +1905,15 @@ function buildTableXml(
       if (co.border) {
         tcPrChildren.push(buildCellBordersXml(co.border));
       }
+      // Diagonal borders
+      if (co.diagonalDown) {
+        const w = ptEmu(co.diagonalDown.pt ?? 1);
+        tcPrChildren.push(`<a:lnTlToBr w="${w}"><a:solidFill><a:srgbClr val="${co.diagonalDown.color ?? "000000"}"/></a:solidFill></a:lnTlToBr>`);
+      }
+      if (co.diagonalUp) {
+        const w = ptEmu(co.diagonalUp.pt ?? 1);
+        tcPrChildren.push(`<a:lnBlToTr w="${w}"><a:solidFill><a:srgbClr val="${co.diagonalUp.color ?? "000000"}"/></a:solidFill></a:lnBlToTr>`);
+      }
 
       // Fill
       if (co.gradient) {
@@ -1924,7 +1998,8 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
       return `<a:p><a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>${runsXml}</a:p>`;
     }).join("");
 
-    return `<a:txBody><a:bodyPr/><a:lstStyle/>${parasXml}</a:txBody>`;
+    const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
+    return `<a:txBody><a:bodyPr${rotAttr}/><a:lstStyle/>${parasXml}</a:txBody>`;
   }
 
   // Handle cell-level href for plain string text
@@ -1934,9 +2009,10 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     hlinkXml = `<a:hlinkClick r:id="${rId}"/>`;
   }
 
+  const rotAttr = opts.textRotation != null ? ` rot="${Math.round(opts.textRotation * 60000)}"` : "";
   return (
     `<a:txBody>` +
-    `<a:bodyPr/>` +
+    `<a:bodyPr${rotAttr}/>` +
     `<a:lstStyle/>` +
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +

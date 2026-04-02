@@ -6,6 +6,7 @@
  */
 
 import JSZip from "jszip";
+import { randomUUID } from "crypto";
 import type { Presentation, TextRun } from "./index.js";
 
 // ─── EMU helpers (duplicated to avoid circular import) ─────────────
@@ -240,6 +241,19 @@ function presentationXml(pres: Presentation): string {
     `<p:sldIdLst>${slideIds}</p:sldIdLst>` +
     `<p:sldSz cx="${cx}" cy="${cy}"/>` +
     `<p:notesSz cx="${cy}" cy="${cx}"/>` +
+    (pres._sections.length > 0
+      ? `<p:extLst><p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}">` +
+        `<p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">` +
+        pres._sections.map((sec, si) => {
+          const nextStart = si + 1 < pres._sections.length ? pres._sections[si + 1].firstSlideIndex : pres._slides.length;
+          const sldIds = [];
+          for (let j = sec.firstSlideIndex; j < nextStart; j++) {
+            sldIds.push(`<p14:sldId id="${256 + j}"/>`);
+          }
+          return `<p14:section name="${escXml(sec.name)}" id="{${randomUUID()}}"><p14:sldIdLst>${sldIds.join("")}</p14:sldIdLst></p14:section>`;
+        }).join("") +
+        `</p14:sectionLst></p:ext></p:extLst>`
+      : "") +
     `</p:presentation>`
   );
 }

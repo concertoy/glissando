@@ -763,6 +763,42 @@ describe("OOXML", () => {
     });
   });
 
+  describe("shape adjustments", () => {
+    it("passes custom adjust values", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rightArrow", {
+        x: 0, y: 0, w: 3, h: 1,
+        fill: { color: "FF0000" },
+        adjustments: { adj1: 50000, adj2: 25000 },
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('name="adj1" fmla="val 50000"');
+      expect(xml).toContain('name="adj2" fmla="val 25000"');
+    });
+  });
+
+  describe("typed table borders", () => {
+    it("renders typed border options", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable([
+        [{ text: "Cell", options: {
+          border: [
+            { pt: 2, color: "FF0000" },
+            { type: "none" },
+            { pt: 1, color: "0000FF" },
+            { type: "none" },
+          ],
+        } }],
+      ], { x: 0, y: 0, w: 8 });
+      const xml = slide._elements[0];
+      expect(xml).toContain("FF0000");
+      expect(xml).toContain("0000FF");
+      expect(xml).toContain("<a:noFill/>");
+    });
+  });
+
   describe("multi-paragraph table cells", () => {
     it("splits rich text on breakLine", () => {
       const pres = new Presentation();

@@ -173,6 +173,8 @@ export interface AddShapeOpts {
   flipH?: boolean;
   flipV?: boolean;
   opacity?: number;
+  /** Custom adjust values for shape geometry (e.g. { adj: 25000 } for arrow head size). */
+  adjustments?: Record<string, number>;
 }
 
 export interface AddImageOpts {
@@ -217,6 +219,15 @@ export interface TransitionOpts {
   advanceAfter?: number;
 }
 
+export interface TableBorderOpts {
+  /** Border width in points (default 1). */
+  pt?: number;
+  /** Border color hex (default "000000"). */
+  color?: string;
+  /** Set to "none" to hide border. */
+  type?: "none" | "solid";
+}
+
 export interface TableCell {
   text: string | TextRun[];
   options?: {
@@ -228,7 +239,8 @@ export interface TableCell {
     align?: string;
     valign?: string;
     fill?: FillOpts;
-    border?: any[];
+    /** Cell borders: [top, right, bottom, left]. */
+    border?: TableBorderOpts[];
     paraSpaceBefore?: number;
     paraSpaceAfter?: number;
     /** Number of columns this cell spans (default 1). */
@@ -926,9 +938,12 @@ function buildShapeXml(
     const shorter = Math.min(opts.w ?? 1, Math.max(opts.h ?? 0.001, 0.001));
     const adj = Math.round((radius / shorter) * 100000);
     geom = `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${adj}"/></a:avLst></a:prstGeom>`;
+  } else if (opts.adjustments) {
+    const avLst = Object.entries(opts.adjustments)
+      .map(([name, val]) => `<a:gd name="${name}" fmla="val ${val}"/>`)
+      .join("");
+    geom = `<a:prstGeom prst="${type}"><a:avLst>${avLst}</a:avLst></a:prstGeom>`;
   } else {
-    // Pass through any OOXML preset name: rect, ellipse, triangle, diamond,
-    // line, chevron, rightArrow, notchedRightArrow, pentagon, hexagon, etc.
     geom = `<a:prstGeom prst="${type}"><a:avLst/></a:prstGeom>`;
   }
 
@@ -1212,7 +1227,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>): 
   );
 }
 
-function buildCellBordersXml(borders: any[]): string {
+function buildCellBordersXml(borders: TableBorderOpts[]): string {
   // borders: [top, right, bottom, left]
   const names = ["Top", "Right", "Bottom", "Left"];
   return names.map((side, i) => {

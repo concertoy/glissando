@@ -235,6 +235,8 @@
 - [x] **Image biLevel** — `biLevel` on AddImageOpts → `<a:biLevel>` on blip for black/white threshold conversion.
 - [x] **Table cell text glow** — `textGlow` on TableCell → `<a:glow>` in cell text `<a:effectLst>`.
 - [x] **Shape text reflection** — `textReflection` on AddShapeOpts → `<a:reflection>` in shape text `<a:effectLst>`.
+- [x] **Table cell text reflection** — `textReflection` on TableCell → `<a:reflection>` in cell text `<a:effectLst>`.
+- [x] **Shape text inner shadow** — `textInnerShadow` on AddShapeOpts → `<a:innerShdw>` in shape text `<a:effectLst>`.
 
 ## Open
 

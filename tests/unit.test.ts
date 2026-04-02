@@ -4089,4 +4089,34 @@ describe("OOXML", () => {
       expect(xml).toContain('blurRad="12700"');
     });
   });
+
+  describe("table cell text reflection", () => {
+    it("adds reflection to cell text effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Mirror", options: { textReflection: { blurRadius: 2, startOpacity: 0.4 } } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:reflection");
+      // 2 * 12700 = 25400
+      expect(xml).toContain('blurRad="25400"');
+    });
+  });
+
+  describe("shape text inner shadow", () => {
+    it("adds innerShdw to shape text effectLst", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", {
+        x: 1, y: 1, w: 6, h: 3,
+        text: "Inner Shadow",
+        textInnerShadow: { color: "333333", blur: 4, offset: 2, angle: 225 },
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("<a:innerShdw");
+      expect(xml).toContain('val="333333"');
+    });
+  });
 });

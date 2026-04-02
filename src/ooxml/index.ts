@@ -366,6 +366,8 @@ export interface AddShapeOpts {
   textGlow?: { color: string; radius?: number; opacity?: number };
   /** Reflection effect on shape text. */
   textReflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
+  /** Inner shadow effect on shape text. */
+  textInnerShadow?: { color?: string; blur?: number; offset?: number; angle?: number };
   /** WordArt text transform preset for shape text (e.g. "textArchUp", "textWave1"). */
   textTransform?: string;
   /** Entrance animation preset. */
@@ -588,6 +590,8 @@ export interface TableCell {
     fillOpacity?: number;
     /** Glow effect on cell text. */
     textGlow?: { color: string; radius?: number; opacity?: number };
+    /** Reflection effect on cell text. */
+    textReflection?: { blurRadius?: number; startOpacity?: number; endOpacity?: number; distance?: number };
   };
 }
 
@@ -1945,6 +1949,18 @@ function buildShapeXml(
           const rDist = Math.round((r.distance ?? 0) * 12700);
           effectParts.push(`<a:reflection blurRad="${rBlur}" stA="${rStart}" endA="${rEnd}" dist="${rDist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`);
         }
+        if (opts.textInnerShadow) {
+          const is = opts.textInnerShadow;
+          const isColor = is.color ?? "000000";
+          const isBlur = Math.round((is.blur ?? 3) * 12700);
+          const isDist = Math.round((is.offset ?? 2) * 12700);
+          const isDir = Math.round((is.angle ?? 225) * 60000);
+          effectParts.push(
+            `<a:innerShdw blurRad="${isBlur}" dist="${isDist}" dir="${isDir}">` +
+            `<a:srgbClr val="${isColor}"><a:alpha val="50000"/></a:srgbClr>` +
+            `</a:innerShdw>`
+          );
+        }
         if (effectParts.length > 0) {
           children.push(`<a:effectLst>${effectParts.join("")}</a:effectLst>`);
         }
@@ -2521,6 +2537,14 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
         const sd = Math.round((sh.offset ?? 2) * 12700);
         const sa = Math.round((sh.angle ?? 315) * 60000);
         effectParts.push(`<a:outerShdw blurRad="${sb}" dist="${sd}" dir="${sa}" algn="bl" rotWithShape="0"><a:srgbClr val="${sc}"><a:alpha val="40000"/></a:srgbClr></a:outerShdw>`);
+      }
+      if (opts.textReflection) {
+        const r = opts.textReflection;
+        const rBlur = Math.round((r.blurRadius ?? 0.5) * 12700);
+        const rStart = Math.round((r.startOpacity ?? 0.5) * 100000);
+        const rEnd = Math.round((r.endOpacity ?? 0) * 100000);
+        const rDist = Math.round((r.distance ?? 0) * 12700);
+        effectParts.push(`<a:reflection blurRad="${rBlur}" stA="${rStart}" endA="${rEnd}" dist="${rDist}" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`);
       }
       if (effectParts.length > 0) extras += `<a:effectLst>${effectParts.join("")}</a:effectLst>`;
       if (opts.textOutline) {

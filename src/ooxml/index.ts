@@ -177,6 +177,8 @@ export interface AddImageOpts {
   sizing?: { type: string; w: number; h: number };
   /** Alt text for accessibility (screen readers). */
   altText?: string;
+  /** Crop percentages (0–100) from each edge. */
+  crop?: { top?: number; right?: number; bottom?: number; left?: number };
 }
 
 export interface AddTableOpts {
@@ -957,6 +959,9 @@ function buildPictureXml(
     `</p:nvPicPr>` +
     `<p:blipFill>` +
     `<a:blip r:embed="${rId}"/>` +
+    (opts.crop
+      ? `<a:srcRect t="${Math.round((opts.crop.top ?? 0) * 1000)}" r="${Math.round((opts.crop.right ?? 0) * 1000)}" b="${Math.round((opts.crop.bottom ?? 0) * 1000)}" l="${Math.round((opts.crop.left ?? 0) * 1000)}"/>`
+      : "") +
     `<a:stretch><a:fillRect/></a:stretch>` +
     `</p:blipFill>` +
     `<p:spPr>` +

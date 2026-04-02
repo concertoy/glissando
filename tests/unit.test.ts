@@ -537,6 +537,26 @@ describe("OOXML", () => {
     });
   });
 
+  describe("image cropping", () => {
+    it("adds srcRect for crop percentages", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3, crop: { top: 10, right: 20, bottom: 5, left: 15 } });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:srcRect t="10000" r="20000" b="5000" l="15000"/>');
+    });
+
+    it("does not add srcRect without crop", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      slide.addImage({ data: tinyPng, x: 0, y: 0, w: 5, h: 3 });
+      const xml = slide._elements[0];
+      expect(xml).not.toContain("<a:srcRect");
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

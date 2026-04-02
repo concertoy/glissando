@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 56 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
+- [x] **Unit test suite** — vitest with 58 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -33,6 +33,8 @@
 - [x] **Shape opacity** — `opacity` on AddTextOpts → `<a:alpha>` on solid fill color.
 - [x] **Custom bullet characters** — `bulletChar` on BulletListProps + `char` on BulletOpts for direct Unicode bullets.
 
+- [x] **Image cropping** — `crop` on AddImageOpts → `<a:srcRect>` for percentage-based edge cropping.
+
 ## Open
 
 - [ ] **Enrich API docs with examples** — Mintlify docs have reference tables but sparse code samples.
@@ -41,5 +43,6 @@
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
 - [ ] **Text shadow** — `textShadow` on TextRunOpts for drop shadow on individual text runs via `<a:effectLst>`.
-- [ ] **Image cropping** — `crop` on AddImageOpts for OOXML `<a:srcRect>` region selection.
 - [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.
+- [ ] **Image border/shadow** — `border` and `shadow` on AddImageOpts for framed image styling.
+- [ ] **Vertical text** — `vertical` on AddTextOpts for top-to-bottom text via `<a:bodyPr vert="vert270">`.

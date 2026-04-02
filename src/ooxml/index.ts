@@ -304,6 +304,14 @@ export interface AddShapeOpts {
   autoFit?: boolean;
   /** Line spacing multiple for shape text (e.g. 1.5 for 150% line height). */
   lineSpacing?: number;
+  /** Strikethrough text in shape. */
+  strike?: boolean;
+  /** Background highlight color on shape text (hex, no #). */
+  highlight?: string;
+  /** Paragraph space before in points. */
+  paraSpaceBefore?: number;
+  /** Paragraph space after in points. */
+  paraSpaceAfter?: number;
   /** Text margin inside shape in inches: single number for uniform, or [top, right, bottom, left]. */
   textMargin?: number | [number, number, number, number];
   /** Entrance animation preset. */
@@ -466,6 +474,10 @@ export interface TableCell {
     diagonalUp?: TableBorderOpts;
     /** Built-in PowerPoint click action for the cell. */
     action?: "nextSlide" | "prevSlide" | "firstSlide" | "lastSlide" | "endShow";
+    /** Underline cell text. */
+    underline?: boolean;
+    /** Strikethrough cell text. */
+    strike?: boolean;
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
   };
@@ -1706,26 +1718,30 @@ function buildShapeXml(
       if (opts.bold) rprAttrs.push('b="1"');
       if (opts.italic) rprAttrs.push('i="1"');
       if (opts.underline) rprAttrs.push('u="sng"');
+      if (opts.strike) rprAttrs.push('strike="sngStrike"');
       if (opts.charSpacing != null) rprAttrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
       const children: string[] = [];
       if (opts.color) children.push(`<a:solidFill><a:srgbClr val="${opts.color}"/></a:solidFill>`);
+      if (opts.highlight) children.push(`<a:highlight><a:srgbClr val="${opts.highlight}"/></a:highlight>`);
       if (opts.fontFace) children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
       const rpr = children.length > 0
         ? `<a:rPr ${rprAttrs.join(" ")}>${children.join("")}</a:rPr>`
         : `<a:rPr ${rprAttrs.join(" ")}/>`;
-      const lnSpc = opts.lineSpacing
-        ? `<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`
-        : "";
-      const pPr = lnSpc
-        ? `<a:pPr algn="${algn}">${lnSpc}</a:pPr>`
+      const pPrChildren: string[] = [];
+      if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
+      if (opts.paraSpaceBefore != null) pPrChildren.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
+      if (opts.paraSpaceAfter != null) pPrChildren.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
+      const pPr = pPrChildren.length > 0
+        ? `<a:pPr algn="${algn}">${pPrChildren.join("")}</a:pPr>`
         : `<a:pPr algn="${algn}"/>`;
       txBody = `<p:txBody>${bodyPr}<a:lstStyle/><a:p>${pPr}<a:r>${rpr}<a:t>${escXml(opts.text)}</a:t></a:r></a:p></p:txBody>`;
     } else {
-      const lnSpc = opts.lineSpacing
-        ? `<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`
-        : "";
-      const pPr = lnSpc
-        ? `<a:pPr algn="${algn}">${lnSpc}</a:pPr>`
+      const pPrChildren: string[] = [];
+      if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
+      if (opts.paraSpaceBefore != null) pPrChildren.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
+      if (opts.paraSpaceAfter != null) pPrChildren.push(`<a:spcAft><a:spcPts val="${Math.round(opts.paraSpaceAfter * 100)}"/></a:spcAft>`);
+      const pPr = pPrChildren.length > 0
+        ? `<a:pPr algn="${algn}">${pPrChildren.join("")}</a:pPr>`
         : `<a:pPr algn="${algn}"/>`;
       const runsXml = opts.text.map((run: TextRun) => {
         const ro = run.options ?? {};
@@ -2116,6 +2132,8 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const color = opts.color ?? "333333";
   const bold = opts.bold ? ' b="1"' : "";
   const italic = opts.italic ? ' i="1"' : "";
+  const underline = opts.underline ? ' u="sng"' : "";
+  const strike = opts.strike ? ' strike="sngStrike"' : "";
   const align = opts.align ?? "l";
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
@@ -2172,7 +2190,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
-    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike} dirty="0">` +
     `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>` +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     hlinkXml +
@@ -2353,7 +2371,7 @@ function buildConnectorLabelXml(
     `<a:bodyPr wrap="square" rtlCol="0"/>` +
     `<a:lstStyle/>` +
     `<a:p><a:r>` +
-    `<a:rPr lang="en-US" sz="1400"${italic} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(conn.labelSize ?? 14)}"${italic} dirty="0">` +
     `<a:solidFill><a:srgbClr val="${conn.color}"/></a:solidFill>` +
     `<a:latin typeface="${escXml(sansFont)}"/>` +
     `</a:rPr>` +

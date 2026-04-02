@@ -167,6 +167,12 @@
 - [x] **Connector dash style** — `dashType` on ConnectorDef/ConnectorProps → `<a:prstDash>` on connector `<a:ln>`.
 - [x] **Animation delay chaining** — `stagger` on ShapeAnimationOpts auto-calculates delays (delay = stagger * animIndex).
 - [x] **Table cell background image** — `bgImage` on TableCell options → `<a:blipFill>` in `<a:tcPr>` for image fills.
+- [x] **Shape text strikethrough** — `strike` on AddShapeOpts → `strike="sngStrike"` on shape text `<a:rPr>`.
+- [x] **Shape text highlight** — `highlight` on AddShapeOpts → `<a:highlight>` on shape text `<a:rPr>`.
+- [x] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts → `<a:spcBef>`/`<a:spcAft>` in shape text `<a:pPr>`.
+- [x] **Table cell underline/strike** — `underline` and `strike` on TableCell options → `u="sng"` / `strike="sngStrike"` on cell text `<a:rPr>`.
+- [x] **Connector label font size** — `labelSize` on ConnectorDef/ConnectorProps → custom `sz` on label `<a:rPr>` (default 14pt).
+- [x] **Shape click to URL** — `href` + `tooltip` on AddShapeOpts already combines `<a:hlinkClick>` + `<a:hlinkHover>`.
 
 ## Open
 
@@ -221,7 +227,7 @@
 - [x] **Shape text underline** — `underline` on AddShapeOpts for underlined text in shapes.
 - [x] **Table auto-height** — `addTable()` returns `{ h: number }` with computed total height.
 - [x] **Connector labels with background** — `labelFill` on ConnectorProps for label background box.
-- [ ] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
+- [x] **Shape click to URL** — `href` on AddShapeOpts combined with `tooltip` for URL + hover text.
 - [ ] **Slide background video** — `bgVideo` on slide for looping background video.
 - [x] **Animation delay chaining** — `stagger` on ShapeAnimationOpts auto-calculates delays.
 - [ ] **Shape text vertical align override** — `textValign` on AddShapeOpts separate from shape valign for fine control.
@@ -232,11 +238,19 @@
 - [ ] **Shape text bullet lists** — `bullets: true` on AddShapeOpts to turn shape text into bulleted list.
 - [x] **Connector dash style** — `dashType` on ConnectorDef for dashed/dotted connector lines.
 - [ ] **Slide background opacity** — `bgOpacity` on slide background for semi-transparent fills over master.
-- [ ] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
+- [x] **Shape text paragraph spacing** — `paraSpaceBefore`/`paraSpaceAfter` on AddShapeOpts for paragraph-level spacing in shape text.
 - [ ] **Image SVG support** — accept `.svg` files in addImage, convert to EMF or inline SVG.
-- [ ] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
-- [ ] **Shape text highlight** — `highlight` on AddShapeOpts for background highlight color on shape text runs.
-- [ ] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.
+- [x] **Table cell underline text** — `underline` on TableCell options for underlined cell text.
+- [x] **Shape text highlight** — `highlight` on AddShapeOpts for background highlight color on shape text runs.
+- [x] **Connector label font size** — `labelSize` on ConnectorDef for custom label font size.
 - [ ] **Slide background tiled image** — `tile` on slide.background for repeating background patterns.
-- [ ] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
+- [x] **Shape text strikethrough** — `strike` on AddShapeOpts for strikethrough text in shapes.
 - [ ] **Animation path** — custom motion path animations via `<p:animMotion>` for shape movement along bezier curves.
+- [ ] **Shape text gradient** — `gradient` on AddShapeOpts for gradient-filled shape text via `<a:gradFill>` in rPr.
+- [ ] **Table column widths by ratio** — `colRatio: [1, 2, 1]` on AddTableOpts for proportional column sizing.
+- [ ] **Connector label color** — `labelColor` on ConnectorDef for custom label text color (separate from line color).
+- [ ] **Shape text subscript/superscript** — `subscript`/`superscript` on AddShapeOpts for baseline shifts in shape text.
+- [ ] **Image caption component** — `imageWithCaption(slide, { ... })` combining image + styled caption as a group.
+- [ ] **Slide thumbnail** — `slide.thumbnail(path)` to set a custom thumbnail image for the slide.
+- [ ] **Shape text kerning** — `kerning` on AddShapeOpts for kerning threshold in shape text.
+- [ ] **Table header background gradient** — `gradient` on AddTableOpts.headerStyle for gradient fills on header row.

@@ -199,6 +199,7 @@ export class Deck {
       labelItalic: props.labelItalic ?? true,
       labelFill: props.labelFill,
       dashType: props.dashType,
+      labelSize: props.labelSize,
     });
     return this;
   }
@@ -219,6 +220,7 @@ export class Deck {
     labelItalic?: boolean;
     labelFill?: string;
     dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
+    labelSize?: number;
   }): this {
     const sideIdx: Record<string, number> = { top: 0, right: 1, bottom: 2, left: 3 };
     const fromIdx = sideIdx[opts?.fromSide ?? "right"];
@@ -237,6 +239,7 @@ export class Deck {
       labelItalic: opts?.labelItalic,
       labelFill: opts?.labelFill,
       dashType: opts?.dashType,
+      labelSize: opts?.labelSize,
     });
   }
 

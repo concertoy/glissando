@@ -2820,4 +2820,97 @@ describe("OOXML", () => {
       expect(xml).toContain("fillRect");
     });
   });
+
+  describe("shape text strikethrough", () => {
+    it("applies strike=sngStrike to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Done", strike: true });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('strike="sngStrike"');
+    });
+  });
+
+  describe("shape text highlight", () => {
+    it("applies highlight color to shape text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, text: "Important", highlight: "FFFF00" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:highlight><a:srgbClr val="FFFF00"/></a:highlight>');
+    });
+  });
+
+  describe("shape text paragraph spacing", () => {
+    it("applies spcBef and spcAft to shape text pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 2, text: "Hello", paraSpaceBefore: 6, paraSpaceAfter: 12 });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('<a:spcBef><a:spcPts val="600"/></a:spcBef>');
+      expect(xml).toContain('<a:spcAft><a:spcPts val="1200"/></a:spcAft>');
+    });
+  });
+
+  describe("table cell underline and strike", () => {
+    it("applies underline to cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Link", options: { underline: true } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('u="sng"');
+    });
+
+    it("applies strikethrough to cell text rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Old", options: { strike: true } }]],
+        { x: 0, y: 0, w: 4 },
+      );
+      const xml = slide._toXml(1);
+      expect(xml).toContain('strike="sngStrike"');
+    });
+  });
+
+  describe("connector label font size", () => {
+    it("applies custom font size to connector label", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 1, y: 1, w: 1, h: 1, objectName: "p" });
+      slide.addShape("rect", { x: 5, y: 1, w: 1, h: 1, objectName: "q" });
+      pres.applyExtras({
+        connectorDefs: [{
+          slideIndex: 1,
+          from: { x: 2, y: 1.5, idx: 1, _shapeName: "p" },
+          to: { x: 5, y: 1.5, idx: 3, _shapeName: "q" },
+          type: "straight",
+          color: "333333",
+          width: 1,
+          head: "arrow",
+          tail: "none",
+          label: "test",
+          labelSize: 10,
+        }],
+      });
+      (pres as any)._applyConnectors();
+      const xml = slide._toXml(1);
+      // 10pt = sz="1000"
+      expect(xml).toContain('sz="1000"');
+    });
+  });
+
+  describe("shape click to URL with tooltip", () => {
+    it("combines href and tooltip on shape", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addShape("rect", { x: 0, y: 0, w: 2, h: 1, href: "https://example.com", tooltip: "Click me" });
+      const xml = slide._toXml(1);
+      expect(xml).toContain("hlinkClick");
+      expect(xml).toContain('tooltip="Click me"');
+    });
+  });
 });

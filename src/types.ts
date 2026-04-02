@@ -321,6 +321,8 @@ export interface ConnectorProps {
   labelFill?: string;
   /** Line dash style for the connector. */
   dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
+  /** Label font size in points (default 14). */
+  labelSize?: number;
 }
 
 /** Stored internally for post-processing into OOXML <p:cxnSp>. */
@@ -339,6 +341,8 @@ export interface ConnectorDef {
   labelFill?: string;
   /** Line dash style for the connector. */
   dashType?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "lgDashDot" | "sysDash" | "sysDot";
+  /** Label font size in points (default 14). */
+  labelSize?: number;
 }
 
 export interface ArrowProps {

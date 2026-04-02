@@ -214,6 +214,10 @@
 - [x] **Table cell caps** — `caps: "all" | "small"` on TableCell → `cap` attribute on cell text `<a:rPr>`.
 - [x] **Shape text indent** — `indent` on AddShapeOpts → `indent` attribute on `<a:pPr>` for first-line indent.
 - [x] **Shape text margin left** — `marginLeft` on AddShapeOpts → `marL` attribute on `<a:pPr>` for paragraph left margin.
+- [x] **Image flip** — `flipH`/`flipV` on AddImageOpts → flip attributes on `<a:xfrm>` for mirrored images.
+- [x] **Table cell line spacing** — `lineSpacing` on TableCell → `<a:lnSpc><a:spcPct>` in cell paragraph properties.
+- [x] **Table cell char spacing** — `charSpacing` on TableCell → `spc` attribute on cell text `<a:rPr>`.
+- [x] **Presentation show properties** — `pres.setShowProperties({ loop, useTimings })` → `<p:showPr>` for kiosk/looping mode.
 
 ## Open
 

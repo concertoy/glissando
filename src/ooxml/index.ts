@@ -439,6 +439,10 @@ export interface AddImageOpts {
   lockAspectRatio?: boolean;
   /** Image opacity 0–1 (1 = fully opaque, 0 = fully transparent). */
   opacity?: number;
+  /** Horizontal flip. */
+  flipH?: boolean;
+  /** Vertical flip. */
+  flipV?: boolean;
 }
 
 export interface AddTableOpts {
@@ -542,6 +546,10 @@ export interface TableCell {
     caps?: "all" | "small";
     /** Background image for the cell (data URI or file path). */
     bgImage?: string;
+    /** Line spacing multiple for cell text (e.g. 1.5 for 150% line height). */
+    lineSpacing?: number;
+    /** Character spacing in points (e.g. 2 for loose, -1 for tight). */
+    charSpacing?: number;
   };
 }
 
@@ -582,6 +590,12 @@ export class Presentation {
   /** @internal */ _sections: Array<{ name: string; firstSlideIndex: number }> = [];
   /** @internal */ _embeddedFonts: Array<{ name: string; data: Buffer; style: "regular" | "bold" | "italic" | "boldItalic" }> = [];
   /** @internal */ _thumbnail?: Buffer;
+  /** @internal */ _showProps: { loop?: boolean; showAll?: boolean; useTimings?: boolean } = {};
+
+  /** Configure presentation show properties (loop, use timings for kiosk mode). */
+  setShowProperties(opts: { loop?: boolean; useTimings?: boolean }): void {
+    Object.assign(this._showProps, opts);
+  }
 
   defineLayout(opts: { name: string; width: number; height: number }): void {
     this._width = opts.width;
@@ -2096,7 +2110,7 @@ function buildPictureXml(
       : `<a:stretch><a:fillRect/></a:stretch>`) +
     `</p:blipFill>` +
     `<p:spPr>` +
-    `<a:xfrm${opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : ""}>` +
+    `<a:xfrm${opts.rotate ? ` rot="${Math.round(opts.rotate * 60000)}"` : ""}${opts.flipH ? ' flipH="1"' : ""}${opts.flipV ? ' flipV="1"' : ""}>` +
     `<a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
     `</a:xfrm>` +
     geom +
@@ -2329,7 +2343,10 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
   const align = opts.align ?? "l";
   const alignMap: Record<string, string> = { left: "l", center: "ctr", right: "r", l: "l", r: "r", ctr: "ctr" };
 
+  const charSpcAttr = opts.charSpacing != null ? ` spc="${Math.round(opts.charSpacing * 100)}"` : "";
+
   const pPrChildren: string[] = [];
+  if (opts.lineSpacing) pPrChildren.push(`<a:lnSpc><a:spcPct val="${Math.round(opts.lineSpacing * 100000)}"/></a:lnSpc>`);
   if (opts.paraSpaceBefore != null) {
     pPrChildren.push(`<a:spcBef><a:spcPts val="${Math.round(opts.paraSpaceBefore * 100)}"/></a:spcBef>`);
   }
@@ -2385,7 +2402,7 @@ function buildCellTextXml(text: string | TextRun[], opts: Record<string, any>, s
     `<a:p>` +
     `<a:pPr algn="${alignMap[align] ?? "l"}">${pPrChildren.join("")}</a:pPr>` +
     `<a:r>` +
-    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr} dirty="0">` +
+    `<a:rPr lang="en-US" sz="${sz100(fontSize)}"${bold}${italic}${underline}${strike}${capsAttr}${charSpcAttr} dirty="0">` +
     (opts.textGradient ? buildGradientFillXml(opts.textGradient) : `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`) +
     `<a:latin typeface="${escXml(fontFace)}"/>` +
     (() => {

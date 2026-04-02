@@ -3734,4 +3734,69 @@ describe("OOXML", () => {
       expect(xml).toContain('marL="914400"');
     });
   });
+
+  describe("image flip", () => {
+    it("adds flipH and flipV to image xfrm", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+        flipH: true,
+        flipV: true,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).toContain('flipH="1"');
+      expect(xml).toContain('flipV="1"');
+    });
+
+    it("omits flip attrs when not set", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addImage({
+        data: "image/png;base64,iVBORw0KGgo=",
+        x: 1, y: 1, w: 4, h: 3,
+      });
+      const xml = slide._toXml(1);
+      expect(xml).not.toContain("flipH");
+      expect(xml).not.toContain("flipV");
+    });
+  });
+
+  describe("table cell line spacing", () => {
+    it("adds lnSpc to cell pPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Spaced", options: { lineSpacing: 1.5 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      // 1.5 * 100000 = 150000
+      expect(xml).toContain('<a:lnSpc><a:spcPct val="150000"/></a:lnSpc>');
+    });
+  });
+
+  describe("table cell char spacing", () => {
+    it("adds spc attribute to cell rPr", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addTable(
+        [[{ text: "Wide", options: { charSpacing: 3 } }]],
+        { x: 1, y: 1, w: 8 },
+      );
+      const xml = slide._toXml(1);
+      // 3 * 100 = 300
+      expect(xml).toContain('spc="300"');
+    });
+  });
+
+  describe("presentation show properties", () => {
+    it("sets loop and useTimings on showPr", () => {
+      const pres = new Presentation();
+      pres.setShowProperties({ loop: true, useTimings: true });
+      expect(pres._showProps.loop).toBe(true);
+      expect(pres._showProps.useTimings).toBe(true);
+    });
+  });
 });

@@ -287,6 +287,13 @@ function presentationXml(pres: Presentation): string {
         }).join("") +
         `</p14:sectionLst></p:ext></p:extLst>`
       : "") +
+    (() => {
+      const loop = pres._showProps.loop ? ' loop="1"' : "";
+      const timings = pres._showProps.useTimings ? ' useTimings="1"' : "";
+      return (loop || timings)
+        ? `<p:showPr${loop}${timings}><p:present/></p:showPr>`
+        : "";
+    })() +
     `</p:presentation>`
   );
 }

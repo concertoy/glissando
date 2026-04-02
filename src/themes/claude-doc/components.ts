@@ -161,6 +161,8 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const objName = needsName ? `bl-${bulletListCounter++}` : undefined;
 
     const baseOpts = { fontSize, fontFace: f.sans, color: c.textSecondary };
+    const bulletOpt: { type: "bullet"; color: string; char?: string } = { type: "bullet", color: c.accent };
+    if (props.bulletChar) bulletOpt.char = props.bulletChar;
     const textRows: TextRun[] = processedItems.flatMap((item): TextRun[] => {
       const mathRuns = expandTextWithMath(item, baseOpts);
       if (mathRuns) {
@@ -168,7 +170,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           ...run,
           options: {
             ...run.options,
-            bullet: j === 0 ? { type: "bullet", color: c.accent } : undefined,
+            bullet: j === 0 ? bulletOpt : undefined,
             paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
             indentLevel: j === 0 ? 0 : undefined,
             breakLine: j === mathRuns.length - 1 ? true : undefined,
@@ -181,7 +183,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           fontSize,
           fontFace: f.sans,
           color: c.textSecondary,
-          bullet: { type: "bullet", color: c.accent },
+          bullet: bulletOpt,
           paraSpaceAfter: 8,
           indentLevel: 0,
         },

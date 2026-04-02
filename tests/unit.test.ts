@@ -491,6 +491,52 @@ describe("OOXML", () => {
     });
   });
 
+  describe("text columns", () => {
+    it("adds numCol attribute for multi-column text", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Two columns", { x: 0, y: 0, w: 10, h: 5, columns: 2 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('numCol="2"');
+      expect(xml).toContain("spcCol=");
+    });
+
+    it("does not add numCol for single column", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("One column", { x: 0, y: 0, w: 10, h: 5 });
+      const xml = slide._elements[0];
+      expect(xml).not.toContain("numCol=");
+    });
+  });
+
+  describe("text shape opacity", () => {
+    it("adds alpha to solid fill", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText("Semi-transparent", {
+        x: 0, y: 0, w: 5, h: 1,
+        shape: "rect",
+        fill: { color: "FF0000" },
+        opacity: 0.5,
+      });
+      const xml = slide._elements[0];
+      expect(xml).toContain('<a:alpha val="50000"/>');
+    });
+  });
+
+  describe("custom bullet character", () => {
+    it("uses char field on BulletOpts", () => {
+      const pres = new Presentation();
+      const slide = pres.addSlide();
+      slide.addText([
+        { text: "item", options: { bullet: { type: "bullet", char: "›" } } },
+      ], { x: 0, y: 0, w: 5, h: 1 });
+      const xml = slide._elements[0];
+      expect(xml).toContain('char="›"');
+    });
+  });
+
   describe("text paragraph splitting", () => {
     it("splits text runs with bullet into separate paragraphs", () => {
       const pres = new Presentation();

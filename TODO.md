@@ -17,7 +17,7 @@
 - [x] Docs site — Mintlify setup at `docs/` with getting-started guide and API reference.
 - [x] **OOXML writer** — replaced pptxgenjs with direct OOXML generation. Connectors, animations, grouping, emoji bullets, and footers are first-class.
 - [x] **Remove pptx-patch.ts and pptxgenjs** — deleted 942-line post-processor, replaced with `jszip`.
-- [x] **Unit test suite** — vitest with 45 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients.
+- [x] **Unit test suite** — vitest with 56 tests covering layout, math, OOXML API, hyperlinks, transitions, accessibility, gradients, and more.
 - [x] **Clean up `as any` casts** — zero `as any` in `src/`.
 - [x] **Typed Slide API** — `AddTextOpts`, `AddShapeOpts`, `AddImageOpts`, `AddTableOpts` + helper types.
 - [x] **Hyperlinks** — `href` on TextRunOpts → `<a:hlinkClick>`. Also added `underline`.
@@ -29,6 +29,9 @@
 
 - [x] **Strikethrough text** — `strike` on TextRunOpts → `strike="sngStrike"` attribute on `<a:rPr>`.
 - [x] **Shape/text rotation** — `rotate` on AddTextOpts (already on AddShapeOpts) → `rot` attribute on `<a:xfrm>`.
+- [x] **Text columns** — `columns` + `columnSpacing` on AddTextOpts → `numCol` + `spcCol` on `<a:bodyPr>`.
+- [x] **Shape opacity** — `opacity` on AddTextOpts → `<a:alpha>` on solid fill color.
+- [x] **Custom bullet characters** — `bulletChar` on BulletListProps + `char` on BulletOpts for direct Unicode bullets.
 
 ## Open
 
@@ -37,6 +40,6 @@
 - [ ] **Video/audio embedding** — embed media files in slides via OOXML media parts.
 - [ ] **Master slide customization** — allow themes to define custom slide masters with placeholder layouts.
 - [ ] **Slide duplication** — `deck.duplicate(slideIndex)` to clone a slide for iterative variants.
-- [ ] **Text columns** — multi-column text layout within a single text box via `<a:bodyPr numCol="N">`.
-- [ ] **Shape opacity** — `opacity` on AddTextOpts for semi-transparent text containers.
-- [ ] **Custom bullet characters** — expose `bulletChar` on BulletListProps for custom Unicode bullet characters.
+- [ ] **Text shadow** — `textShadow` on TextRunOpts for drop shadow on individual text runs via `<a:effectLst>`.
+- [ ] **Image cropping** — `crop` on AddImageOpts for OOXML `<a:srcRect>` region selection.
+- [ ] **Placeholder-based text** — use OOXML placeholder types (`title`, `body`) for better theme compatibility.

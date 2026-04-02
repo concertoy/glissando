@@ -67,7 +67,10 @@ export interface TextRunOpts {
 
 export interface BulletOpts {
   type?: "bullet" | "number";
+  /** Hex code point for bullet character (e.g. "2013" for en-dash). */
   code?: string;
+  /** Direct bullet character (e.g. "–", "›", "★"). Takes precedence over code. */
+  char?: string;
   color?: string;
 }
 
@@ -135,6 +138,12 @@ export interface AddTextOpts {
   altText?: string;
   /** Rotation in degrees (clockwise). */
   rotate?: number;
+  /** Number of text columns within the text box. */
+  columns?: number;
+  /** Column spacing in inches (default 0.3). */
+  columnSpacing?: number;
+  /** Shape opacity 0–1 (affects fill, not text). */
+  opacity?: number;
 }
 
 export interface AddShapeOpts {
@@ -574,7 +583,8 @@ function buildTextShapeXml(
   } else if (opts.gradient) {
     fillXml = buildGradientFillXml(opts.gradient);
   } else if (opts.fill) {
-    fillXml = `<a:solidFill><a:srgbClr val="${opts.fill.color}"/></a:solidFill>`;
+    const opacXml = opts.opacity != null ? `<a:alpha val="${Math.round(opts.opacity * 100000)}"/>` : "";
+    fillXml = `<a:solidFill><a:srgbClr val="${opts.fill.color}">${opacXml}</a:srgbClr></a:solidFill>`;
   } else {
     fillXml = `<a:noFill/>`;
   }
@@ -649,8 +659,12 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
     fitXml = `<a:spAutoFit/>`;
   }
 
+  const colAttr = opts.columns && opts.columns > 1
+    ? ` numCol="${opts.columns}" spcCol="${emu(opts.columnSpacing ?? 0.3)}"`
+    : "";
   const bodyPr =
     `<a:bodyPr wrap="square" lIns="${lIns}" tIns="${tIns}" rIns="${rIns}" bIns="${bIns}" rtlCol="0" anchor="${anchor}"` +
+    colAttr +
     (opts.charSpacing != null ? ` spcFirstLastPara="0"` : "") +
     `>${fitXml}</a:bodyPr>`;
 
@@ -757,7 +771,7 @@ function buildParagraphProps(opts: Record<string, any>): string {
       children.push(`<a:buAutoNum type="arabicPeriod"/>`);
     } else {
       // Default: bullet character
-      const char = bOpts.code ? String.fromCodePoint(parseInt(bOpts.code, 16)) : "\u2022";
+      const char = bOpts.char ?? (bOpts.code ? String.fromCodePoint(parseInt(bOpts.code, 16)) : "\u2022");
       children.push(`<a:buFont typeface="Arial" pitchFamily="34" charset="0"/>`);
       children.push(`<a:buChar char="${escXml(char)}"/>`);
     }

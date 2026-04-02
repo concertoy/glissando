@@ -194,6 +194,8 @@ export interface BulletListProps {
   h?: number;
   fontSize?: number;
   build?: boolean;  // reveal bullets one-by-one on click
+  /** Custom bullet character (e.g. "–", "›", "★"). */
+  bulletChar?: string;
 }
 
 export interface NumberedListProps {

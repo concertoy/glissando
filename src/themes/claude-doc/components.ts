@@ -168,7 +168,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           ...run,
           options: {
             ...run.options,
-            bullet: j === 0 ? { type: "bullet", color: c.accent } as any : undefined,
+            bullet: j === 0 ? { type: "bullet", color: c.accent } : undefined,
             paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
             indentLevel: j === 0 ? 0 : undefined,
             breakLine: j === mathRuns.length - 1 ? true : undefined,
@@ -181,7 +181,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           fontSize,
           fontFace: f.sans,
           color: c.textSecondary,
-          bullet: { type: "bullet", color: c.accent } as any,
+          bullet: { type: "bullet", color: c.accent },
           paraSpaceAfter: 8,
           indentLevel: 0,
         },
@@ -232,7 +232,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           ...run,
           options: {
             ...run.options,
-            bullet: j === 0 ? { type: "number", color: c.accent } as any : undefined,
+            bullet: j === 0 ? { type: "number", color: c.accent } : undefined,
             paraSpaceAfter: j === mathRuns.length - 1 ? 8 : undefined,
             breakLine: j === mathRuns.length - 1 ? true : undefined,
           },
@@ -244,7 +244,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           fontSize,
           fontFace: f.sans,
           color: c.textSecondary,
-          bullet: { type: "number", color: c.accent } as any,
+          bullet: { type: "number", color: c.accent },
           paraSpaceAfter: 8,
         },
       }];
@@ -326,7 +326,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         ? { color: cs.border, width: 1 }
         : { color: cs.bg, width: 0.5 },
       objectName: lang ? `cb-${gid}-bg` : undefined,
-    } as any);
+    });
 
     if (lang) {
       // Shape 2: language label (top-right, above rule)
@@ -351,7 +351,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         h: 0,
         line: { color: cs.border ?? cs.text, width: 0.75 },
         objectName: `cb-${gid}-rule`,
-      } as any);
+      });
 
       // Shape 4: syntax-highlighted code text (below rule)
       const hlLines = highlightCode(truncated, lang, cs);
@@ -384,7 +384,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       // No language — code text built into the rounded rect
       slide.addText(truncated, {
         x: props.x, y: props.y, w: props.w, h,
-        shape: "roundRect" as any,
+        shape: "roundRect",
         fill: { color: cs.bg },
         rectRadius: cs.borderRadius ?? 0.15,
         line: cs.border
@@ -484,7 +484,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         fill: { color: "FFFFFF" },
         line: { color: borderColor, width: 1.5 },
         rectRadius: props.rounding ? 0.08 : 0,
-      } as any);
+      });
     }
 
     const imgOpts: Record<string, any> = {
@@ -567,7 +567,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       const coBodyRuns = expandTextWithMath(props.body, coBodyBase);
       slide.addText(coBodyRuns ?? props.body, {
         x: props.x, y: props.y, w: props.w, h,
-        shape: "roundRect" as any,
+        shape: "roundRect",
         fill: { color: style.bg },
         rectRadius: 0.08,
         line: { color: style.border, width: 1 },
@@ -586,7 +586,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
             ...run,
             options: {
               ...run.options,
-              bullet: j === 0 ? { type: "bullet", color: style.border } as any : undefined,
+              bullet: j === 0 ? { type: "bullet", color: style.border } : undefined,
               paraSpaceAfter: j === mathRuns.length - 1 ? 4 : undefined,
               breakLine: j === mathRuns.length - 1 ? true : undefined,
             },
@@ -597,14 +597,14 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
           options: {
             fontSize: s.small, fontFace: f.sans,
             color: style.textColor,
-            bullet: { type: "bullet", color: style.border } as any,
+            bullet: { type: "bullet", color: style.border },
             paraSpaceAfter: 4,
           },
         }];
       });
       slide.addText(rows, {
         x: props.x, y: props.y, w: props.w, h,
-        shape: "roundRect" as any,
+        shape: "roundRect",
         fill: { color: style.bg },
         rectRadius: 0.08,
         line: { color: style.border, width: 1 },
@@ -625,7 +625,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
       x: props.x + iconPadLeft, y: iconY,
       w: iconSize, h: iconSize,
       objectName: `co-${gid}-icon`,
-    } as any);
+    });
     return { x: props.x, y: props.y, w: props.w, h };
   }
 
@@ -703,7 +703,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
             text: item,
             options: {
               fontSize: s.small, fontFace: f.sans, color: bodyColor,
-              bullet: { type: "bullet", color: borderColor } as any,
+              bullet: { type: "bullet", color: borderColor },
               paraSpaceAfter: 4,
             },
           });
@@ -723,7 +723,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
 
     slide.addText(rows, {
       x: props.x, y: props.y, w: props.w, h,
-      shape: "roundRect" as any,
+      shape: "roundRect",
       fill: { color: fillColor },
       rectRadius: 0.08,
       line: { color: borderColor, width: 1 },
@@ -755,7 +755,7 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
     const name = `diag-box-${shapeCounter++}`;
     slide.addText(props.text, {
       x: props.x, y: props.y, w: props.w, h: props.h,
-      shape: "roundRect" as any,
+      shape: "roundRect",
       fill: { color: props.fill ?? c.bgCard },
       rectRadius: 0.06,
       line: {
@@ -884,11 +884,11 @@ export const createComponents: ComponentFactory = (cfg: ThemeConfig, emojiDefs?:
         width: 1,
       },
       shadow: {
-        type: "outer", blur: 3, offset: 1,
+        blur: 3, offset: 1,
         color: "000000", opacity: 0.08,
       },
       objectName: name,
-    } as any);
+    });
     if (props.label) {
       slide.addText(props.label, {
         x: props.x, y: props.y - 0.35,

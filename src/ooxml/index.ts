@@ -46,6 +46,7 @@ export interface TextRunOpts {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   subscript?: boolean;
   superscript?: boolean;
   bullet?: BulletOpts | boolean;
@@ -56,6 +57,7 @@ export interface TextRunOpts {
   breakLine?: boolean;
   valign?: string;
   align?: string;
+  href?: string;
 }
 
 export interface BulletOpts {
@@ -64,9 +66,119 @@ export interface BulletOpts {
   color?: string;
 }
 
+// ─── Slide method option types ──────────────────────────────────────
+
+export interface FillOpts {
+  color: string;
+}
+
+export interface LineOpts {
+  color: string;
+  width?: number;
+  dashType?: "dash" | "solid";
+}
+
+export interface ShadowOpts {
+  color?: string;
+  blur?: number;
+  offset?: number;
+  opacity?: number;
+}
+
+export interface AddTextOpts {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  fontSize?: number;
+  fontFace?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  valign?: "top" | "middle" | "bottom" | "t" | "ctr" | "b";
+  align?: "left" | "center" | "right" | "l" | "ctr" | "r";
+  lineSpacingMultiple?: number;
+  lineSpacing?: number;
+  charSpacing?: number;
+  margin?: number | number[];
+  shape?: string;
+  fill?: FillOpts;
+  line?: LineOpts;
+  shadow?: ShadowOpts;
+  rectRadius?: number;
+  objectName?: string;
+  autoFit?: boolean;
+  fit?: "shrink";
+  paraSpaceAfter?: number;
+  paraSpaceBefore?: number;
+  bullet?: BulletOpts | boolean;
+  indentLevel?: number;
+}
+
+export interface AddShapeOpts {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  fill?: FillOpts;
+  line?: LineOpts;
+  shadow?: ShadowOpts;
+  rectRadius?: number;
+  lineHead?: string;
+  lineTail?: string;
+  objectName?: string;
+  rotate?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  opacity?: number;
+}
+
+export interface AddImageOpts {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  path?: string;
+  data?: string;
+  objectName?: string;
+  rounding?: boolean;
+  sizing?: { type: string; w: number; h: number };
+}
+
+export interface AddTableOpts {
+  x?: number;
+  y?: number;
+  w?: number;
+  rowH?: number;
+  colW?: number[];
+  margin?: number | number[];
+}
+
+export type TransitionType = "fade" | "push" | "wipe" | "cover" | "split" | "cut";
+
+export interface TransitionOpts {
+  type: TransitionType;
+  /** Duration in milliseconds (default: 700). */
+  duration?: number;
+  /** Advance automatically after this many milliseconds. */
+  advanceAfter?: number;
+}
+
 export interface TableCell {
   text: string;
-  options?: Record<string, any>;
+  options?: {
+    fontSize?: number;
+    fontFace?: string;
+    color?: string;
+    bold?: boolean;
+    italic?: boolean;
+    align?: string;
+    valign?: string;
+    fill?: FillOpts;
+    border?: any[];
+    paraSpaceBefore?: number;
+    paraSpaceAfter?: number;
+  };
 }
 
 // ─── Extras passed at write time ────────────────────────────────────
@@ -251,6 +363,9 @@ export class Slide {
   /** @internal */ _notes?: string;
   /** @internal */ _timing?: string;
   /** @internal */ _mediaCounter = 0;
+  /** @internal */ _hyperlinks: Array<{ rId: string; url: string }> = [];
+  /** @internal */ _hyperlinkCounter = 0;
+  /** @internal */ _transition?: TransitionOpts;
 
   constructor(index: number) {
     this._slideIndex = index;
@@ -259,6 +374,10 @@ export class Slide {
   set background(bg: { color: string }) { this._bg = bg.color; }
   get background(): { color: string } { return { color: this._bg }; }
 
+  /** Set a transition effect for this slide. */
+  set transition(opts: TransitionOpts) { this._transition = opts; }
+  get transition(): TransitionOpts | undefined { return this._transition; }
+
   /** @internal */
   _allocId(name?: string): number {
     const id = this._nextId++;
@@ -266,33 +385,44 @@ export class Slide {
     return id;
   }
 
-  addText(content: string | TextRun[], opts?: Record<string, any>): void {
-    const o = opts ?? {};
+  /** @internal Register a hyperlink and return its relationship ID. */
+  _addHyperlink(url: string): string {
+    this._hyperlinkCounter++;
+    const rId = `rIdHlink${this._hyperlinkCounter}`;
+    this._hyperlinks.push({ rId, url });
+    return rId;
+  }
+
+  addText(content: string | TextRun[], opts?: AddTextOpts): void {
+    const o: Record<string, any> = opts ?? {};
     const id = this._allocId(o.objectName);
     const name = o.objectName ?? `TextBox_${id}`;
-    this._elements.push(buildTextShapeXml(id, name, content, o));
+    this._elements.push(buildTextShapeXml(id, name, content, o, this));
   }
 
-  addShape(type: string, opts: Record<string, any>): void {
-    const id = this._allocId(opts.objectName);
-    const name = opts.objectName ?? `Shape_${id}`;
-    this._elements.push(buildShapeXml(id, name, type, opts));
+  addShape(type: string, opts: AddShapeOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._allocId(o.objectName);
+    const name = o.objectName ?? `Shape_${id}`;
+    this._elements.push(buildShapeXml(id, name, type, o));
   }
 
-  addImage(opts: Record<string, any>): void {
-    const id = this._allocId(opts.objectName);
-    const name = opts.objectName ?? `Image_${id}`;
+  addImage(opts: AddImageOpts): void {
+    const o: Record<string, any> = opts;
+    const id = this._allocId(o.objectName);
+    const name = o.objectName ?? `Image_${id}`;
     this._mediaCounter++;
-    const resolved = resolveImageData(opts);
+    const resolved = resolveImageData(o);
     const fileName = `img_s${this._slideIndex + 1}_${this._mediaCounter}.${resolved.ext}`;
     const rId = `rImg${this._mediaCounter}`;
     this._images.push({ rId, fileName, data: resolved.data, contentType: resolved.contentType });
-    this._elements.push(buildPictureXml(id, name, rId, opts));
+    this._elements.push(buildPictureXml(id, name, rId, o));
   }
 
-  addTable(rows: any[][], opts: Record<string, any>): void {
+  addTable(rows: TableCell[][], opts: AddTableOpts): void {
+    const o: Record<string, any> = opts;
     const id = this._allocId();
-    this._elements.push(buildTableXml(id, rows, opts));
+    this._elements.push(buildTableXml(id, rows, o));
   }
 
   addNotes(text: string): void {
@@ -318,6 +448,7 @@ export class Slide {
       `</p:spTree>`;
 
     const timing = this._timing ?? "";
+    const transition = this._transition ? buildTransitionXml(this._transition) : "";
 
     return (
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
@@ -326,6 +457,7 @@ export class Slide {
       ` xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
       `<p:cSld>${bgXml}${spTree}</p:cSld>` +
       `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>` +
+      transition +
       timing +
       `</p:sld>`
     );
@@ -339,6 +471,11 @@ export class Slide {
     for (const img of this._images) {
       rels.push(
         `<Relationship Id="${img.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${img.fileName}"/>`,
+      );
+    }
+    for (const hlink of this._hyperlinks) {
+      rels.push(
+        `<Relationship Id="${hlink.rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escXml(hlink.url)}" TargetMode="External"/>`,
       );
     }
     if (hasNotes) {
@@ -366,6 +503,7 @@ function buildTextShapeXml(
   name: string,
   content: string | TextRun[],
   opts: Record<string, any>,
+  slide?: Slide,
 ): string {
   const x = emu(opts.x ?? 0);
   const y = emu(opts.y ?? 0);
@@ -439,14 +577,14 @@ function buildTextShapeXml(
   const spPr = `<p:spPr>${xfrmXml}${geomXml}${fillXml}${lineXml}${shadowXml}</p:spPr>`;
 
   // Text body
-  const txBody = buildTextBodyXml(content, opts);
+  const txBody = buildTextBodyXml(content, opts, slide);
 
   return `<p:sp>${nvSpPr}${spPr}${txBody}</p:sp>`;
 }
 
 // ─── Text body XML (<p:txBody>) ─────────────────────────────────────
 
-function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>): string {
+function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>, slide?: Slide): string {
   // Body properties
   const valignMap: Record<string, string> = { top: "t", middle: "ctr", bottom: "b", b: "b", t: "t", ctr: "ctr" };
   const anchor = valignMap[opts.valign ?? "top"] ?? "t";
@@ -458,8 +596,7 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
       const m = ptEmu(opts.margin);
       lIns = tIns = rIns = bIns = m;
     } else if (Array.isArray(opts.margin)) {
-      // pptxgenjs order: [left, right, bottom, top] (yes, it's weird)
-      // see pptx-patch.ts comment: "NOTE: pptxgenjs addText margin array order is [left, right, bottom, top]"
+      // Order: [left, right, bottom, top]
       lIns = ptEmu(opts.margin[0]);
       rIns = ptEmu(opts.margin[1]);
       bIns = ptEmu(opts.margin[2]);
@@ -480,12 +617,12 @@ function buildTextBodyXml(content: string | TextRun[], opts: Record<string, any>
     `>${fitXml}</a:bodyPr>`;
 
   // Build paragraphs
-  const paragraphs = buildParagraphsXml(content, opts);
+  const paragraphs = buildParagraphsXml(content, opts, slide);
 
   return `<p:txBody>${bodyPr}<a:lstStyle/>${paragraphs}</p:txBody>`;
 }
 
-function buildParagraphsXml(content: string | TextRun[], opts: Record<string, any>): string {
+function buildParagraphsXml(content: string | TextRun[], opts: Record<string, any>, slide?: Slide): string {
   if (typeof content === "string") {
     // Simple single-paragraph text
     return buildSingleParagraph(content, opts);
@@ -508,7 +645,7 @@ function buildParagraphsXml(content: string | TextRun[], opts: Record<string, an
     paragraphs.pop();
   }
 
-  return paragraphs.map((runs) => buildParagraphFromRuns(runs, opts)).join("");
+  return paragraphs.map((runs) => buildParagraphFromRuns(runs, opts, slide)).join("");
 }
 
 function buildSingleParagraph(text: string, opts: Record<string, any>): string {
@@ -517,7 +654,7 @@ function buildSingleParagraph(text: string, opts: Record<string, any>): string {
   return `<a:p>${pPr}<a:r>${rPr}<a:t>${escXml(text)}</a:t></a:r></a:p>`;
 }
 
-function buildParagraphFromRuns(runs: TextRun[], parentOpts: Record<string, any>): string {
+function buildParagraphFromRuns(runs: TextRun[], parentOpts: Record<string, any>, slide?: Slide): string {
   if (runs.length === 0) return `<a:p><a:endParaRPr lang="en-US"/></a:p>`;
 
   // Paragraph props come from the first run
@@ -527,7 +664,7 @@ function buildParagraphFromRuns(runs: TextRun[], parentOpts: Record<string, any>
 
   const runXmls = runs.map((run) => {
     const o = { ...parentOpts, ...run.options };
-    const rPr = buildRunProps(o);
+    const rPr = buildRunProps(o, slide);
     return `<a:r>${rPr}<a:t>${escXml(run.text)}</a:t></a:r>`;
   });
 
@@ -593,12 +730,13 @@ function buildParagraphProps(opts: Record<string, any>): string {
   return `<a:pPr${parts.length ? " " + parts.join(" ") : ""}>${children.join("")}</a:pPr>`;
 }
 
-function buildRunProps(opts: Record<string, any>): string {
+function buildRunProps(opts: Record<string, any>, slide?: Slide): string {
   const attrs: string[] = ['lang="en-US"'];
 
   if (opts.fontSize) attrs.push(`sz="${sz100(opts.fontSize)}"`);
   if (opts.bold) attrs.push(`b="1"`);
   if (opts.italic) attrs.push(`i="1"`);
+  if (opts.underline) attrs.push(`u="sng"`);
   if (opts.subscript) attrs.push(`baseline="-40000"`);
   if (opts.superscript) attrs.push(`baseline="30000"`);
   if (opts.charSpacing != null) attrs.push(`spc="${Math.round(opts.charSpacing * 100)}"`);
@@ -610,6 +748,10 @@ function buildRunProps(opts: Record<string, any>): string {
   }
   if (opts.fontFace) {
     children.push(`<a:latin typeface="${escXml(opts.fontFace)}"/>`);
+  }
+  if (opts.href && slide) {
+    const rId = slide._addHyperlink(opts.href);
+    children.push(`<a:hlinkClick r:id="${rId}"/>`);
   }
 
   if (children.length > 0) {
@@ -1106,6 +1248,26 @@ function buildFooterTextBox(
     `</p:txBody>` +
     `</p:sp>`
   );
+}
+
+// ─── Slide transitions ─────────────────────────────────────────────
+
+function buildTransitionXml(opts: TransitionOpts): string {
+  const dur = opts.duration ?? 700;
+  const advAttr = opts.advanceAfter != null ? ` advTm="${opts.advanceAfter}"` : "";
+
+  // Map transition types to OOXML elements
+  const typeMap: Record<TransitionType, string> = {
+    fade: `<p:fade/>`,
+    push: `<p:push/>`,
+    wipe: `<p:wipe/>`,
+    cover: `<p:cover/>`,
+    split: `<p:split/>`,
+    cut: `<p:cut/>`,
+  };
+
+  const inner = typeMap[opts.type] ?? `<p:fade/>`;
+  return `<p:transition spd="${dur <= 500 ? "fast" : dur <= 1000 ? "med" : "slow"}"${advAttr}>${inner}</p:transition>`;
 }
 
 // ─── Timing / build animations ──────────────────────────────────────

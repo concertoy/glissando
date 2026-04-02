@@ -133,7 +133,7 @@ function content(
     w: contentW,
     h: 0,
     line: { color: "E5E5E5", width: 1 },
-  } as any);
+  });
 
   let bulletTop = sp.marginTop + 1.1;
   if (props.subtitle) {
@@ -187,7 +187,7 @@ function twoColumn(
     w: contentW,
     h: 0,
     line: { color: "E5E5E5", width: 1 },
-  } as any);
+  });
 
   const colTop = sp.marginTop + 1.1;
   const gap = 0.6;
@@ -314,7 +314,7 @@ function tableLayout(
   slide.addShape("line", {
     x: sp.marginLeft, y: sp.marginTop + 0.8, w: contentW, h: 0,
     line: { color: "E5E5E5", width: 1 },
-  } as any);
+  });
 
   comp.table(slide, {
     headers: props.headers, rows: props.rows,

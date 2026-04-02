@@ -12,7 +12,7 @@ npm install
 
 ## Build, Test, and Development Commands
 
-- `npm install` — install runtime (pptxgenjs, sharp, mathjax-full) and tooling dependencies.
+- `npm install` — install runtime (jszip, sharp, mathjax-full) and tooling dependencies.
 - `./build.sh examples/<deck>` — compile `slides.ts` into `output.pptx` inside that example folder.
 - `npx tsx scripts/runner.ts <path-to-deck>` — run the builder directly when debugging runner changes.
 - `npx tsx scripts/render-slide.ts <path>.pptx --all --output /tmp/render` — render PPTX slides to PNG for visual verification.
@@ -54,8 +54,10 @@ The agent only provides **content**. All positioning, colors, and fonts are hand
 ```
 src/
   index.ts                  Deck class (public API)
-  pptx-patch.ts             PPTX post-processing (font patching, connectors, grouping)
   types.ts                  TypeScript types for Theme, Components, Layouts
+  ooxml/
+    index.ts                Presentation/Slide classes, XML builders (connectors, animations, grouping)
+    writer.ts               PPTX ZIP assembly (boilerplate XML + JSZip packaging)
   config.ts                 CLI config loader (~/.glissando/config.json)
   equation.ts               LaTeX renderer (MathJax → SVG → PNG via sharp)
   highlight.ts              Syntax highlighter (per-language keyword coloring)
@@ -241,7 +243,7 @@ numberedList(slide, { items: ["1st", "2nd", "3rd"], build: true, ...area });
 | `deck.image({ title, imagePath, caption?, notes? })` | Heading + image |
 | `deck.table({ title, headers, rows, notes? })` | Heading + themed table |
 | `await deck.equation({ title, equations, notes? })` | Heading + rendered LaTeX equations |
-| `deck.blank({ bg?, notes? })` | Empty slide (returns raw pptxgenjs slide) |
+| `deck.blank({ bg?, notes? })` | Empty slide (returns raw Slide object) |
 
 ## Available Components
 

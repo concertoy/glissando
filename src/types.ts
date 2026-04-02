@@ -137,7 +137,7 @@ export interface BibEntry {
   year: number;
 }
 
-/** Internal: per-slide footer data passed to pptx-patch. */
+/** Internal: per-slide footer data passed to OOXML writer. */
 export interface FooterDef {
   slideIndex: number;   // 0-based (matches pptx slide numbering)
   slideNumber?: string;
@@ -145,7 +145,7 @@ export interface FooterDef {
   citations?: string;
 }
 
-/** Internal: per-shape animation data passed to pptx-patch. */
+/** Internal: per-shape animation data passed to OOXML writer. */
 export interface AnimationDef {
   slideIndex: number;      // -1 = resolve by objectName search (like emoji defs)
   objectName: string;      // shape objectName for spid lookup
